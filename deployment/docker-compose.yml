@@ -1,0 +1,41 @@
+# Local development stack: PostgreSQL + PostGIS, Redis, backend API.
+# Run from the repository root:  docker compose -f deployment/docker-compose.yml up --build
+name: carcux
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: carcux
+      POSTGRES_PASSWORD: carcux        # development only
+      POSTGRES_DB: carcux
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carcux -d carcux"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ../backend
+    environment:
+      CARCUX_ENVIRONMENT: development
+      CARCUX_DATABASE_URL: postgresql+psycopg://carcux:carcux@db:5432/carcux
+      CARCUX_REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  db_data:
