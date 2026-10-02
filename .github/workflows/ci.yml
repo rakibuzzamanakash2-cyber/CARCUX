@@ -45,3 +45,26 @@ jobs:
         run: alembic upgrade head && alembic check
       - name: Test
         run: pytest -q
+
+  data:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: data/tools
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: data/tools/pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Validator tests
+        run: pytest -q
+      - name: Validate every dataset in the repository
+        run: |
+          for d in $(find ../samples ../releases -name events.jsonl -printf '%h\n' 2>/dev/null | sort -u); do
+            python -m carcux_data.validate "$d"
+          done
