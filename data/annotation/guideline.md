@@ -1,6 +1,6 @@
 # CARCUX-BD Annotation Guideline
 
-**Version 0.1** · Schema v1 · Status: draft for the first annotation round
+**Version 0.2** · Schema v1.1 · Status: draft for the first annotation round
 
 This guideline tells annotators how to turn news, posts, videos and field reports about Bangladesh disaster and disruption events into CARCUX-BD records. Two annotators following it should reach the same labels. When they don't, that is a signal to improve the guideline, not to argue.
 
@@ -35,8 +35,8 @@ Run it before every commit. A dataset that fails validation is not merged.
 
 | Family | Types |
 |---|---|
-| `natural_calamity` | flood, flash_flood, waterlogging, cyclone, storm_surge, landslide, river_erosion, heavy_rainfall |
-| `road_infrastructure` | road_blockage, road_accident, road_damage, bridge_damage, power_outage, gas_outage, water_outage, construction_closure |
+| `natural_calamity` | flood, flash_flood, waterlogging, cyclone, storm_surge, landslide, river_erosion, heavy_rainfall, earthquake |
+| `road_infrastructure` | road_blockage, road_accident, road_damage, bridge_damage, power_outage, gas_outage, water_outage, construction_closure, rail_accident |
 | `urban_emergency` | fire, building_collapse, building_hazard, explosion |
 
 **Out of scope:** political events as a category. A gathering that blocks a road may be recorded **only** as a `road_blockage`: place, time, duration, traffic impact. No organisers, no slogans, no sides, no political labels.
@@ -239,7 +239,18 @@ Rules:
 
 ---
 
-## 10. Open questions for v0.2
+## 10. Changelog
+
+| Version | Schema | Changes |
+|---|---|---|
+| 0.2 | v1.1 | Added event types `earthquake` (natural_calamity) and `rail_accident` (road_infrastructure), needed by shortlist events such as the November 2025 Narsingdi earthquake and the October 2023 Bhairab train collision. Additive only: every v1.0 dataset is still valid. |
+| 0.1 | v1.0 | First version. |
+
+Annotations record the guideline version they were made under (`guideline_version`), so items labelled under 0.1 stay valid.
+
+---
+
+## 11. Open questions for v0.3
 
 - Exact checkpoint set: is `T+24h` needed for fast urban events?
 - Magnitude vocabularies for non-water events (fire size, outage extent).
