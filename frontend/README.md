@@ -1,6 +1,6 @@
 # CARCUX frontend
 
-Next.js (App Router) console for CARCUX staff: sign-in, overview, account management and field reports. Sections whose backend is not built yet (map, events, review queue, audit log) show what they will do.
+Next.js (App Router) console for CARCUX staff: sign-in, overview, account management, field reports and events. Sections whose backend is not built yet (map, review queue, audit log) show what they will do.
 
 ## Run locally
 
@@ -43,6 +43,20 @@ docker compose -f deployment/docker-compose.yml up --build
 - **Location needs HTTPS.** Browsers only share GPS with `https://` pages and `localhost`. On a phone opening the console over plain `http://` on your network, **Use my location** explains this and the worker types coordinates instead. A production deployment must serve HTTPS.
 - **Event types** mirror the dataset schema; `npm run check:event-types` (run in CI) fails if they drift.
 
+## Events
+
+| Page | Who | What |
+|---|---|---|
+| `/` | everyone | Open events, most urgent first (priority, then newest). |
+| `/events` | everyone | **Open / Resolved / Dismissed / All**, filter by kind. Priority, assessment, status and an evidence summary per event. |
+| `/events/new` | analyst, admin | Create an event. From a report (`?from_report=`), type, place, location and time are prefilled and the report is attached as support. |
+| `/events/{id}` | everyone; reviewers see more | Details and evidence counts for all. Reviewers also get **Analyst decision** (status, priority, assessment, edit title/place/summary), **Evidence** (change relation, unlink), **Possibly related reports** (one-click link as supports / partly supports / contradicts / related) and **History** in plain words. |
+| `/field-reports/{id}` | analyst, admin | An **Events** section: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
+
+- Suggestions come from place and time only (5 km, 48 h); the page says so. Analysts decide.
+- Closing an event (resolved or dismissed) records its end time; reopening clears it.
+- Assessment labels and their meanings are the CARCUX-BD dataset's, shown under the selector.
+
 ## Checks
 
 ```bash
@@ -63,9 +77,9 @@ src/
 ├── components/              # shared UI (sidebar, form fields, placeholders)
 └── app/
     ├── login/               # sign-in page
-    ├── actions/             # Server Actions: login, logout, users, field reports
+    ├── actions/             # Server Actions: login, logout, users, field reports, events
     ├── fonts/               # self-hosted Archivo (SIL OFL)
-    └── (console)/           # signed-in pages: overview, users, field reports, and upcoming sections
+    └── (console)/           # signed-in pages: overview, users, field reports, events, and upcoming sections
 ```
 
 ## Design

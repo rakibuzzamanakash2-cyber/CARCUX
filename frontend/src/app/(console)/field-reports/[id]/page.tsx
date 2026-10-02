@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AssessmentText, PriorityBadge, StatusText } from "@/components/event-badges";
+import { LinkButtons } from "@/components/evidence-controls";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
+import { RELATION_STYLE, relationLabel } from "@/lib/events";
 import { FLAG_INFO, flagLabel, formatBytes, formatCoords, formatDhaka, isUuid } from "@/lib/format";
-import { REPORT_READERS, REPORT_REVIEWERS, REPORT_SUBMITTERS, type FieldReport } from "@/lib/types";
+import {
+  REPORT_READERS,
+  REPORT_REVIEWERS,
+  REPORT_SUBMITTERS,
+  type CandidateEvent,
+  type FieldReport,
+  type ReportLink,
+} from "@/lib/types";
 
 import { VerifyPanel } from "./verify-panel";
 
@@ -51,6 +61,12 @@ export default async function FieldReportPage({
 
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const canSubmit = REPORT_SUBMITTERS.includes(user.role);
+  const [links, candidates] = reviewer
+    ? await Promise.all([
+        api<ReportLink[]>(`/field-reports/${id}/events`),
+        api<CandidateEvent[]>(`/field-reports/${id}/candidate-events`),
+      ])
+    : [[] as ReportLink[], [] as CandidateEvent[]];
   const mapUrl = `https://www.openstreetmap.org/?mlat=${report.latitude}&mlon=${report.longitude}#map=17/${report.latitude}/${report.longitude}`;
 
   return (
@@ -107,6 +123,89 @@ export default async function FieldReportPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {reviewer && (
+        <section aria-labelledby="events" className="border-t border-line pt-6">
+          <h2 id="events" className="display mb-4 text-2xl">
+            Events
+          </h2>
+          {links.length > 0 && (
+            <ul className="mb-6 flex max-w-3xl flex-col gap-3">
+              {links.map((l) => (
+                <li key={l.evidence_id} className={`border-l-2 pl-3 ${RELATION_STYLE[l.relation]}`}>
+                  <p className="text-sm text-steel">
+                    This report {relationLabel(l.relation).toLowerCase()}
+                  </p>
+                  <Link
+                    href={`/events/${l.event.id}`}
+                    className="hover:underline hover:underline-offset-2"
+                  >
+                    {l.event.title}
+                  </Link>
+                  <p className="mt-1 flex flex-wrap items-center gap-3 text-sm">
+                    <PriorityBadge priority={l.event.priority} />
+                    <AssessmentText assessment={l.event.assessment} />
+                    <StatusText status={l.event.status} />
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {candidates.length > 0 ? (
+            <>
+              <h3 className="mb-1 font-semibold">Possibly the same situation</h3>
+              <p className="mb-4 max-w-3xl text-sm text-steel">
+                Open events within 5 km and 48 hours of this report, same type first. Read the event
+                before linking.
+              </p>
+              <ul className="mb-6 flex max-w-4xl flex-col divide-y divide-line border-y border-line">
+                {candidates.map((c) => (
+                  <li key={c.event.id} className="flex flex-col gap-3 py-4">
+                    <div>
+                      <p className="text-sm text-steel">
+                        {c.distance_km < 1
+                          ? `${Math.round(c.distance_km * 1000)} m away`
+                          : `${c.distance_km.toFixed(1)} km away`}
+                        {" · "}
+                        {c.hours_apart === 0 ? "during the event" : `${c.hours_apart} h outside it`}
+                        {" · "}
+                        {c.same_type ? (
+                          <span className="text-bone">same type</span>
+                        ) : (
+                          eventTypeLabel(c.event.event_type)
+                        )}
+                      </p>
+                      <Link
+                        href={`/events/${c.event.id}`}
+                        className="hover:underline hover:underline-offset-2"
+                      >
+                        {c.event.title}
+                      </Link>
+                    </div>
+                    <LinkButtons
+                      eventId={c.event.id}
+                      reportId={report.id}
+                      label="Link to this event as"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            links.length === 0 && (
+              <p className="mb-4 text-sm text-steel">
+                Not linked to any event, and no open event is nearby.
+              </p>
+            )
+          )}
+          <Link
+            href={`/events/new?from_report=${report.id}`}
+            className="inline-flex h-11 items-center rounded-sm border border-steel px-4 text-bone transition-colors hover:bg-panel-2"
+          >
+            Create an event from this report
+          </Link>
         </section>
       )}
 
