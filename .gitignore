@@ -35,9 +35,11 @@ research/**/runs/
 research/**/wandb/
 mlruns/
 
-# Media uploads
-media/
-uploads/
+# Uploaded media at runtime (anchored, so source folders like ai/media/ are NOT ignored)
+/media/
+/uploads/
+backend/media/
+backend/uploads/
 
 # OS / editors
 .DS_Store
