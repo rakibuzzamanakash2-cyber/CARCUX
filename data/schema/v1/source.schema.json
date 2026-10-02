@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/source.schema.json",
+  "title": "Source",
+  "description": "Where observations come from: a news outlet, a social account, a field worker. One line of sources.jsonl. Holds no personal data.",
+  "type": "object",
+  "required": ["source_id", "source_type", "name"],
+  "properties": {
+    "source_id": { "$ref": "common.schema.json#/$defs/source_id" },
+    "source_type": { "$ref": "common.schema.json#/$defs/source_type" },
+    "name": {
+      "description": "Outlet or organisation name (e.g. a newspaper). For individual social accounts and field workers use a neutral label such as 'Social account' or 'Field worker'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "platform": {
+      "description": "For social and video sources: the platform (e.g. facebook, youtube, x).",
+      "type": "string"
+    },
+    "account_ref": {
+      "description": "Salted SHA-256 of the account handle, so the same account can be recognised across posts without storing who it is. Never the handle itself.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "domain": {
+      "description": "Website domain for news and public-record sources.",
+      "type": "string"
+    },
+    "languages": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/language" },
+      "uniqueItems": true
+    },
+    "is_simulated": {
+      "description": "True for simulated field workers and injected contamination sources.",
+      "type": "boolean",
+      "default": false
+    },
+    "notes": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "source_type": { "enum": ["social", "video_platform"] } } },
+      "then": { "required": ["platform"] }
+    }
+  ],
+  "additionalProperties": false
+}

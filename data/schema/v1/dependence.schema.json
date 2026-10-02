@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/dependence.schema.json",
+  "title": "Dependence",
+  "description": "An observation that is not independent of an earlier one. One line of dependences.jsonl. This is what lets the fusion model count 100 copies as one source.",
+  "type": "object",
+  "required": ["obs_id", "origin_obs_id", "type", "annotations"],
+  "properties": {
+    "obs_id": {
+      "description": "The later, dependent observation.",
+      "$ref": "common.schema.json#/$defs/observation_id"
+    },
+    "origin_obs_id": {
+      "description": "The earlier observation it depends on. Must be published before obs_id.",
+      "$ref": "common.schema.json#/$defs/observation_id"
+    },
+    "type": {
+      "description": "verbatim_copy: same text. rewrite: same claims, reworded. repost: platform share/forward. cites: explicitly attributes to the origin ('according to ...'). same_media: reuses the origin's image or video.",
+      "enum": ["verbatim_copy", "rewrite", "repost", "cites", "same_media"]
+    },
+    "evidence": {
+      "description": "How the dependence was established.",
+      "type": "array",
+      "items": { "enum": ["text_overlap", "attribution", "platform_share", "media_hash", "timestamp_order", "annotator_judgement"] },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "annotations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/annotation_meta" }
+    }
+  },
+  "additionalProperties": false
+}

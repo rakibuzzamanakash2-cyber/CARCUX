@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/common.schema.json",
+  "title": "CARCUX-BD v1 shared definitions",
+  "$defs": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^EVT-[0-9]{6}$"
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^SRC-[0-9]{6}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^OBS-[0-9]{7}$"
+    },
+    "annotator_id": {
+      "description": "Pseudonymous annotator code. Never a real name.",
+      "type": "string",
+      "pattern": "^ANN-[0-9]{3}$"
+    },
+    "datetime": {
+      "description": "ISO 8601 with an explicit UTC offset, e.g. 2024-06-18T10:15:00+06:00.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "time_precision": {
+      "enum": [
+        "minute",
+        "hour",
+        "day",
+        "unknown"
+      ]
+    },
+    "event_family": {
+      "enum": [
+        "natural_calamity",
+        "road_infrastructure",
+        "urban_emergency"
+      ]
+    },
+    "event_type": {
+      "description": "Controlled vocabulary. The family of each type is fixed by the validator.",
+      "enum": [
+        "flood",
+        "flash_flood",
+        "waterlogging",
+        "cyclone",
+        "storm_surge",
+        "landslide",
+        "river_erosion",
+        "heavy_rainfall",
+        "road_blockage",
+        "road_accident",
+        "road_damage",
+        "bridge_damage",
+        "power_outage",
+        "gas_outage",
+        "water_outage",
+        "construction_closure",
+        "fire",
+        "building_collapse",
+        "building_hazard",
+        "explosion"
+      ]
+    },
+    "language": {
+      "description": "bn = Bangla script, bn-Latn = Banglish (Romanized Bangla), en = English, mixed = code-mixed.",
+      "enum": [
+        "bn",
+        "bn-Latn",
+        "en",
+        "mixed"
+      ]
+    },
+    "modality": {
+      "enum": [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "mixed"
+      ]
+    },
+    "source_type": {
+      "enum": [
+        "field",
+        "news",
+        "social",
+        "video_platform",
+        "public_record",
+        "other"
+      ]
+    },
+    "position": {
+      "type": "array",
+      "description": "[longitude, latitude] in WGS84, within Bangladesh's bounding box.",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 88.0,
+          "maximum": 92.7
+        },
+        {
+          "type": "number",
+          "minimum": 20.5,
+          "maximum": 26.7
+        }
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "geometry": {
+      "description": "GeoJSON geometry (WGS84).",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "properties": {
+            "type": {
+              "const": "Point"
+            },
+            "coordinates": {
+              "$ref": "#/$defs/position"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "properties": {
+            "type": {
+              "const": "Polygon"
+            },
+            "coordinates": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "array",
+                "minItems": 4,
+                "items": {
+                  "$ref": "#/$defs/position"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "properties": {
+            "type": {
+              "const": "MultiPolygon"
+            },
+            "coordinates": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "array",
+                  "minItems": 4,
+                  "items": {
+                    "$ref": "#/$defs/position"
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "admin_area": {
+      "description": "Bangladesh administrative names, in English transliteration.",
+      "type": "object",
+      "required": [
+        "division",
+        "district"
+      ],
+      "properties": {
+        "division": {
+          "type": "string",
+          "minLength": 1
+        },
+        "district": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upazila_or_thana": {
+          "type": "string"
+        },
+        "city_corporation": {
+          "type": "string"
+        },
+        "locality": {
+          "type": "string",
+          "description": "Neighbourhood, road or landmark."
+        }
+      },
+      "additionalProperties": false
+    },
+    "location": {
+      "type": "object",
+      "required": [
+        "geometry",
+        "precision_m",
+        "admin"
+      ],
+      "properties": {
+        "geometry": {
+          "$ref": "#/$defs/geometry"
+        },
+        "precision_m": {
+          "description": "Approximate radius of uncertainty in metres.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "admin": {
+          "$ref": "#/$defs/admin_area"
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim_attribute": {
+      "description": "What a claim is about. Conflicts are recorded per attribute.",
+      "enum": [
+        "occurrence",
+        "event_type",
+        "location",
+        "start_time",
+        "end_time",
+        "status",
+        "magnitude",
+        "affected_count",
+        "casualty_count",
+        "cause"
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "attribute",
+        "value"
+      ],
+      "properties": {
+        "attribute": {
+          "$ref": "#/$defs/claim_attribute"
+        },
+        "value": {
+          "description": "Normalised value: string, number or boolean (e.g. occurrence=true, magnitude='knee-deep').",
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "surface": {
+          "description": "The words in the item that state this claim (short excerpt, max 200 chars).",
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotation_meta": {
+      "type": "object",
+      "required": [
+        "annotator",
+        "confidence",
+        "annotated_at",
+        "guideline_version"
+      ],
+      "properties": {
+        "annotator": {
+          "$ref": "#/$defs/annotator_id"
+        },
+        "confidence": {
+          "description": "1 = unsure, 2 = fairly sure, 3 = certain.",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "annotated_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "guideline_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "assessment_label": {
+      "description": "verified: the evidence establishes it happened as described. partially_verified: it happened, but key attributes are uncertain or disputed. conflicting: credible evidence on both sides of whether it happened. unverified: claims exist but none are independent or credible enough. refuted: the evidence establishes it did not happen (or not as claimed). insufficient_evidence: too little information to judge.",
+      "enum": [
+        "verified",
+        "partially_verified",
+        "conflicting",
+        "unverified",
+        "refuted",
+        "insufficient_evidence"
+      ]
+    }
+  }
+}

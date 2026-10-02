@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/observation.schema.json",
+  "title": "Observation",
+  "description": "One item of evidence: a news article, a post, a video, an image, a field report. One line of observations.jsonl.",
+  "type": "object",
+  "required": [
+    "obs_id", "source_id", "modality", "language", "published_at", "collected_at",
+    "content_policy", "claims", "is_simulated"
+  ],
+  "properties": {
+    "obs_id": { "$ref": "common.schema.json#/$defs/observation_id" },
+    "source_id": { "$ref": "common.schema.json#/$defs/source_id" },
+    "modality": { "$ref": "common.schema.json#/$defs/modality" },
+    "language": { "$ref": "common.schema.json#/$defs/language" },
+
+    "reference": {
+      "description": "URL or platform identifier of the original item. Required unless simulated.",
+      "type": "string"
+    },
+    "published_at": {
+      "description": "When the item became public (or was submitted, for field reports).",
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "observed_at": {
+      "description": "When the item says the described situation was seen, if it says so.",
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "collected_at": {
+      "description": "When CARCUX collected the item.",
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+
+    "content_policy": {
+      "description": "How much of the original content is stored. 'full' only for content we may redistribute (our own simulated reports, public-domain records).",
+      "enum": ["full", "excerpt", "reference_only"]
+    },
+    "text": {
+      "description": "Full text (content_policy=full) or a short excerpt (content_policy=excerpt, max 300 chars). Names of private individuals must be replaced with [PERSON].",
+      "type": "string"
+    },
+    "media": {
+      "description": "Derived features of attached media, never the media file itself.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "enum": ["image", "video", "audio"] },
+          "phash": {
+            "description": "64-bit perceptual hash (hex) for spotting reused images and video frames.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$"
+          },
+          "transcript": { "type": "string", "description": "ASR transcript (audio/video), excerpt rules apply." },
+          "ocr_text": { "type": "string" },
+          "duration_s": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "location_mentions": {
+      "description": "Places the item mentions or attaches (GPS for field reports), resolved to coordinates.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["surface", "resolved"],
+        "properties": {
+          "surface": { "type": "string", "description": "As written, e.g. 'Mirpur 10 golchottor'." },
+          "resolved": { "$ref": "common.schema.json#/$defs/location" },
+          "from_gps": { "type": "boolean", "default": false }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "claims": {
+      "description": "Structured statements the item makes. Written by annotators (or extractors, later checked).",
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/claim" }
+    },
+
+    "is_simulated": { "type": "boolean" },
+    "simulation": {
+      "description": "Required when is_simulated is true: how the item was produced, for reproducibility.",
+      "type": "object",
+      "required": ["kind", "generator_version", "seed"],
+      "properties": {
+        "kind": {
+          "enum": ["field_report", "duplicate", "contradiction", "stale", "false_event"]
+        },
+        "generator_version": { "type": "string" },
+        "seed": { "type": "integer" },
+        "derived_from": {
+          "description": "Ground-truth event or observation this item was generated from.",
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/event_id" },
+            { "$ref": "common.schema.json#/$defs/observation_id" }
+          ]
+        },
+        "parameters": {
+          "description": "Noise settings used, e.g. {location_error_m: 400, delay_min: 35}.",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "is_simulated": { "const": true } } },
+      "then": { "required": ["simulation"] },
+      "else": { "required": ["reference"], "not": { "required": ["simulation"] } }
+    },
+    {
+      "if": { "properties": { "content_policy": { "const": "excerpt" } } },
+      "then": { "properties": { "text": { "maxLength": 300 } } }
+    },
+    {
+      "if": { "properties": { "content_policy": { "const": "reference_only" } } },
+      "then": { "not": { "required": ["text"] } }
+    }
+  ],
+  "additionalProperties": false
+}
