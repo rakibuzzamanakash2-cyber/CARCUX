@@ -9,7 +9,7 @@ import type { ActionState, EvidenceRelation } from "@/lib/types";
 function Result({ state }: { state: ActionState }) {
   if (!state || state.ok) return null;
   return (
-    <p role="alert" className="text-sm text-signal">
+    <p role="alert" className="text-sm text-critical">
       {state.message}
     </p>
   );
@@ -38,7 +38,7 @@ export function LinkButtons({
             onClick={() =>
               startTransition(async () => setState(await linkReport(eventId, reportId, r.value)))
             }
-            className="h-9 rounded-sm border border-line px-3 text-sm text-bone transition-colors hover:border-steel hover:bg-panel-2 disabled:cursor-wait disabled:opacity-60"
+            className="h-9 rounded-md border border-line bg-panel-2 px-3 text-sm text-ink transition-colors hover:border-water disabled:cursor-wait disabled:opacity-60"
           >
             {r.label}
           </button>
@@ -85,7 +85,7 @@ export function EvidenceControls({
               ),
             )
           }
-          className="h-9 rounded-sm border border-line bg-panel-2 px-2 text-sm text-bone focus:border-steel focus:outline-none disabled:opacity-60"
+          className="h-9 rounded-md border border-line bg-panel-2 px-2 text-sm text-ink focus:border-muted focus:outline-none disabled:opacity-60"
         >
           {RELATIONS.map((r) => (
             <option key={r.value} value={r.value}>
@@ -103,7 +103,7 @@ export function EvidenceControls({
               setState(await unlinkEvidence(eventId, evidenceId, reportId)),
             );
           }}
-          className="text-sm text-steel underline-offset-2 hover:text-bone hover:underline disabled:opacity-60"
+          className="text-sm text-muted underline-offset-2 hover:text-ink hover:underline disabled:opacity-60"
         >
           Unlink
         </button>

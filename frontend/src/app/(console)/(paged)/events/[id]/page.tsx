@@ -8,6 +8,7 @@ import {
   StatusText,
 } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
+import { PageHeader, Panel } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -68,7 +69,7 @@ function describe(entry: HistoryEntry): React.ReactNode {
   const reportLink = d.field_report_id ? (
     <Link
       href={`/field-reports/${String(d.field_report_id)}`}
-      className="underline underline-offset-2 hover:text-white"
+      className="text-water hover:underline"
     >
       a report
     </Link>
@@ -150,206 +151,208 @@ export default async function EventPage({
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
 
   return (
-    <div className="flex flex-col gap-10">
-      <Link href="/events" className="w-fit text-sm text-steel hover:text-bone">
-        ← All events
-      </Link>
+    <>
+      <PageHeader
+        back={{ href: "/events", label: "All events" }}
+        kicker={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>{eventTypeLabel(event.event_type)}</span>
+            <span>{familyLabel(event.family)}</span>
+          </span>
+        }
+        title={event.title}
+      />
 
       {created && (
-        <p role="status" className="border-l-2 border-ok pl-3">
+        <p role="status" className="mb-6 rounded-md border border-ok/50 bg-ok/10 px-3 py-2">
           Event created. Link more reports below as they come in.
         </p>
       )}
 
-      <section>
-        <p className="mb-2 text-sm text-steel">
-          {eventTypeLabel(event.event_type)} · {familyLabel(event.family)}
-        </p>
-        <h1 className="display mb-4 text-3xl sm:text-4xl">{event.title}</h1>
-        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <PriorityBadge priority={event.priority} />
-          <AssessmentText assessment={event.assessment} />
-          <StatusText status={event.status} />
-        </div>
-        {event.summary && (
-          <p className="max-w-3xl text-lg leading-relaxed whitespace-pre-wrap">{event.summary}</p>
-        )}
-      </section>
+      <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-line bg-panel px-4 py-3">
+        <PriorityBadge priority={event.priority} />
+        <AssessmentText assessment={event.assessment} />
+        <StatusText status={event.status} />
+        <span className="text-sm">
+          <EvidenceSummary counts={event.evidence_counts} />
+        </span>
+      </div>
 
-      <section aria-labelledby="details" className="border-t border-line pt-6">
-        <h2 id="details" className="display mb-4 text-2xl">
-          Details
-        </h2>
-        <dl className="grid max-w-3xl grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm sm:grid-cols-[11rem_1fr]">
-          <dt className="text-steel">Place</dt>
-          <dd>{event.place_name ?? "Not named"}</dd>
-          <dt className="text-steel">Location</dt>
-          <dd>
-            {formatCoords(event.latitude, event.longitude)}
-            <a
-              href={mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-3 text-steel underline underline-offset-2 hover:text-bone"
-            >
-              Open map
-            </a>
-          </dd>
-          <dt className="text-steel">Started</dt>
-          <dd>{formatDhaka(event.started_at)}</dd>
-          <dt className="text-steel">Ended</dt>
-          <dd>{event.ended_at ? formatDhaka(event.ended_at) : "Ongoing"}</dd>
-          <dt className="text-steel">Evidence</dt>
-          <dd>
-            <EvidenceSummary counts={event.evidence_counts} />
-          </dd>
-          <dt className="text-steel">Created by</dt>
-          <dd>
-            {event.created_by.full_name}, {formatDhaka(event.created_at)}
-          </dd>
-        </dl>
-      </section>
-
-      {reviewer && (
-        <>
-          <section aria-labelledby="manage" className="border-t border-line pt-6">
-            <h2 id="manage" className="display mb-4 text-2xl">
-              Analyst decision
-            </h2>
-            <ManagePanel event={event} />
-          </section>
-
-          <section aria-labelledby="evidence" className="border-t border-line pt-6">
-            <h2 id="evidence" className="display mb-1 text-2xl">
-              Evidence
-            </h2>
-            <p className="mb-5 text-sm text-steel">
-              Reports placed against this event, and how each bears on it.
-            </p>
-            {evidence.length === 0 ? (
-              <p className="text-sm text-steel">No reports linked yet.</p>
-            ) : (
-              <ul className="flex max-w-4xl flex-col gap-5">
-                {evidence.map((item) => {
-                  const r = item.field_report;
-                  return (
-                    <li
-                      key={item.id}
-                      className={`border-l-2 pl-4 ${RELATION_STYLE[item.relation]}`}
-                    >
-                      <p className="text-sm text-steel">
-                        {formatDhaka(r.observed_at)} · {r.reporter.full_name}
-                        {r.place_name && <span> · {r.place_name}</span>}
-                        {r.media.length > 0 && (
-                          <span>
-                            {" "}
-                            · {r.media.length} {r.media.length === 1 ? "photo" : "photos"}
-                          </span>
-                        )}
-                      </p>
-                      <p className="mb-1">
-                        <Link
-                          href={`/field-reports/${r.id}`}
-                          className="hover:underline hover:underline-offset-2"
-                        >
-                          {r.text}
-                        </Link>
-                      </p>
-                      {r.integrity_flags.length > 0 && (
-                        <p className="mb-2 flex flex-wrap gap-2 text-xs">
-                          {r.integrity_flags.map((f, i) => (
-                            <span key={i} className="rounded-sm bg-signal-soft px-2 py-0.5">
-                              {flagLabel(f.code)}
-                            </span>
-                          ))}
-                        </p>
-                      )}
-                      <EvidenceControls
-                        eventId={event.id}
-                        evidenceId={item.id}
-                        reportId={r.id}
-                        relation={item.relation}
-                      />
-                      <p className="mt-1 text-xs text-steel">
-                        Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          {event.status !== "dismissed" && (
-            <section aria-labelledby="candidates" className="border-t border-line pt-6">
-              <h2 id="candidates" className="display mb-1 text-2xl">
-                Possibly related reports
-              </h2>
-              <p className="mb-5 max-w-3xl text-sm text-steel">
-                Unlinked reports within 5 km and 48 hours of this event, same type first. A
-                suggestion from location and time only: read each one before linking it.
-              </p>
-              {candidates.length === 0 ? (
-                <p className="text-sm text-steel">None right now.</p>
-              ) : (
-                <ul className="flex max-w-4xl flex-col divide-y divide-line border-y border-line">
-                  {candidates.map((c) => (
-                    <li key={c.report.id} className="flex flex-col gap-3 py-4">
-                      <div>
-                        <p className="text-sm text-steel">
-                          {c.distance_km < 1
-                            ? `${Math.round(c.distance_km * 1000)} m away`
-                            : `${c.distance_km.toFixed(1)} km away`}
-                          {" · "}
-                          {c.hours_apart === 0
-                            ? "during the event"
-                            : `${c.hours_apart} h outside the event's time`}
-                          {" · "}
-                          {c.same_type ? (
-                            <span className="text-bone">same type</span>
-                          ) : (
-                            eventTypeLabel(c.report.event_type)
-                          )}
-                          {" · "}
-                          {c.report.reporter.full_name}
-                        </p>
-                        <Link
-                          href={`/field-reports/${c.report.id}`}
-                          className="hover:underline hover:underline-offset-2"
-                        >
-                          {c.report.text}
-                        </Link>
-                      </div>
-                      <LinkButtons
-                        eventId={event.id}
-                        reportId={c.report.id}
-                        label="Link this report as"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+      <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-6">
+          {event.summary && (
+            <p className="text-lg leading-relaxed whitespace-pre-wrap">{event.summary}</p>
           )}
 
-          <section aria-labelledby="history" className="border-t border-line pt-6">
-            <h2 id="history" className="display mb-4 text-2xl">
-              History
-            </h2>
-            <ol className="flex max-w-3xl flex-col gap-2 text-sm">
-              {history.map((h, i) => (
-                <li key={i} className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-4">
-                  <span className="text-steel">{formatDhaka(h.occurred_at)}</span>
-                  <span>
-                    <span className="text-bone">{h.actor?.full_name ?? "System"}</span>{" "}
-                    <span className="text-steel">{describe(h)}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </>
-      )}
-    </div>
+          {reviewer && (
+            <>
+              <Panel
+                id="evidence"
+                title="Evidence"
+                description="Reports placed against this event, and how each bears on it."
+              >
+                {evidence.length === 0 ? (
+                  <p className="text-sm text-muted">No reports linked yet.</p>
+                ) : (
+                  <ul className="flex flex-col gap-4">
+                    {evidence.map((item) => {
+                      const r = item.field_report;
+                      return (
+                        <li
+                          key={item.id}
+                          className={`border-l-2 pl-4 ${RELATION_STYLE[item.relation]}`}
+                        >
+                          <p className="flex flex-wrap gap-x-3 text-sm text-muted">
+                            <span>{formatDhaka(r.observed_at)}</span>
+                            <span>{r.reporter.full_name}</span>
+                            {r.place_name && <span>{r.place_name}</span>}
+                            {r.media.length > 0 && (
+                              <span>
+                                {r.media.length} {r.media.length === 1 ? "photo" : "photos"}
+                              </span>
+                            )}
+                          </p>
+                          <p className="mb-2">
+                            <Link href={`/field-reports/${r.id}`} className="hover:underline">
+                              {r.text}
+                            </Link>
+                          </p>
+                          {r.integrity_flags.length > 0 && (
+                            <p className="mb-2 flex flex-wrap gap-2 text-xs">
+                              {r.integrity_flags.map((f, i) => (
+                                <span
+                                  key={i}
+                                  className="rounded bg-critical-soft px-2 py-0.5 ring-1 ring-critical/40"
+                                >
+                                  {flagLabel(f.code)}
+                                </span>
+                              ))}
+                            </p>
+                          )}
+                          <EvidenceControls
+                            eventId={event.id}
+                            evidenceId={item.id}
+                            reportId={r.id}
+                            relation={item.relation}
+                          />
+                          <p className="mt-1 text-xs text-muted">
+                            Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </Panel>
+
+              {event.status !== "dismissed" && (
+                <Panel
+                  id="candidates"
+                  title="Possibly related reports"
+                  description="Unlinked reports within 5 km and 48 hours, same type first. Chosen by place and time only: read each one before linking it."
+                >
+                  {candidates.length === 0 ? (
+                    <p className="text-sm text-muted">None right now.</p>
+                  ) : (
+                    <ul className="flex flex-col divide-y divide-line">
+                      {candidates.map((c) => (
+                        <li
+                          key={c.report.id}
+                          className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0"
+                        >
+                          <div>
+                            <p className="flex flex-wrap gap-x-3 text-sm text-muted">
+                              <span>
+                                {c.distance_km < 1
+                                  ? `${Math.round(c.distance_km * 1000)} m away`
+                                  : `${c.distance_km.toFixed(1)} km away`}
+                              </span>
+                              <span>
+                                {c.hours_apart === 0
+                                  ? "during the event"
+                                  : `${c.hours_apart} h outside the event's time`}
+                              </span>
+                              {c.same_type ? (
+                                <span className="text-ink">same type</span>
+                              ) : (
+                                <span>{eventTypeLabel(c.report.event_type)}</span>
+                              )}
+                              <span>{c.report.reporter.full_name}</span>
+                            </p>
+                            <Link
+                              href={`/field-reports/${c.report.id}`}
+                              className="hover:underline"
+                            >
+                              {c.report.text}
+                            </Link>
+                          </div>
+                          <LinkButtons
+                            eventId={event.id}
+                            reportId={c.report.id}
+                            label="Link this report as"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Panel>
+              )}
+
+              <Panel id="history" title="History">
+                <ol className="flex flex-col gap-2.5 text-sm">
+                  {history.map((h, i) => (
+                    <li key={i} className="grid gap-0.5 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
+                      <span className="text-muted">{formatDhaka(h.occurred_at)}</span>
+                      <span>
+                        <span className="text-ink">{h.actor?.full_name ?? "System"}</span>{" "}
+                        <span className="text-muted">{describe(h)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </Panel>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {reviewer && (
+            <Panel id="manage" title="Analyst decision">
+              <ManagePanel event={event} />
+            </Panel>
+          )}
+          <Panel id="details" title="Details">
+            <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2 text-sm">
+              <dt className="text-muted">Place</dt>
+              <dd>{event.place_name ?? "Not named"}</dd>
+              <dt className="text-muted">Location</dt>
+              <dd>
+                {formatCoords(event.latitude, event.longitude)}
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-water hover:underline"
+                >
+                  Open map
+                </a>
+              </dd>
+              <dt className="text-muted">Started</dt>
+              <dd>{formatDhaka(event.started_at)}</dd>
+              <dt className="text-muted">Ended</dt>
+              <dd>{event.ended_at ? formatDhaka(event.ended_at) : "Ongoing"}</dd>
+              <dt className="text-muted">Evidence</dt>
+              <dd>
+                <EvidenceSummary counts={event.evidence_counts} />
+              </dd>
+              <dt className="text-muted">Created by</dt>
+              <dd>
+                {event.created_by.full_name}, {formatDhaka(event.created_at)}
+              </dd>
+            </dl>
+          </Panel>
+        </div>
+      </div>
+    </>
   );
 }

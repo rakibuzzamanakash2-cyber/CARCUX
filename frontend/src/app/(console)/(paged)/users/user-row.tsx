@@ -41,7 +41,7 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
               `Change ${user.full_name}'s role? They will be signed out.`,
             )
           }
-          className="rounded-sm border border-line bg-panel-2 px-2 py-1 text-bone focus:border-steel focus:outline-none disabled:opacity-60"
+          className="rounded-md border border-line bg-panel-2 px-2 py-1 text-bone focus:border-muted focus:outline-none disabled:opacity-60"
         >
           {ROLES.map((r) => (
             <option key={r.value} value={r.value}>
@@ -65,7 +65,7 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
                   `Deactivate ${user.full_name}? They will be signed out and cannot sign in again until reactivated.`,
                 )
               }
-              className="rounded-sm border border-line px-2.5 py-1 text-steel transition-colors hover:border-signal hover:text-bone disabled:opacity-60"
+              className="rounded-md border border-line px-2.5 py-1 text-steel transition-colors hover:border-signal hover:text-bone disabled:opacity-60"
             >
               Deactivate
             </button>
@@ -74,7 +74,7 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
               type="button"
               disabled={pending}
               onClick={() => save({ is_active: true })}
-              className="rounded-sm border border-line px-2.5 py-1 text-steel transition-colors hover:border-ok hover:text-bone disabled:opacity-60"
+              className="rounded-md border border-line px-2.5 py-1 text-steel transition-colors hover:border-ok hover:text-bone disabled:opacity-60"
             >
               Reactivate
             </button>

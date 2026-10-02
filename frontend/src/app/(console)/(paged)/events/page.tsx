@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -6,6 +7,8 @@ import {
   PriorityBadge,
   StatusText,
 } from "@/components/event-badges";
+import { buttonPrimary, PageHeader } from "@/components/page-header";
+import { Pager } from "@/components/pager";
 import { api } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -55,116 +58,105 @@ export default async function EventsPage({
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const lastPage = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
 
-  return (
-    <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="display mb-3 text-4xl">Events</h1>
-          <p className="max-w-2xl text-steel">
-            Each situation CARCUX is tracking, with the assessment analysts have reached and the
-            evidence behind it.
-          </p>
-        </div>
-        {reviewer && (
-          <Link
-            href="/events/new"
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-sm bg-bone px-5 font-semibold text-ground transition-colors hover:bg-white"
-          >
-            New event
-          </Link>
-        )}
-      </section>
+  const tabCls = (on: boolean) =>
+    `rounded-md px-3 py-1.5 text-sm transition-colors ${
+      on ? "bg-panel-2 text-ink" : "text-muted hover:text-ink"
+    }`;
 
-      <div className="flex flex-col gap-3 border-b border-line sm:flex-row sm:items-end sm:justify-between">
-        <nav aria-label="Status" className="flex gap-1 text-sm">
-          {VIEWS.map((v) => (
-            <Link
-              key={v.key}
-              href={href(v.key, family)}
-              aria-current={v.key === view.key ? "page" : undefined}
-              className={`-mb-px border-b-2 px-3 py-2 transition-colors ${
-                v.key === view.key
-                  ? "border-signal text-bone"
-                  : "border-transparent text-steel hover:text-bone"
-              }`}
-            >
-              {v.label}
+  return (
+    <>
+      <PageHeader
+        title="Events"
+        description="Each situation being tracked, with the analysts' assessment and the evidence behind it."
+        actions={
+          reviewer && (
+            <Link href="/events/new" className={buttonPrimary}>
+              <Plus size={17} strokeWidth={2.25} aria-hidden="true" />
+              New event
             </Link>
-          ))}
-        </nav>
-        <nav aria-label="Kind of event" className="flex flex-wrap gap-x-4 gap-y-1 pb-2 text-sm">
-          {[{ value: "", label: "Every kind" }, ...FAMILIES].map((f) => (
-            <Link
-              key={f.value}
-              href={href(view.key, f.value)}
-              aria-current={f.value === family ? "page" : undefined}
-              className={f.value === family ? "text-bone" : "text-steel hover:text-bone"}
-            >
-              {f.label}
-            </Link>
-          ))}
-        </nav>
+          )
+        }
+      />
+
+      <div className="rounded-lg border border-line bg-panel">
+        <div className="flex flex-col gap-2 border-b border-line p-2 sm:flex-row sm:items-center sm:justify-between">
+          <nav aria-label="Status" className="flex gap-1">
+            {VIEWS.map((v) => (
+              <Link
+                key={v.key}
+                href={href(v.key, family)}
+                aria-current={v.key === view.key ? "page" : undefined}
+                className={tabCls(v.key === view.key)}
+              >
+                {v.label}
+              </Link>
+            ))}
+          </nav>
+          <nav aria-label="Kind of event" className="flex flex-wrap gap-1">
+            {[{ value: "", label: "Every kind" }, ...FAMILIES].map((f) => (
+              <Link
+                key={f.value}
+                href={href(view.key, f.value)}
+                aria-current={f.value === family ? "page" : undefined}
+                className={tabCls(f.value === family)}
+              >
+                {f.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        {data.items.length === 0 ? (
+          <p className="p-5 text-muted">
+            {view.key === "open"
+              ? reviewer
+                ? "No open events. Create one from a field report, or with New event."
+                : "No open events."
+              : "No events here."}
+          </p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {data.items.map((e) => (
+              <li key={e.id}>
+                <Link
+                  href={`/events/${e.id}`}
+                  className="grid gap-2 px-4 py-3 transition-colors hover:bg-panel-2 md:grid-cols-[6rem_1fr_11rem_9rem] md:items-center md:gap-4"
+                >
+                  <span>
+                    <PriorityBadge priority={e.priority} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="display block truncate text-lg">{e.title}</span>
+                    <span className="flex flex-wrap gap-x-3 text-sm text-muted">
+                      <span>{eventTypeLabel(e.event_type)}</span>
+                      {e.place_name && <span>{e.place_name}</span>}
+                      <EvidenceSummary counts={e.evidence_counts} />
+                    </span>
+                  </span>
+                  <span className="text-sm">
+                    <AssessmentText assessment={e.assessment} />
+                  </span>
+                  <span className="text-sm text-muted md:text-right">
+                    <StatusText status={e.status} />
+                    <span className="block">{formatDhaka(e.started_at)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {data.items.length === 0 ? (
-        <p className="text-steel">
-          {view.key === "open"
-            ? reviewer
-              ? "No open events. Create one from a field report, or with New event."
-              : "No open events."
-            : "No events here."}
-        </p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-line border-y border-line">
-          {data.items.map((e) => (
-            <li key={e.id}>
-              <Link
-                href={`/events/${e.id}`}
-                className="grid gap-2 py-4 transition-colors hover:bg-panel sm:grid-cols-[1fr_auto] sm:gap-6 sm:px-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm text-steel">
-                    {eventTypeLabel(e.event_type)}
-                    {e.place_name && <span> · {e.place_name}</span>}
-                    <span> · since {formatDhaka(e.started_at)}</span>
-                  </p>
-                  <p className="text-lg">{e.title}</p>
-                  <p className="text-sm">
-                    <EvidenceSummary counts={e.evidence_counts} />
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm sm:flex-col sm:items-end sm:gap-1.5">
-                  <PriorityBadge priority={e.priority} />
-                  <AssessmentText assessment={e.assessment} />
-                  <StatusText status={e.status} />
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
       {data.total > PAGE_SIZE && (
-        <nav aria-label="Pages" className="flex items-center gap-4 text-sm">
-          {page > 1 ? (
-            <Link href={href(view.key, family, page - 1)} className="text-steel hover:text-bone">
-              ← Newer
-            </Link>
-          ) : (
-            <span className="text-steel/40">← Newer</span>
-          )}
-          <span className="text-steel">
-            Page {page} of {lastPage} · {data.total} events
-          </span>
-          {page < lastPage ? (
-            <Link href={href(view.key, family, page + 1)} className="text-steel hover:text-bone">
-              Older →
-            </Link>
-          ) : (
-            <span className="text-steel/40">Older →</span>
-          )}
-        </nav>
+        <Pager
+          page={page}
+          lastPage={lastPage}
+          total={data.total}
+          noun="events"
+          newer={page > 1 ? href(view.key, family, page - 1) : null}
+          older={page < lastPage ? href(view.key, family, page + 1) : null}
+        />
       )}
-    </div>
+    </>
   );
 }

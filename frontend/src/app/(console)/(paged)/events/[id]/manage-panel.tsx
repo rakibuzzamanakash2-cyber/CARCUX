@@ -8,7 +8,7 @@ import { ASSESSMENTS, PRIORITIES, STATUSES } from "@/lib/events";
 import type { ActionState, CarcuxEvent } from "@/lib/types";
 
 const selectCls =
-  "h-11 w-full rounded-sm border border-line bg-panel-2 px-3 text-bone focus:border-steel focus:outline-none disabled:opacity-60";
+  "h-10 w-full rounded-md border border-line bg-panel-2 px-3 text-ink focus:border-water focus:outline-none disabled:opacity-60";
 
 /** Status, priority and assessment save on change; title, place and summary on Save. */
 export function ManagePanel({ event }: { event: CarcuxEvent }) {
@@ -32,7 +32,7 @@ export function ManagePanel({ event }: { event: CarcuxEvent }) {
 
   return (
     <div className="flex flex-col gap-5" aria-busy={pending}>
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-4">
         <div className="flex flex-col gap-1.5 text-sm">
           <label htmlFor={`${ids}-status`}>Status</label>
           <select
@@ -83,14 +83,14 @@ export function ManagePanel({ event }: { event: CarcuxEvent }) {
         </div>
       </div>
       {assessment && (
-        <p className="-mt-2 text-sm text-steel">
+        <p className="-mt-2 text-sm text-muted">
           {assessment.label}: {assessment.meaning}
         </p>
       )}
 
       {editing ? (
         <form
-          className="flex flex-col gap-4 border-l-2 border-line pl-4"
+          className="flex flex-col gap-4 rounded-md border border-line p-3"
           onSubmit={(e) => {
             e.preventDefault();
             save(
@@ -128,14 +128,14 @@ export function ManagePanel({ event }: { event: CarcuxEvent }) {
             <button
               type="submit"
               disabled={pending}
-              className="h-11 rounded-sm bg-bone px-5 font-semibold text-ground hover:bg-white disabled:opacity-60"
+              className="h-11 rounded-md bg-water px-5 font-semibold text-ground hover:bg-[#4dbac8] disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="h-11 rounded-sm border border-line px-4 text-steel hover:text-bone"
+              className="h-11 rounded-md border border-line px-4 text-muted hover:text-ink"
             >
               Cancel
             </button>
@@ -145,7 +145,7 @@ export function ManagePanel({ event }: { event: CarcuxEvent }) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="h-11 w-fit rounded-sm border border-line px-4 text-sm text-steel transition-colors hover:border-steel hover:text-bone"
+          className="h-11 w-fit rounded-md border border-line px-4 text-sm text-muted transition-colors hover:border-muted hover:text-ink"
         >
           Edit title, place and summary
         </button>

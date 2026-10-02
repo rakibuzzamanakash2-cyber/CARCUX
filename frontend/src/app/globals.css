@@ -1,22 +1,38 @@
 @import "tailwindcss";
 
 /*
- * CARCUX console tokens.
- * Red is a signal, not decoration: active location, priority, errors.
+ * CARCUX: "monsoon night". An operations room looking at a river delta after dark.
+ * Slate-blue ground, teal for water and selection, amber and red only for urgency.
+ *
+ * Token names are semantic; older names (bone, steel, signal) are kept as aliases so
+ * every page picks up the palette.
  */
 @theme {
-  --color-ground: #16181b;     /* page */
-  --color-panel: #1e2125;      /* raised surfaces */
-  --color-panel-2: #24282d;    /* inputs, hover */
-  --color-line: #2c3036;       /* hairlines */
-  --color-steel: #a9b0b8;      /* secondary text (logo lettering) */
-  --color-bone: #eceae6;       /* primary text */
-  --color-signal: #d7262e;     /* the one red */
-  --color-signal-soft: #3a1c1f;
-  --color-amber: #d9a441;      /* partial / pending */
-  --color-ok: #6fae86;         /* healthy / verified */
+  --color-ground: #0f1a21; /* page, map sea */
+  --color-panel: #15232c; /* panels */
+  --color-panel-2: #1c2e39; /* inputs, hover, raised */
+  --color-line: #263b47; /* borders */
+  --color-ink: #e4ecef; /* primary text */
+  --color-muted: #8da2ad; /* secondary text */
+  --color-water: #3aa6b4; /* rivers, links, selection, focus */
+  --color-water-soft: #173a42;
+  --color-alert: #e9a23b; /* high priority, attention */
+  --color-alert-soft: #3a2c16;
+  --color-critical: #e5484d; /* critical, contradiction, errors */
+  --color-critical-soft: #3d1c20;
+  --color-ok: #4fb477; /* verified, healthy */
+  --color-land: #1b2d36; /* map: Bangladesh */
+  --color-land-near: #14232b; /* map: neighbours */
 
-  --font-sans: var(--font-archivo), "Hind Siliguri", system-ui, sans-serif;
+  /* Aliases used across existing pages. */
+  --color-bone: var(--color-ink);
+  --color-steel: var(--color-muted);
+  --color-signal: var(--color-critical);
+  --color-signal-soft: var(--color-critical-soft);
+  --color-amber: var(--color-alert);
+
+  --font-sans: "Barlow", "Hind Siliguri", system-ui, sans-serif;
+  --font-condensed: "Barlow Condensed", "Hind Siliguri", system-ui, sans-serif;
 }
 
 :root {
@@ -25,40 +41,45 @@
 
 body {
   background: var(--color-ground);
-  color: var(--color-bone);
+  color: var(--color-ink);
   font-family: var(--font-sans);
-  font-variation-settings: "wdth" 100;
+  font-size: 15px;
+  font-feature-settings: "tnum" 1; /* figures line up in counts and times */
 }
 
-/* Condensed headings: the signage voice. */
+/* Headings and big figures: road-signage condensed. */
 .display {
-  font-variation-settings: "wdth" 72;
-  font-weight: 650;
-  letter-spacing: 0.005em;
+  font-family: var(--font-condensed);
+  font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1.05;
 }
 
-/* The meridian: the logo's vertical red line with a diamond. */
-.meridian {
-  position: relative;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, var(--color-signal) 18%, var(--color-signal) 82%, transparent);
-}
-.meridian::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  background: var(--color-signal);
-  transform: translate(-50%, -50%) rotate(45deg);
+a {
+  text-underline-offset: 3px;
 }
 
-/* Visible keyboard focus everywhere. */
+/* Visible keyboard focus everywhere, in the selection colour. */
 :focus-visible {
-  outline: 2px solid var(--color-bone);
+  outline: 2px solid var(--color-water);
   outline-offset: 2px;
+}
+
+/* The one animation: critical events pulse on the map. */
+@keyframes carcux-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.pulse-ring {
+  animation: carcux-pulse 2s ease-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -66,4 +87,50 @@ body {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Leaflet sits on the ground colour; controls follow the palette. */
+/* Doubled class: beats leaflet.css, which loads after this file. */
+.leaflet-container.leaflet-container {
+  background: var(--color-ground);
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  background: rgba(15, 26, 33, 0.8) !important;
+  color: var(--color-muted) !important;
+  font-size: 11px;
+}
+.leaflet-control-attribution a {
+  color: var(--color-water) !important;
+}
+.leaflet-bar a {
+  background: var(--color-panel) !important;
+  color: var(--color-ink) !important;
+  border-color: var(--color-line) !important;
+}
+.leaflet-bar a:hover {
+  background: var(--color-panel-2) !important;
+}
+.leaflet-tooltip.carcux-tip {
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  box-shadow: none;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.leaflet-tooltip.carcux-tip::before {
+  display: none;
+}
+.leaflet-tooltip.city-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--color-muted);
+  font-size: 12px;
+  padding: 0;
+}
+.leaflet-tooltip.city-label::before {
+  display: none;
 }

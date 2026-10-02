@@ -25,16 +25,16 @@ export function VerifyPanel({ reportId }: { reportId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={run}
           disabled={pending}
-          className="h-11 w-fit rounded-sm border border-steel px-4 text-bone transition-colors hover:bg-panel-2 disabled:cursor-wait disabled:opacity-60"
+          className="h-11 w-fit rounded-md border border-line bg-panel-2 px-4 text-ink transition-colors hover:bg-panel-2 disabled:cursor-wait disabled:opacity-60"
         >
           {pending ? "Checking…" : result ? "Check again" : "Check it is unchanged"}
         </button>
-        <p className="text-sm text-steel">
+        <p className="text-sm text-muted">
           Recomputes the fingerprint from the stored text, location and photos. Each check is
           logged.
         </p>
@@ -47,7 +47,7 @@ export function VerifyPanel({ reportId }: { reportId: string }) {
           </p>
         )}
         {result && !result.intact && (
-          <div className="border-l-2 border-signal pl-3 text-sm">
+          <div className="border-l-2 border-critical pl-3 text-sm">
             <p className="mb-1 font-semibold">This report was changed after submission.</p>
             <ul className="list-disc pl-5">
               {result.problems.map((p) => (
@@ -56,7 +56,7 @@ export function VerifyPanel({ reportId }: { reportId: string }) {
             </ul>
           </div>
         )}
-        {error && <p className="border-l-2 border-signal pl-3 text-sm">{error}</p>}
+        {error && <p className="border-l-2 border-critical pl-3 text-sm">{error}</p>}
       </div>
     </div>
   );

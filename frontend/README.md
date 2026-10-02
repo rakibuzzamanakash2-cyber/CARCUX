@@ -1,6 +1,6 @@
 # CARCUX frontend
 
-Next.js (App Router) console for CARCUX staff: sign-in, overview, account management, field reports and events. Sections whose backend is not built yet (map, review queue, audit log) show what they will do.
+Next.js (App Router) console for CARCUX staff: a command-center layout that opens on the situation map, with events, field reports and account management. Sections whose backend is not built yet (review queue, audit log) show what they will do.
 
 ## Run locally
 
@@ -27,6 +27,14 @@ docker compose -f deployment/docker-compose.yml up --build
 - `src/lib/dal.ts` is the real check: every protected page asks the backend who the user is, so expired, deactivated or re-roled accounts are stopped on their next click.
 - Every Server Action re-checks the user's role. Server Actions are public endpoints, so hiding a button is never enough.
 - The `?next=` redirect after login only accepts paths on this site.
+
+## Situation map (home page)
+
+- **Layout:** status bar on top (critical, high and open events; reports in 24 h; for reviewers also flagged and to-review counts; Dhaka clock), an icon rail on the left (a tab bar on phones), the map in the middle and open events on the right.
+- **Markers:** colour is priority (red critical, amber high, light medium, grey low); shape is the kind of event (circle natural calamity, diamond road and infrastructure, triangle urban emergency), so they read without colour too. Critical events pulse: the one animation in the console, off when the system asks for reduced motion.
+- **Selecting** a marker or a list item flies the map to it and opens its card with priority, assessment, evidence and **Open event**. The kind filter narrows list and markers together.
+- **Field reports** from the last 48 hours show as small dots for analysts and admins (red if flagged); click one to open it. Field workers get a **New report** button instead.
+- **Works offline.** The basemap (Bangladesh, divisions, major rivers, cities, neighbours) is a 107 KB GeoJSON built from Natural Earth (public domain) by `scripts/build-basemap.py`, served from `public/geo/`. **Street detail** adds OpenStreetMap/CARTO tiles when there is internet.
 
 ## Field reports
 
@@ -74,14 +82,21 @@ CI runs the same commands.
 src/
 ├── proxy.ts                 # redirect to /login when there is no session cookie
 ├── lib/                     # backend client, session cookie, auth checks (server-only); formatting, event types (shared)
-├── components/              # shared UI (sidebar, form fields, placeholders)
+├── components/              # shared UI (rail, status bar, page header, form fields, badges)
 └── app/
     ├── login/               # sign-in page
     ├── actions/             # Server Actions: login, logout, users, field reports, events
     ├── fonts/               # self-hosted Archivo (SIL OFL)
-    └── (console)/           # signed-in pages: overview, users, field reports, events, and upcoming sections
+    └── (console)/           # signed-in shell: status bar, rail
+        ├── page.tsx         # situation map (map-view.tsx: Leaflet; situation.tsx: panel)
+        └── (paged)/         # events, field reports, users, and upcoming sections
 ```
 
 ## Design
 
-Dark console matching the CARCUX logo. Red is a signal, never decoration: it marks the current page, priority and errors. One typeface (Archivo) in two widths: condensed for headings, normal for reading.
+"Monsoon night": an operations room looking at a river delta after dark.
+
+- **Colour** (`src/app/globals.css`): slate-blue ground and panels, teal for water, links, selection and focus; amber and red only for urgency (high, critical, contradictions, errors); green for verified.
+- **Type:** Barlow for reading, Barlow Condensed for headings and figures (road-signage voice), Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource/*`, SIL OFL), so builds and browsers never call a font service.
+- **Icons:** lucide-react.
+- Ordinary pages use `PageHeader` and `Panel` (`src/components/page-header.tsx`); detail pages put the work on the left and facts and decisions on the right.

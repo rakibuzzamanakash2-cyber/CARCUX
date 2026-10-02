@@ -149,9 +149,9 @@ export function ReportForm({
   const message = problem ?? state;
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-3xl flex-col gap-8" aria-busy={pending}>
-      <fieldset className="flex flex-col gap-5">
-        <legend className="display mb-4 text-2xl">What</legend>
+    <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-busy={pending}>
+      <fieldset className="flex flex-col gap-5 rounded-lg border border-line bg-panel p-4 md:p-5">
+        <legend className="display float-left mb-4 w-full text-xl">What</legend>
         <TextAreaField
           label="What do you see?"
           name="text"
@@ -182,14 +182,14 @@ export function ReportForm({
         </SelectField>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-5">
-        <legend className="display mb-4 text-2xl">Where</legend>
+      <fieldset className="flex flex-col gap-5 rounded-lg border border-line bg-panel p-4 md:p-5">
+        <legend className="display float-left mb-4 w-full text-xl">Where</legend>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <button
             type="button"
             onClick={locate}
             disabled={locating.state === "busy"}
-            className="h-11 rounded-sm border border-steel px-4 text-bone transition-colors hover:bg-panel-2 disabled:cursor-wait disabled:opacity-60"
+            className="h-11 rounded-md border border-muted px-4 text-bone transition-colors hover:bg-panel-2 disabled:cursor-wait disabled:opacity-60"
           >
             {locating.state === "busy" ? "Finding location…" : "Use my location"}
           </button>
@@ -228,8 +228,8 @@ export function ReportForm({
         />
       </fieldset>
 
-      <fieldset className="flex flex-col gap-5">
-        <legend className="display mb-4 text-2xl">When</legend>
+      <fieldset className="flex flex-col gap-5 rounded-lg border border-line bg-panel p-4 md:p-5">
+        <legend className="display float-left mb-4 w-full text-xl">When</legend>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
           <div className="sm:w-72">
             <Field
@@ -244,16 +244,16 @@ export function ReportForm({
           <button
             type="button"
             onClick={() => setObservedAt(dhakaNowLocalInput())}
-            className="h-11 rounded-sm border border-line px-4 text-sm text-steel transition-colors hover:border-steel hover:text-bone"
+            className="h-11 rounded-md border border-line px-4 text-sm text-steel transition-colors hover:border-muted hover:text-bone"
           >
             Now
           </button>
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-4">
-        <legend className="display mb-4 text-2xl">Photos</legend>
-        <p className="-mt-2 text-sm text-steel">
+      <fieldset className="flex flex-col gap-4 rounded-lg border border-line bg-panel p-4 md:p-5">
+        <legend className="display float-left mb-4 w-full text-xl">Photos</legend>
+        <p className="text-sm text-muted">
           Up to {MAX_PHOTOS}, 8 MB each. Take them now if you can: a photo used in another report is
           flagged.
         </p>
@@ -266,7 +266,7 @@ export function ReportForm({
                 <img
                   src={p.url}
                   alt={`Photo ${i + 1} to send`}
-                  className="aspect-square w-full rounded-sm border border-line object-cover"
+                  className="aspect-square w-full rounded-md border border-line object-cover"
                 />
                 <div className="flex items-center justify-between gap-2 text-xs text-steel">
                   <span>{formatBytes(p.file.size)}</span>
@@ -283,7 +283,7 @@ export function ReportForm({
           </ul>
         )}
         {photos.length < MAX_PHOTOS && (
-          <label className="inline-flex h-11 w-fit cursor-pointer items-center rounded-sm border border-steel px-4 text-bone transition-colors focus-within:outline-2 focus-within:outline-bone hover:bg-panel-2">
+          <label className="inline-flex h-11 w-fit cursor-pointer items-center rounded-md border border-muted px-4 text-bone transition-colors focus-within:outline-2 focus-within:outline-bone hover:bg-panel-2">
             {photos.length ? "Add another photo" : "Take or choose photos"}
             <input
               ref={fileInput}
@@ -297,7 +297,7 @@ export function ReportForm({
         )}
       </fieldset>
 
-      <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <SubmitButton pending={pending} pendingText="Sending…">
           Send report
         </SubmitButton>

@@ -35,9 +35,9 @@ export function EventForm({ draft }: { draft: EventDraft }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-3xl flex-col gap-6" aria-busy={pending}>
+    <form onSubmit={onSubmit} className="flex flex-col gap-5" aria-busy={pending}>
       {draft.report && (
-        <div className="border-l-2 border-ok pl-3 text-sm">
+        <div className="rounded-md border border-ok/50 bg-ok/10 px-3 py-2 text-sm">
           <p className="text-steel">
             Starting from a report by {draft.report.reporter}. It will be attached as supporting
             evidence.
@@ -134,7 +134,7 @@ export function EventForm({ draft }: { draft: EventDraft }) {
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
       />
-      <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 border-t border-line pt-5 sm:flex-row sm:items-center">
         <SubmitButton pending={pending} pendingText="Creating…">
           Create event
         </SubmitButton>

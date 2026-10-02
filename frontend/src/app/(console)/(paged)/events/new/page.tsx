@@ -1,3 +1,4 @@
+import { PageHeader, Panel } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -49,15 +50,15 @@ export default async function NewEventPage({
       };
 
   return (
-    <div className="flex flex-col gap-8">
-      <section>
-        <h1 className="display mb-3 text-4xl">New event</h1>
-        <p className="max-w-2xl text-steel">
-          One record per real situation. Reports are attached to it as evidence, so before creating
-          one, check Events for an open event at the same place.
-        </p>
-      </section>
-      <EventForm draft={draft} />
+    <div className="max-w-3xl">
+      <PageHeader
+        back={{ href: "/events", label: "All events" }}
+        title="New event"
+        description="One record per real situation. Before creating one, check the map for an open event at the same place."
+      />
+      <Panel>
+        <EventForm draft={draft} />
+      </Panel>
     </div>
   );
 }

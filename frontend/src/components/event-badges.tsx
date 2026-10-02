@@ -9,44 +9,56 @@ import type { Assessment, EventStatus, EvidenceCounts, Priority } from "@/lib/ty
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
-    <span className={`rounded-sm px-2 py-0.5 text-xs font-semibold ${PRIORITY_STYLE[priority]}`}>
+    <span
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ${PRIORITY_STYLE[priority]}`}
+    >
       {priorityLabel(priority)}
     </span>
   );
 }
 
 export function AssessmentText({ assessment }: { assessment: Assessment }) {
-  return <span className={ASSESSMENT_STYLE[assessment]}>{assessmentLabel(assessment)}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${ASSESSMENT_STYLE[assessment]}`}>
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+      {assessmentLabel(assessment)}
+    </span>
+  );
 }
 
 export function StatusText({ status }: { status: EventStatus }) {
   const dim = status === "resolved" || status === "dismissed";
-  return <span className={dim ? "text-steel" : "text-bone"}>{statusLabel(status)}</span>;
+  return <span className={dim ? "text-muted" : "text-ink"}>{statusLabel(status)}</span>;
 }
 
-/** "3 supporting · 1 contradicting · 2 field workers" */
+/** Evidence at a glance: supporting, contradicting, related, and how many people. */
 export function EvidenceSummary({ counts }: { counts: EvidenceCounts }) {
   const supporting = counts.supports + counts.partially_supports;
-  const parts: React.ReactNode[] = [];
-  if (supporting) parts.push(`${supporting} supporting`);
-  if (counts.contradicts)
-    parts.push(
-      <span key="c" className="text-signal">
-        {counts.contradicts} contradicting
-      </span>,
-    );
-  if (counts.related) parts.push(`${counts.related} related`);
-  if (counts.reporters)
-    parts.push(`${counts.reporters} ${counts.reporters === 1 ? "field worker" : "field workers"}`);
-  if (parts.length === 0) return <span className="text-steel">No evidence yet</span>;
+  const total = supporting + counts.contradicts + counts.related;
+  if (total === 0) return <span className="text-muted">No evidence yet</span>;
   return (
-    <span className="text-steel">
-      {parts.map((p, i) => (
-        <span key={i}>
-          {i > 0 && " · "}
-          {p}
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
+      {supporting > 0 && (
+        <span>
+          <span className="text-ok">{supporting}</span> supporting
         </span>
-      ))}
+      )}
+      {counts.contradicts > 0 && (
+        <span>
+          <span className="text-critical">{counts.contradicts}</span> contradicting
+        </span>
+      )}
+      {counts.related > 0 && (
+        <span>
+          <span className="text-ink">{counts.related}</span> related
+        </span>
+      )}
+      {counts.reporters > 0 && (
+        <span>
+          <span className="text-ink">{counts.reporters}</span>{" "}
+          {counts.reporters === 1 ? "field worker" : "field workers"}
+        </span>
+      )}
     </span>
   );
 }
