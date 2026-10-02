@@ -38,3 +38,19 @@ def test_create_admin_rejects_mismatch_and_short_password(monkeypatch, engine, d
 def test_create_admin_rejects_existing_email(monkeypatch, engine):
     assert _run(monkeypatch, ["a-strong-password!", "a-strong-password!"]) == 0
     assert _run(monkeypatch, ["a-strong-password!", "a-strong-password!"]) == 1
+
+
+def test_cli_admin_with_internal_domain_can_log_in(monkeypatch, client):
+    # Regression: the CLI used to accept emails the login endpoint then rejected.
+    assert _run(monkeypatch, ["a-strong-password!"] * 2, email="Rakib@CARCUX.local") == 0
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "rakib@carcux.local", "password": "a-strong-password!"},
+    )
+    assert response.status_code == 200
+
+
+def test_cli_rejects_malformed_email(monkeypatch, engine, db):
+    assert _run(monkeypatch, [], email="not-an-email") == 1
+    assert db.scalar(select(User)) is None

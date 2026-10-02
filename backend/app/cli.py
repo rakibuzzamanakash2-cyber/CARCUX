@@ -14,10 +14,15 @@ from app.core.security import MIN_PASSWORD_LENGTH
 from app.db.session import make_engine, make_session_factory
 from app.models.user import Role
 from app.services import audit
-from app.services.users import EmailAlreadyRegisteredError, create_user
+from app.services.users import EmailAlreadyRegisteredError, create_user, normalise_email
 
 
 def create_admin(email: str, name: str) -> int:
+    try:
+        email = normalise_email(email)
+    except ValueError as exc:
+        print(f"Invalid email {email!r}: {exc}", file=sys.stderr)
+        return 1
     password = getpass.getpass("Password: ")
     if len(password) < MIN_PASSWORD_LENGTH:
         print(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.", file=sys.stderr)
