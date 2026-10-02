@@ -226,7 +226,8 @@ def _check_integrity(data, report: Report) -> None:
         if child in edges:
             report.error(
                 where,
-                f"{child} already has an origin ({edges[child]}); record only the item it was directly copied from",
+                f"{child} already has an origin ({edges[child]}); "
+                "record only the item it was directly copied from",
             )
             continue
         edges[child] = origin
