@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/event.schema.json",
+  "title": "Event",
+  "description": "A real-world disaster or disruption event, reconstructed after the fact with known ground truth. One line of events.jsonl.",
+  "type": "object",
+  "required": [
+    "event_id", "family", "type", "title", "location", "start", "time_precision",
+    "ground_truth", "assessments"
+  ],
+  "properties": {
+    "event_id": { "$ref": "common.schema.json#/$defs/event_id" },
+    "parent_event_id": {
+      "description": "Larger event this one belongs to (e.g. a road blockage caused by a cyclone).",
+      "$ref": "common.schema.json#/$defs/event_id"
+    },
+    "family": { "$ref": "common.schema.json#/$defs/event_family" },
+    "type": { "$ref": "common.schema.json#/$defs/event_type" },
+    "title": {
+      "description": "Neutral, factual English title. No names of private individuals, no political framing.",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 160
+    },
+    "title_bn": { "type": "string", "maxLength": 160 },
+    "location": { "$ref": "common.schema.json#/$defs/location" },
+    "start": { "$ref": "common.schema.json#/$defs/datetime" },
+    "end": { "$ref": "common.schema.json#/$defs/datetime" },
+    "time_precision": { "$ref": "common.schema.json#/$defs/time_precision" },
+
+    "ground_truth": {
+      "description": "What actually happened, established from sources published after the event.",
+      "type": "object",
+      "required": ["occurred", "facts", "sources"],
+      "properties": {
+        "occurred": {
+          "description": "false is allowed: rumoured events that did not happen are valuable negatives.",
+          "type": "boolean"
+        },
+        "facts": {
+          "description": "Verified attribute values. Conflicts in observations are judged against these.",
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/claim" }
+        },
+        "sources": {
+          "description": "Post-event references used to establish ground truth (official reports, follow-up coverage).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["reference", "published_at", "kind"],
+            "properties": {
+              "reference": { "type": "string", "format": "uri" },
+              "published_at": { "$ref": "common.schema.json#/$defs/datetime" },
+              "kind": { "enum": ["official", "news_followup", "humanitarian_report", "other"] }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "assessments": {
+      "description": "Gold verification state at fixed checkpoints after the first observation: what an ideal analyst should conclude from the evidence available up to that moment.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["as_of", "label", "rationale", "annotations"],
+        "properties": {
+          "as_of": { "$ref": "common.schema.json#/$defs/datetime" },
+          "checkpoint": { "enum": ["T+1h", "T+6h", "T+24h", "final"] },
+          "label": { "$ref": "common.schema.json#/$defs/assessment_label" },
+          "rationale": { "type": "string", "minLength": 10, "maxLength": 600 },
+          "annotations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                { "$ref": "common.schema.json#/$defs/annotation_meta" },
+                {
+                  "type": "object",
+                  "required": ["label"],
+                  "properties": {
+                    "label": { "$ref": "common.schema.json#/$defs/assessment_label" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false
+}

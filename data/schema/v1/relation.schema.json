@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carcux.dev/schema/v1/relation.schema.json",
+  "title": "Relation",
+  "description": "How one observation relates to one event (stance). One line of relations.jsonl. Copying between observations is recorded separately in dependences.jsonl.",
+  "type": "object",
+  "required": ["obs_id", "event_id", "annotations"],
+  "properties": {
+    "obs_id": { "$ref": "common.schema.json#/$defs/observation_id" },
+    "event_id": { "$ref": "common.schema.json#/$defs/event_id" },
+    "annotations": {
+      "description": "One entry per annotator. Kept separately so agreement can be measured.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          { "$ref": "common.schema.json#/$defs/annotation_meta" },
+          { "$ref": "#/$defs/judgement" }
+        ]
+      }
+    },
+    "gold": {
+      "description": "Adjudicated final judgement. Absent until adjudication.",
+      "$ref": "#/$defs/judgement"
+    }
+  },
+  "$defs": {
+    "judgement": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": {
+          "description": "supports: says it happened and agrees on every attribute it mentions. partially_supports: says it happened but disagrees on at least one attribute. contradicts: denies it happened, or says it is false/rumour. related: about the event but no checkable claim. unrelated: not about this event.",
+          "enum": ["supports", "partially_supports", "contradicts", "related", "unrelated"]
+        },
+        "conflicts": {
+          "description": "Attributes on which the observation disagrees with ground truth. Required for partially_supports.",
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/claim_attribute" },
+          "uniqueItems": true
+        },
+        "stale": {
+          "description": "True if the item describes the event as it was earlier (outdated when published).",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "label": { "const": "partially_supports" } } },
+          "then": { "required": ["conflicts"], "properties": { "conflicts": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "label": { "enum": ["related", "unrelated"] } } },
+          "then": { "not": { "required": ["conflicts"] } }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
