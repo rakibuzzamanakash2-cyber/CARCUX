@@ -1,0 +1,7 @@
+{"source_id": "SRC-000001", "source_type": "news", "name": "Example Daily (synthetic)", "domain": "example.org", "languages": ["en", "bn"]}
+{"source_id": "SRC-000002", "source_type": "news", "name": "Example Tribune (synthetic)", "domain": "example.net", "languages": ["en"]}
+{"source_id": "SRC-000003", "source_type": "social", "name": "Social account", "platform": "facebook", "account_ref": "c4fe49a35bb81eb73e4debdb83747c6443826ad6886a83d8bfb1a9c3d01c940b", "languages": ["bn", "bn-Latn"]}
+{"source_id": "SRC-000004", "source_type": "social", "name": "Social account", "platform": "facebook", "account_ref": "0f5a2153dd3eb026dfcfe03679362e64618171ace6acbeff7396f71ef46aa08f", "languages": ["bn-Latn"]}
+{"source_id": "SRC-000005", "source_type": "field", "name": "Field worker", "is_simulated": true, "languages": ["bn-Latn"]}
+{"source_id": "SRC-000006", "source_type": "public_record", "name": "Emergency service statement (synthetic)", "domain": "example.gov", "languages": ["en", "bn"]}
+{"source_id": "SRC-000007", "source_type": "social", "name": "Injected noise", "platform": "simulation", "is_simulated": true, "notes": "Contamination generator for robustness experiments."}
