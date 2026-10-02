@@ -121,3 +121,17 @@ def test_audit_log_is_append_only(admin_headers, db, statement):
     with pytest.raises(DBAPIError, match="append-only"):
         db.execute(text(statement))
     db.rollback()
+
+
+@pytest.mark.parametrize("email", ["staff@office.local", "staff@carcux.test", "a.b@gov.bd"])
+def test_internal_domains_are_accepted_and_can_log_in(client, admin_headers, login, email):
+    created = client.post(USERS, json={**NEW_USER, "email": email}, headers=admin_headers)
+    assert created.status_code == 201
+
+    assert client.get(ME, headers=login(email, NEW_USER["password"])).status_code == 200
+
+
+@pytest.mark.parametrize("email", ["not-an-email", "a@b", "two@@signs.com", "sp ace@x.com", ""])
+def test_malformed_emails_are_rejected_on_create(client, admin_headers, email):
+    response = client.post(USERS, json={**NEW_USER, "email": email}, headers=admin_headers)
+    assert response.status_code == 422
