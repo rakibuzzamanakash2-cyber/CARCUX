@@ -58,6 +58,15 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: data/tools/pyproject.toml
+      - name: No project folder is git-ignored
+        working-directory: .
+        run: |
+          bad=$(git ls-files | xargs -n1 dirname | sort -u | while read -r d; do
+            git check-ignore -q --no-index "$d/__probe__.py" && echo "$d"
+          done)
+          if [ -n "$bad" ]; then
+            echo "New files in these folders would be silently ignored by git:"; echo "$bad"; exit 1
+          fi
       - run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check . && ruff format --check .

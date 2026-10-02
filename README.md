@@ -13,9 +13,7 @@ CARCUX fuses authenticated field observations with noisy public information (new
 |---|---|
 | `backend/` | FastAPI service: auth, field reports, events, evidence, audit log, workers |
 | `frontend/` | Next.js intelligence dashboard and field PWA |
-| `ai/extraction/` | Language ID, Bangla/Banglish/English NLP, geocoding |
-| `ai/media/` | ASR, OCR, image embeddings and hashing |
-| `ai/fusion/` | Research core: correlation, source dependence, conflict, calibration |
+| `ai/` | Six AI modules, one per Spec §6 area. `correlation/` and `fusion/` are the research core; see [`ai/README.md`](ai/README.md) |
 | `data/` | Dataset schema, annotation guideline, samples, dataset card (CARCUX-BD) |
 | `research/` | Literature notes, baselines, experiments, ablations, robustness, results |
 | `deployment/` | Docker, Compose, deployment configuration |
