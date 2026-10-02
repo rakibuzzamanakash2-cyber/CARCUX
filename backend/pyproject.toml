@@ -1,6 +1,6 @@
 [project]
 name = "carcux-backend"
-version = "0.3.0"
+version = "0.4.0"
 description = "CARCUX backend API: field reports, events, evidence, audit"
 requires-python = ">=3.12"
 dependencies = [

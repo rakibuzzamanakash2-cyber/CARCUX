@@ -16,6 +16,11 @@ class AuditAction:
     USER_BOOTSTRAPPED = "user.bootstrapped"
     FIELD_REPORT_SUBMITTED = "field_report.submitted"
     FIELD_REPORT_VERIFIED = "field_report.verified"
+    EVENT_CREATED = "event.created"
+    EVENT_UPDATED = "event.updated"
+    EVIDENCE_LINKED = "event.evidence_linked"
+    EVIDENCE_UPDATED = "event.evidence_updated"
+    EVIDENCE_UNLINKED = "event.evidence_unlinked"
 
 
 def record(

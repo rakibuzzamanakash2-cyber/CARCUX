@@ -48,8 +48,8 @@ def _clean_tables(request) -> None:
     with eng.begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE field_report_media, field_reports, audit_log, users "
-                "RESTART IDENTITY CASCADE"
+                "TRUNCATE event_evidence, events, field_report_media, field_reports, "
+                "audit_log, users RESTART IDENTITY CASCADE"
             )
         )
 
