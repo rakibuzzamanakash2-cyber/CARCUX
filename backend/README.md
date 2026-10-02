@@ -54,7 +54,7 @@ Field workers submit what they saw; analysts and admins review.
 | Endpoint | Who | What |
 |---|---|---|
 | `POST /api/v1/field-reports` | field worker, admin | Submit (multipart form, up to 4 JPEG/PNG/WebP photos, 8 MB each) |
-| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags |
+| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags; `?since=` (with UTC offset) for recent ones |
 | `GET /api/v1/field-reports/{id}` | same | One report |
 | `GET /api/v1/field-reports/{id}/media/{media_id}` | same | A photo |
 | `GET /api/v1/field-reports/{id}/verify` | analyst, admin | Check the report has not been changed since submission |
@@ -85,6 +85,10 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 - **Status:** `active`, `monitoring`, `resolved`, `dismissed`. **Priority:** `low` to `critical`. **Assessment:** the dataset's six labels, from `verified` to `insufficient_evidence`; new events start `unverified`.
 - **Matching is a baseline, and only a suggestion:** within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now). Same type first, then nearest. The correlation engine in `ai/correlation/` will replace it and can be scored against analysts' links.
 - Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
+
+## Overview
+
+`GET /api/v1/overview` (everyone signed in) feeds the console's status bar: open events by priority and reports observed in the last 24 hours (a field worker's own). Analysts and admins also get flagged reports in the last 24 hours and the number of reports nobody has reviewed yet; for others those are `null`.
 
 ## Audit log
 

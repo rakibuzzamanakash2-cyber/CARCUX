@@ -123,8 +123,15 @@ def list_reports(
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     flagged: Annotated[bool | None, Query(description="Only reports with integrity flags")] = None,
+    since: Annotated[
+        datetime | None, Query(description="Only reports observed at or after this time")
+    ] = None,
 ):
     query = service.visible_reports(user)
+    if since is not None:
+        if since.tzinfo is None:
+            raise _unprocessable("since must include a UTC offset, e.g. +06:00")
+        query = query.where(FieldReport.observed_at >= since)
     if flagged is True:
         query = query.where(func.jsonb_array_length(FieldReport.integrity_flags) > 0)
     elif flagged is False:
