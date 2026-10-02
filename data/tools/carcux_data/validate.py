@@ -28,6 +28,8 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from carcux_data import SCHEMA_VERSION
+
 SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schema" / "v1"
 
 FILES = {
@@ -43,14 +45,14 @@ TYPE_FAMILY = {
     **dict.fromkeys(
         [
             "flood", "flash_flood", "waterlogging", "cyclone", "storm_surge", "landslide",
-            "river_erosion", "heavy_rainfall",
+            "river_erosion", "heavy_rainfall", "earthquake",
         ],
         "natural_calamity",
     ),
     **dict.fromkeys(
         [
             "road_blockage", "road_accident", "road_damage", "bridge_damage", "power_outage",
-            "gas_outage", "water_outage", "construction_closure",
+            "gas_outage", "water_outage", "construction_closure", "rail_accident",
         ],
         "road_infrastructure",
     ),
@@ -302,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {line}")
         return 1
 
-    print(f"OK: {args.directory} is valid CARCUX-BD v1\n")
+    print(f"OK: {args.directory} is valid CARCUX-BD v{SCHEMA_VERSION}\n")
     for name, counter in report.counts.items():
         summary = ", ".join(f"{k}={v}" for k, v in sorted(counter.items()))
         print(f"  {name:24} {summary}")

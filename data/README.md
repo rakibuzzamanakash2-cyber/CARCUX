@@ -25,6 +25,15 @@ Source ──< Observation >──── Relation ────< Event
 - **Dependences** say which items are copies, so 100 reposts count as one piece of evidence.
 - **Events** carry the ground truth and gold **assessments** at checkpoints (T+1h, T+6h, …), which is what the fusion model is evaluated against.
 
+## Schema versions
+
+| Version | Change |
+|---|---|
+| v1.1 | Added event types `earthquake` and `rail_accident` |
+| v1.0 | First release |
+
+Minor versions only add allowed values, so older datasets stay valid. The files stay in `schema/v1/` until a breaking change requires `schema/v2/`.
+
 ## Validate a dataset
 
 ```bash

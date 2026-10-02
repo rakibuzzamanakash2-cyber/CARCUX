@@ -42,7 +42,7 @@ def errors_of(directory: Path) -> str:
 
 def test_worked_example_is_valid(capsys):
     assert main([str(EXAMPLE)]) == 0
-    assert "valid CARCUX-BD v1" in capsys.readouterr().out
+    assert "valid CARCUX-BD v1.1" in capsys.readouterr().out
 
 
 # --- Schema-level mistakes -------------------------------------------------------------
@@ -202,3 +202,42 @@ def test_main_reports_failure(ds, capsys):
     mutate(ds, "events", _set(0, ["type"], "fire"))
     assert main([str(ds)]) == 1
     assert "FAILED" in capsys.readouterr().out
+
+
+# --- Schema v1.1 ----------------------------------------------------------------------
+
+
+def test_every_schema_type_has_exactly_one_family():
+    # The schema's type list and the validator's family map must never drift apart:
+    # a type in one but not the other would crash or silently pass validation.
+    from carcux_data.validate import SCHEMA_DIR, TYPE_FAMILY
+
+    common = json.loads((SCHEMA_DIR / "common.schema.json").read_text(encoding="utf-8"))
+    assert set(common["$defs"]["event_type"]["enum"]) == set(TYPE_FAMILY)
+
+
+@pytest.mark.parametrize(
+    ("family", "event_type"),
+    [("natural_calamity", "earthquake"), ("road_infrastructure", "rail_accident")],
+)
+def test_v1_1_types_are_accepted(ds, family, event_type):
+    def fn(rows):
+        rows[0]["family"], rows[0]["type"] = family, event_type
+
+    mutate(ds, "events", fn)
+    assert validate_dir(ds).ok
+
+
+@pytest.mark.parametrize(
+    ("family", "event_type", "expected"),
+    [
+        ("urban_emergency", "earthquake", "belongs to natural_calamity"),
+        ("natural_calamity", "rail_accident", "belongs to road_infrastructure"),
+    ],
+)
+def test_v1_1_types_need_the_right_family(ds, family, event_type, expected):
+    def fn(rows):
+        rows[0]["family"], rows[0]["type"] = family, event_type
+
+    mutate(ds, "events", fn)
+    assert expected in errors_of(ds)
