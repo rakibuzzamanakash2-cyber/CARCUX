@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+ * CARCUX console tokens.
+ * Red is a signal, not decoration: active location, priority, errors.
+ */
+@theme {
+  --color-ground: #16181b;     /* page */
+  --color-panel: #1e2125;      /* raised surfaces */
+  --color-panel-2: #24282d;    /* inputs, hover */
+  --color-line: #2c3036;       /* hairlines */
+  --color-steel: #a9b0b8;      /* secondary text (logo lettering) */
+  --color-bone: #eceae6;       /* primary text */
+  --color-signal: #d7262e;     /* the one red */
+  --color-signal-soft: #3a1c1f;
+  --color-amber: #d9a441;      /* partial / pending */
+  --color-ok: #6fae86;         /* healthy / verified */
+
+  --font-sans: var(--font-archivo), "Hind Siliguri", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  font-variation-settings: "wdth" 100;
+}
+
+/* Condensed headings: the signage voice. */
+.display {
+  font-variation-settings: "wdth" 72;
+  font-weight: 650;
+  letter-spacing: 0.005em;
+  line-height: 1.05;
+}
+
+/* The meridian: the logo's vertical red line with a diamond. */
+.meridian {
+  position: relative;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--color-signal) 18%, var(--color-signal) 82%, transparent);
+}
+.meridian::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  background: var(--color-signal);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Visible keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--color-bone);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

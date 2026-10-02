@@ -26,7 +26,14 @@ Work runs in three parallel tracks — **Code**, **Dataset**, **Paper** — as d
 
 ## Getting started
 
-See `backend/README.md` once the backend skeleton is merged.
+Run everything (database, backend, frontend) with Docker:
+
+```bash
+docker compose -f deployment/docker-compose.yml up --build
+docker compose -f deployment/docker-compose.yml exec backend python -m app.cli create-admin --email you@office.local --name "Your Name"
+```
+
+Then open http://localhost:3000. Details: `backend/README.md`, `frontend/README.md`.
 
 ## Contributing
 

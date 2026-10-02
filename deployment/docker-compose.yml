@@ -1,4 +1,4 @@
-# Local development stack: PostgreSQL + PostGIS, Redis, backend API.
+# Local development stack: PostgreSQL + PostGIS, Redis, backend API, frontend console.
 # Run from the repository root:  docker compose -f deployment/docker-compose.yml up --build
 name: carcux
 
@@ -36,6 +36,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+  frontend:
+    build: ../frontend
+    environment:
+      CARCUX_API_URL: http://backend:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   db_data:
