@@ -62,7 +62,7 @@ jobs:
         working-directory: .
         run: |
           bad=$(git ls-files | xargs -n1 dirname | sort -u | while read -r d; do
-            git check-ignore -q --no-index "$d/__probe__.py" && echo "$d"
+            if git check-ignore -q --no-index "$d/__probe__.py"; then echo "$d"; fi
           done)
           if [ -n "$bad" ]; then
             echo "New files in these folders would be silently ignored by git:"; echo "$bad"; exit 1
