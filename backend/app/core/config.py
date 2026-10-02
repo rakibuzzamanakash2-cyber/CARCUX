@@ -4,7 +4,10 @@ from functools import lru_cache
 from typing import Literal
 
 from fastapi import Request
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEV_JWT_SECRET = "dev-only-insecure-secret-change-me-0000000000"  # noqa: S105
 
 
 class Settings(BaseSettings):
@@ -18,6 +21,19 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Auth
+    jwt_secret: SecretStr = SecretStr(DEV_JWT_SECRET)
+    jwt_algorithm: str = "HS256"
+    access_token_minutes: int = 30
+
+    @model_validator(mode="after")
+    def _production_requires_real_secret(self) -> "Settings":
+        if self.environment == "production":
+            secret = self.jwt_secret.get_secret_value()
+            if secret == DEV_JWT_SECRET or len(secret) < 32:
+                raise ValueError("CARCUX_JWT_SECRET must be set to 32+ random characters")
+        return self
 
     @property
     def docs_enabled(self) -> bool:

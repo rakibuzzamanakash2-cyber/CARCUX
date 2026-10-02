@@ -25,7 +25,7 @@ def test_docs_enabled_outside_production():
 
 
 def test_docs_disabled_in_production():
-    client = make_client(environment="production")
+    client = make_client(environment="production", jwt_secret="x" * 40)
 
     assert client.get("/docs").status_code == 404
     assert client.get("/openapi.json").status_code == 404

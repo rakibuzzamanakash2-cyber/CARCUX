@@ -11,9 +11,25 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: carcux
+          POSTGRES_PASSWORD: carcux
+          POSTGRES_DB: carcux_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U carcux -d carcux_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CARCUX_TEST_DATABASE_URL: postgresql+psycopg://carcux:carcux@localhost:5432/carcux_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -23,5 +39,9 @@ jobs:
         run: ruff check .
       - name: Format
         run: ruff format --check .
+      - name: Migrations match models
+        env:
+          CARCUX_DATABASE_URL: postgresql+psycopg://carcux:carcux@localhost:5432/carcux_test
+        run: alembic upgrade head && alembic check
       - name: Test
         run: pytest -q
