@@ -3,7 +3,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 import app.models  # noqa: F401  (registers all models on Base.metadata)
 from app.core.config import get_settings
@@ -48,6 +48,10 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        # Our tables live in "public". The PostGIS image adds its topology and
+        # tiger schemas to the search path; keep their tables out of comparisons.
+        connection.execute(text("SET search_path TO public"))
+        connection.commit()
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
