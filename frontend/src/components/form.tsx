@@ -33,6 +33,33 @@ export function Field({
   );
 }
 
+export function TextAreaField({
+  label,
+  hint,
+  ...props
+}: ComponentProps<"textarea"> & { label: string; hint?: string }) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm text-bone">
+        {label}
+      </label>
+      <textarea
+        {...props}
+        id={id}
+        aria-describedby={hint ? hintId : undefined}
+        className="min-h-28 rounded-sm border border-line bg-panel-2 px-3 py-2.5 text-bone placeholder:text-steel/60 focus:border-steel focus:outline-none"
+      />
+      {hint && (
+        <span id={hintId} className="text-xs text-steel">
+          {hint}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function SelectField({
   label,
   children,

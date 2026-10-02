@@ -38,8 +38,8 @@ Open http://localhost:8000/docs, call `POST /api/v1/auth/login`, then click **Au
 | Role | Can |
 |---|---|
 | `admin` | Manage accounts (create, change role, deactivate) |
-| `analyst` | Review events and verify assessments (coming) |
-| `field_worker` | Submit field reports (coming) |
+| `analyst` | Read and verify all field reports; review events (coming) |
+| `field_worker` | Submit field reports and read their own |
 | `viewer` | Read-only dashboard access (coming) |
 
 - Passwords are hashed with Argon2id, minimum 12 characters.

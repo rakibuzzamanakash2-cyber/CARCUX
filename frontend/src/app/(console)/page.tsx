@@ -6,12 +6,32 @@ export const metadata = { title: "Overview" };
 
 // Where each part of CARCUX stands. Update as PRs land.
 const BUILD = [
-  { name: "Accounts, roles and audit log", state: "live", note: "Sign-in, four roles, instant revocation, append-only audit trail." },
-  { name: "Dataset schema and validator", state: "live", note: "CARCUX-BD v1: events, observations, relations, dependences." },
-  { name: "Field reports", state: "next", note: "Submission with location, time, photos and integrity checks." },
-  { name: "Events and evidence", state: "next", note: "Event records linked to their supporting and conflicting evidence." },
+  {
+    name: "Accounts, roles and audit log",
+    state: "live",
+    note: "Sign-in, four roles, instant revocation, append-only audit trail.",
+  },
+  {
+    name: "Dataset schema and validator",
+    state: "live",
+    note: "CARCUX-BD v1: events, observations, relations, dependences.",
+  },
+  {
+    name: "Field reports",
+    state: "live",
+    note: "Phone-friendly submission with GPS and photos; tamper-evident fingerprint; integrity flags for reviewers.",
+  },
+  {
+    name: "Events and evidence",
+    state: "next",
+    note: "Event records linked to their supporting and conflicting evidence.",
+  },
   { name: "Situation map", state: "later", note: "Events on a map with status and priority." },
-  { name: "Correlation and fusion engine", state: "later", note: "The research core: same-event grouping, source independence, calibrated assessment." },
+  {
+    name: "Correlation and fusion engine",
+    state: "later",
+    note: "The research core: same-event grouping, source independence, calibrated assessment.",
+  },
 ] as const;
 
 const STATE_STYLE = {
@@ -33,7 +53,11 @@ export default async function OverviewPage({
 }: {
   searchParams: Promise<{ denied?: string }>;
 }) {
-  const [user, health, { denied }] = await Promise.all([verifySession(), backendStatus(), searchParams]);
+  const [user, health, { denied }] = await Promise.all([
+    verifySession(),
+    backendStatus(),
+    searchParams,
+  ]);
   const firstName = user.full_name.split(" ")[0];
 
   return (
@@ -47,13 +71,15 @@ export default async function OverviewPage({
       <section>
         <h1 className="display mb-3 text-5xl">Good to see you, {firstName}.</h1>
         <p className="max-w-2xl text-lg leading-relaxed text-steel">
-          No events are being tracked yet. Once field reports and the evidence engine are live,
-          this page will open on the situations that need attention first.
+          No events are being tracked yet. Field reports are live; once the evidence engine is, this
+          page will open on the situations that need attention first.
         </p>
       </section>
 
       <section aria-labelledby="system" className="border-t border-line pt-6">
-        <h2 id="system" className="display mb-4 text-2xl">System</h2>
+        <h2 id="system" className="display mb-4 text-2xl">
+          System
+        </h2>
         <dl className="grid max-w-2xl grid-cols-[10rem_1fr] gap-y-2 text-sm">
           <dt className="text-steel">Backend</dt>
           <dd className={health ? "text-ok" : "text-signal"}>
@@ -69,7 +95,9 @@ export default async function OverviewPage({
       </section>
 
       <section aria-labelledby="build" className="border-t border-line pt-6">
-        <h2 id="build" className="display mb-4 text-2xl">What is built</h2>
+        <h2 id="build" className="display mb-4 text-2xl">
+          What is built
+        </h2>
         <ul className="flex max-w-3xl flex-col divide-y divide-line">
           {BUILD.map((b) => (
             <li key={b.name} className="grid gap-1 py-3 sm:grid-cols-[4rem_1fr]">

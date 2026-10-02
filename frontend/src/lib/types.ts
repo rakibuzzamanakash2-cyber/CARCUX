@@ -31,3 +31,56 @@ export interface Health {
 
 /** Result shape returned by Server Actions to forms. */
 export type ActionState = { ok: boolean; message: string } | undefined;
+
+/** Mirrors the backend's field report schemas. */
+export interface IntegrityFlag {
+  code: string;
+  detail: string;
+}
+
+export interface ReportMedia {
+  id: string;
+  position: number;
+  content_type: string;
+  size_bytes: number;
+  width: number;
+  height: number;
+  sha256: string;
+}
+
+export interface FieldReport {
+  id: string;
+  client_report_id: string;
+  reporter: { id: string; full_name: string };
+  text: string;
+  event_type: string | null;
+  place_name: string | null;
+  latitude: number;
+  longitude: number;
+  location_accuracy_m: number | null;
+  observed_at: string;
+  received_at: string;
+  status: "submitted" | "reviewed" | "dismissed";
+  content_hash: string;
+  integrity_flags: IntegrityFlag[];
+  media: ReportMedia[];
+}
+
+export interface FieldReportPage {
+  items: FieldReport[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface VerifyResult {
+  report_id: string;
+  intact: boolean;
+  problems: string[];
+  content_hash: string;
+}
+
+/** Roles that may read field reports, and roles that may submit them. */
+export const REPORT_READERS: Role[] = ["field_worker", "analyst", "admin"];
+export const REPORT_SUBMITTERS: Role[] = ["field_worker", "admin"];
+export const REPORT_REVIEWERS: Role[] = ["analyst", "admin"];

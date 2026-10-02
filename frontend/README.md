@@ -1,6 +1,6 @@
 # CARCUX frontend
 
-Next.js (App Router) console for CARCUX staff: sign-in, overview, and account management. Sections whose backend is not built yet (map, events, field reports, review queue, audit log) show what they will do.
+Next.js (App Router) console for CARCUX staff: sign-in, overview, account management and field reports. Sections whose backend is not built yet (map, events, review queue, audit log) show what they will do.
 
 ## Run locally
 
@@ -28,28 +28,44 @@ docker compose -f deployment/docker-compose.yml up --build
 - Every Server Action re-checks the user's role. Server Actions are public endpoints, so hiding a button is never enough.
 - The `?next=` redirect after login only accepts paths on this site.
 
+## Field reports
+
+| Page | Who | What |
+|---|---|---|
+| `/field-reports` | field worker (own), analyst, admin | List, newest first. Reviewers get an **All / Flagged** filter and flag badges. |
+| `/field-reports/new` | field worker, admin | Phone-first form: text, event type, **Use my location** (GPS), Dhaka time, up to 4 photos with previews. |
+| `/field-reports/{id}` | same as list | Text, details, photos, fingerprint. Reviewers also see each flag explained and a **Check it is unchanged** button. |
+
+- **Safe to resend.** Each form load carries a fresh `client_report_id`. If the connection drops and the worker presses Send again, the backend returns the original report instead of storing a second copy.
+- **Flags are for reviewers only.** Field workers never see integrity flags, so the checks cannot be learned and dodged.
+- **Photos** are fetched through `/field-reports/{id}/photos/{mediaId}`, a route handler that adds the session token; the backend decides who may see each photo. They are never cached.
+- **Upload size.** Up to 4 × 8 MB per report, so `next.config.ts` raises the Server Action body limit and the proxy body limit to 34 MB (the defaults, 1 MB and 10 MB, would reject or silently truncate photos).
+- **Location needs HTTPS.** Browsers only share GPS with `https://` pages and `localhost`. On a phone opening the console over plain `http://` on your network, **Use my location** explains this and the worker types coordinates instead. A production deployment must serve HTTPS.
+- **Event types** mirror the dataset schema; `npm run check:event-types` (run in CI) fails if they drift.
+
 ## Checks
 
 ```bash
 npm run lint
 npx tsc --noEmit
+npm run check:event-types
 npm run build
 ```
 
-CI runs the same three commands.
+CI runs the same commands.
 
 ## Layout
 
 ```
 src/
 ├── proxy.ts                 # redirect to /login when there is no session cookie
-├── lib/                     # server-only: backend client, session cookie, auth checks
+├── lib/                     # backend client, session cookie, auth checks (server-only); formatting, event types (shared)
 ├── components/              # shared UI (sidebar, form fields, placeholders)
 └── app/
     ├── login/               # sign-in page
-    ├── actions/             # Server Actions: login, logout, users
+    ├── actions/             # Server Actions: login, logout, users, field reports
     ├── fonts/               # self-hosted Archivo (SIL OFL)
-    └── (console)/           # signed-in pages: overview, users, and upcoming sections
+    └── (console)/           # signed-in pages: overview, users, field reports, and upcoming sections
 ```
 
 ## Design
