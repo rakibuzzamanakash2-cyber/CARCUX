@@ -33,15 +33,17 @@ function readableDetail(body: unknown, fallback: string): string {
 }
 
 /**
- * Call the CARCUX backend from server code. Adds the session token when present.
- * Throws ApiError for non-2xx responses.
+ * Call the CARCUX backend from server code and return the raw response. Adds the
+ * session token when present. Sends JSON unless the body is FormData (multipart,
+ * where fetch sets the boundary itself). Throws ApiError for non-2xx responses.
  */
-export async function api<T>(
+export async function apiFetch(
   path: string,
   init: RequestInit & { auth?: boolean } = {},
-): Promise<T> {
+): Promise<Response> {
   const { auth = true, headers, ...rest } = init;
   const token = auth ? await getToken() : undefined;
+  const isForm = rest.body instanceof FormData;
 
   let response: Response;
   try {
@@ -49,7 +51,7 @@ export async function api<T>(
       ...rest,
       cache: "no-store",
       headers: {
-        "Content-Type": "application/json",
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
@@ -62,5 +64,13 @@ export async function api<T>(
     const body = await response.json().catch(() => null);
     throw new ApiError(response.status, readableDetail(body, response.statusText));
   }
-  return (await response.json()) as T;
+  return response;
+}
+
+/** Call the backend and parse the JSON body. See apiFetch. */
+export async function api<T>(
+  path: string,
+  init: RequestInit & { auth?: boolean } = {},
+): Promise<T> {
+  return (await (await apiFetch(path, init)).json()) as T;
 }

@@ -95,5 +95,7 @@ jobs:
         run: npm run lint
       - name: Type check
         run: npx tsc --noEmit
+      - name: Event types match the dataset schema
+        run: npm run check:event-types
       - name: Build
         run: npm run build
