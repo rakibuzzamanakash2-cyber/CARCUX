@@ -47,9 +47,27 @@ Open http://localhost:8000/docs, call `POST /api/v1/auth/login`, then click **Au
 - Changing a user's role or deactivating them revokes their existing tokens immediately.
 - The last active admin cannot be demoted or deactivated.
 
+## Field reports
+
+Field workers submit what they saw; analysts and admins review.
+
+| Endpoint | Who | What |
+|---|---|---|
+| `POST /api/v1/field-reports` | field worker, admin | Submit (multipart form, up to 4 JPEG/PNG/WebP photos, 8 MB each) |
+| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags |
+| `GET /api/v1/field-reports/{id}` | same | One report |
+| `GET /api/v1/field-reports/{id}/media/{media_id}` | same | A photo |
+| `GET /api/v1/field-reports/{id}/verify` | analyst, admin | Check the report has not been changed since submission |
+
+- **Offline-safe:** the device sends a `client_report_id` it generated. Sending the same report again returns the original (200) instead of a duplicate; reusing the id for different content is refused (409).
+- **Tamper-evident:** at submission the server stores a SHA-256 hash over the report's content and every photo. `verify` recomputes it and reports any edited text, moved location, or changed or missing photo. This detects changes; it cannot prevent someone with full server access from changing data *and* the hash, which is why verifications are audit-logged and the hash can later be anchored externally.
+- **Integrity flags** (for human review, never blocking): `photo_reused` (identical or near-identical to an earlier report's photo), `impossible_travel` (faster than 150 km/h between a worker's reports), `observed_in_future`, `old_observation` (over 24 h), `submission_burst`, `poor_location_accuracy`.
+- **Privacy:** someone else's report returns 404, exactly like a missing one. Photos are checked by decoding (not by file name), stored outside the database, and served with `no-store` caching.
+- **Photos on disk:** `CARCUX_MEDIA_DIR` (Docker: the `media_data` volume). Back it up together with the database.
+
 ## Audit log
 
-Logins (success and failure), account creation and account changes are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
+Logins (success and failure), account creation and changes, field report submissions and verifications are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
 
 ## Database migrations
 

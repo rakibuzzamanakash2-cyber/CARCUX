@@ -1,6 +1,7 @@
 """Application settings, loaded from environment variables (prefix CARCUX_) or .env."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from fastapi import Request
@@ -26,6 +27,11 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = SecretStr(DEV_JWT_SECRET)
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 30
+
+    # Field report media (photos). Stored on disk, outside the database.
+    media_dir: Path = Path("media")
+    max_photos_per_report: int = 4
+    max_photo_bytes: int = 8 * 1024 * 1024
 
     @model_validator(mode="after")
     def _production_requires_real_secret(self) -> "Settings":

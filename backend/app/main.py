@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import auth, health, users
+from app.api import auth, field_reports, health, users
 from app.core.config import Settings, get_settings
 from app.db.session import make_engine, make_session_factory
 
@@ -41,7 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
-    for router in (health.router, auth.router, users.router):
+    for router in (health.router, auth.router, users.router, field_reports.router):
         app.include_router(router, prefix=settings.api_prefix)
     return app
 
