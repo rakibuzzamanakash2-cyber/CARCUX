@@ -13,7 +13,11 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: "/", label: "Overview" },
       { href: "/map", label: "Situation map" },
       { href: "/events", label: "Events" },
-      { href: "/field-reports", label: "Field reports" },
+      {
+        href: "/field-reports",
+        label: "Field reports",
+        roles: ["admin", "analyst", "field_worker"],
+      },
       { href: "/review", label: "Review queue", roles: ["admin", "analyst"] },
     ],
   },
