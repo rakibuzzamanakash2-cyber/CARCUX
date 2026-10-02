@@ -46,12 +46,19 @@ def _clean_tables(request) -> None:
         return
     eng = request.getfixturevalue("engine")
     with eng.begin() as conn:
-        conn.execute(text("TRUNCATE audit_log, users RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text(
+                "TRUNCATE field_report_media, field_reports, audit_log, users "
+                "RESTART IDENTITY CASCADE"
+            )
+        )
 
 
 @pytest.fixture
-def settings() -> Settings:
-    return Settings(environment="test", database_url=TEST_DATABASE_URL)
+def settings(tmp_path) -> Settings:
+    return Settings(
+        environment="test", database_url=TEST_DATABASE_URL, media_dir=tmp_path / "media"
+    )
 
 
 @pytest.fixture
