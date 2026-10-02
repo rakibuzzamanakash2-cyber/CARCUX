@@ -12,8 +12,9 @@ RUN pip install .
 COPY alembic.ini ./
 COPY migrations ./migrations
 
-# Run as an unprivileged user.
-RUN useradd --create-home --uid 10001 carcux
+# Run as an unprivileged user. It owns only the media directory.
+RUN useradd --create-home --uid 10001 carcux \
+    && mkdir -p /app/media && chown carcux /app/media
 USER carcux
 
 EXPOSE 8000
