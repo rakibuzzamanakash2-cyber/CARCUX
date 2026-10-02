@@ -84,3 +84,88 @@ export interface VerifyResult {
 export const REPORT_READERS: Role[] = ["field_worker", "analyst", "admin"];
 export const REPORT_SUBMITTERS: Role[] = ["field_worker", "admin"];
 export const REPORT_REVIEWERS: Role[] = ["analyst", "admin"];
+
+/** Mirrors the backend's event schemas. */
+export type EventStatus = "active" | "monitoring" | "resolved" | "dismissed";
+export type Priority = "low" | "medium" | "high" | "critical";
+export type Assessment =
+  | "verified"
+  | "partially_verified"
+  | "conflicting"
+  | "unverified"
+  | "refuted"
+  | "insufficient_evidence";
+export type EvidenceRelation = "supports" | "partially_supports" | "contradicts" | "related";
+
+export interface EvidenceCounts {
+  supports: number;
+  partially_supports: number;
+  contradicts: number;
+  related: number;
+  reporters: number;
+  photos: number;
+}
+
+export interface CarcuxEvent {
+  id: string;
+  title: string;
+  summary: string | null;
+  event_type: string;
+  family: string;
+  status: EventStatus;
+  priority: Priority;
+  assessment: Assessment;
+  place_name: string | null;
+  latitude: number;
+  longitude: number;
+  started_at: string;
+  ended_at: string | null;
+  created_by: { id: string; full_name: string };
+  created_at: string;
+  updated_at: string;
+  evidence_counts: EvidenceCounts;
+}
+
+export interface EventPage {
+  items: CarcuxEvent[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface Evidence {
+  id: string;
+  relation: EvidenceRelation;
+  note: string | null;
+  linked_by: { id: string; full_name: string };
+  linked_at: string;
+  field_report: FieldReport;
+}
+
+export interface CandidateReport {
+  report: FieldReport;
+  distance_km: number;
+  hours_apart: number;
+  same_type: boolean;
+}
+
+export interface CandidateEvent {
+  event: CarcuxEvent;
+  distance_km: number;
+  hours_apart: number;
+  same_type: boolean;
+  same_family: boolean;
+}
+
+export interface ReportLink {
+  evidence_id: string;
+  relation: EvidenceRelation;
+  event: CarcuxEvent;
+}
+
+export interface HistoryEntry {
+  occurred_at: string;
+  action: string;
+  actor: { id: string; full_name: string } | null;
+  details: Record<string, unknown>;
+}

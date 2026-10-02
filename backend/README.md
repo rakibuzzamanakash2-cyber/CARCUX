@@ -38,9 +38,9 @@ Open http://localhost:8000/docs, call `POST /api/v1/auth/login`, then click **Au
 | Role | Can |
 |---|---|
 | `admin` | Manage accounts (create, change role, deactivate) |
-| `analyst` | Read and verify all field reports; review events (coming) |
+| `analyst` | Read and verify all field reports; create and manage events and their evidence |
 | `field_worker` | Submit field reports and read their own |
-| `viewer` | Read-only dashboard access (coming) |
+| `viewer` | Read events (read-only) |
 
 - Passwords are hashed with Argon2id, minimum 12 characters.
 - Login returns a short-lived bearer token (30 minutes by default).
@@ -65,9 +65,30 @@ Field workers submit what they saw; analysts and admins review.
 - **Privacy:** someone else's report returns 404, exactly like a missing one. Photos are checked by decoding (not by file name), stored outside the database, and served with `no-store` caching.
 - **Photos on disk:** `CARCUX_MEDIA_DIR` (Docker: the `media_data` volume). Back it up together with the database.
 
+## Events and evidence
+
+An event is the working record of one real situation ("Waterlogging at Mirpur 10 circle"). Field reports attach to it as **evidence**, each with a relation: `supports`, `partially_supports`, `contradicts` or `related`. Labels match the CARCUX-BD dataset, so analysts' decisions can later be compared with gold annotations and with the fusion engine.
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /api/v1/events` | everyone signed in | List, newest first; `?status=active&status=monitoring`, `?family=urban_emergency` |
+| `POST /api/v1/events` | analyst, admin | Create; `field_report_ids` attaches reports as supporting evidence |
+| `GET /api/v1/events/{id}` | everyone signed in | One event with evidence counts (by relation, distinct reporters, photos) |
+| `PATCH /api/v1/events/{id}` | analyst, admin | Change title, type, place, times, status, priority, assessment |
+| `GET /api/v1/events/{id}/history` | analyst, admin | Who changed what, from the audit log |
+| `GET/POST /api/v1/events/{id}/evidence` | analyst, admin | List or link a report (409 if already linked) |
+| `PATCH/DELETE /api/v1/events/{id}/evidence/{evidence_id}` | analyst, admin | Change the relation or note, or unlink |
+| `GET /api/v1/events/{id}/candidate-reports` | analyst, admin | Unlinked reports that may belong to the event |
+| `GET /api/v1/field-reports/{id}/events` | analyst, admin | Events a report is evidence for |
+| `GET /api/v1/field-reports/{id}/candidate-events` | analyst, admin | Events a report may belong to |
+
+- **Status:** `active`, `monitoring`, `resolved`, `dismissed`. **Priority:** `low` to `critical`. **Assessment:** the dataset's six labels, from `verified` to `insufficient_evidence`; new events start `unverified`.
+- **Matching is a baseline, and only a suggestion:** within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now). Same type first, then nearest. The correlation engine in `ai/correlation/` will replace it and can be scored against analysts' links.
+- Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
+
 ## Audit log
 
-Logins (success and failure), account creation and changes, field report submissions and verifications are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
+Logins (success and failure), account creation and changes, field report submissions and verifications, and every event and evidence change are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
 
 ## Database migrations
 
