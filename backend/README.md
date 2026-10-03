@@ -99,6 +99,7 @@ Signals are evidence from outside CARCUX: disaster alerts, official bulletins an
 | BMD, FFWC | Entered by hand | `POST /api/v1/signals` with a district or coordinates; the full bulletin text can be kept. |
 
 - **Placing news.** `app/ingest/places.py` looks up names in `app/data/bd_gazetteer.json` (64 districts and 8 divisions with coordinates, upazilas, and city localities; English and Bangla; districts and upazilas from [nuhil/bangladesh-geocode](https://github.com/nuhil/bangladesh-geocode), MIT). The first place mentioned anchors the item, refined to the most specific place in its district; precision is the uncertainty radius (2.5 km for a locality, 30 km for a district) and widens when the text names other districts too.
+- **Fresh news only.** Feed items older than 7 days are left out (some feed addresses redirect to archives that stopped years ago).
 - **Classifying news.** `app/ingest/classify.py` uses English and Bangla keywords per event type; it needs a match in the headline, or two in the summary. Matched words are stored in `extraction`, so each decision can be explained. Both are baselines for the learned models.
 - **Matching signals to events:** the 5 km / 48 h rule, widened by the signal's precision (up to 300 km) and using its validity period.
 - **Fetching safely:** http(s) only, no private or local addresses, at most 3 redirects (each checked), 5 MB and 20 s limits, XML parsed with `defusedxml`.

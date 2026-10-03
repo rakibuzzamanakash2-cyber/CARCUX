@@ -2,7 +2,9 @@
 linking signals to events, and managing sources."""
 
 import json
+import re
 from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 from pathlib import Path
 
 import pytest
@@ -18,6 +20,9 @@ from app.models.user import Role
 from app.services.audit import AuditAction
 from tests.test_events import MIRPUR, NOW, create
 
+# The feed samples were saved on 3 October 2026; read them as if it were that day.
+SAMPLE_DAY = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
+
 FIXTURES = Path(__file__).parent / "fixtures"
 SIGNALS = "/api/v1/signals"
 SOURCES = "/api/v1/sources"
@@ -29,6 +34,14 @@ def fixture(name: str) -> bytes:
 
 def source(db, key: str) -> Source:
     return db.scalar(select(Source).where(Source.key == key))
+
+
+def fresh_news() -> bytes:
+    """The news sample with its dates moved to the last few hours, so it stays current."""
+    body = fixture("news.xml").decode()
+    for hours, date in enumerate(re.findall(r"<pubDate>(.*?)</pubDate>", body), start=1):
+        body = body.replace(date, format_datetime(datetime.now(UTC) - timedelta(hours=hours)), 1)
+    return body.encode()
 
 
 def serving(body: bytes):
@@ -115,7 +128,7 @@ def test_gdacs_keeps_bangladesh_floods_and_cyclones(db):
 
 
 def test_news_feed_keeps_placeable_disaster_items_as_excerpts(db):
-    parsed = rss.parse(fixture("news.xml"), source(db, "prothomalo-en"))
+    parsed = rss.parse(fixture("news.xml"), source(db, "prothomalo-en"), now=SAMPLE_DAY)
 
     assert (parsed.fetched, parsed.skipped) == (4, 2)  # mobile story; Pakistan flood
     water, slide = parsed.items
@@ -132,9 +145,16 @@ def test_news_feed_keeps_placeable_disaster_items_as_excerpts(db):
     assert slide.published_at == datetime(2026, 10, 2, 16, 0, tzinfo=UTC)
 
 
+def test_old_news_is_left_out(db):
+    """Some feed addresses redirect to archives that stopped years ago."""
+    src = source(db, "prothomalo-en")
+    month_later = rss.parse(fixture("news.xml"), src, now=SAMPLE_DAY + timedelta(days=30))
+    assert (month_later.fetched, month_later.items) == (4, [])
+
+
 def test_atom_feed_in_bangla(db):
     src = source(db, "prothomalo-bn")
-    parsed = rss.parse(fixture("news_bn.atom"), src)
+    parsed = rss.parse(fixture("news_bn.atom"), src, now=SAMPLE_DAY)
 
     assert (parsed.fetched, len(parsed.items)) == (2, 1)
     (item,) = parsed.items
@@ -233,9 +253,7 @@ def test_private_and_odd_addresses_are_refused(url):
 @pytest.fixture
 def stored(db, settings):
     runner.run_source(db, source(db, "gdacs"), settings, fetcher=serving(fixture("gdacs.xml")))
-    runner.run_source(
-        db, source(db, "prothomalo-en"), settings, fetcher=serving(fixture("news.xml"))
-    )
+    runner.run_source(db, source(db, "prothomalo-en"), settings, fetcher=serving(fresh_news()))
     return {s.external_id: str(s.id) for s in db.scalars(select(Signal))}
 
 
