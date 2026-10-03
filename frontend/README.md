@@ -65,6 +65,16 @@ docker compose -f deployment/docker-compose.yml up --build
 - Closing an event (resolved or dismissed) records its end time; reopening clears it.
 - Assessment labels and their meanings are the CARCUX-BD dataset's, shown under the selector.
 
+## Review queue, audit log and account
+
+| Page | Who | What |
+|---|---|---|
+| `/review` | analyst, admin | Reports nobody has triaged, oldest first, 10 per page. Each card shows the report, photos and flags with their meaning, plus up to three nearby open events to link it to in one click. **Mark reviewed**, **Dismiss** (a reason is required) or **Create an event from it**. Linking a report also marks it reviewed. A "Show" filter limits the queue to flagged reports. The sidebar badge and header bell show how many are waiting. |
+| `/field-reports/{id}` | analyst, admin | A **Triage** panel on the overview with the same actions, and the reviewer, time and note once triaged. **Reopen** puts it back in the queue. |
+| `/audit` | admin | Every recorded action in plain words, newest first, 50 per page. Filter by group or exact action, period (24 h, 7 days, 30 days) and the id of an event, report or account. Rows link to the event or report, and the full record opens under **Full record**. |
+| `/account` | everyone | Profile, and **Change password** (current password, new one twice, at least 12 characters). This device stays signed in; every other device is signed out. |
+| `/users` | admin | **Reset password** on each row sets a temporary password and signs that person out everywhere. |
+
 ## Checks
 
 ```bash

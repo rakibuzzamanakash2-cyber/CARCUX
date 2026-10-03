@@ -7,7 +7,9 @@ export function Pager({
   noun,
   newer,
   older,
+  labels = ["Newer", "Older"],
 }: {
+  labels?: [string, string];
   page: number;
   lastPage: number;
   total: number;
@@ -20,20 +22,20 @@ export function Pager({
     <nav aria-label="Pages" className="flex items-center gap-3 text-sm">
       {newer ? (
         <Link href={newer} className={cls}>
-          Newer
+          {labels[0]}
         </Link>
       ) : (
-        <span className={`${cls} text-muted/40`}>Newer</span>
+        <span className={`${cls} text-muted/40`}>{labels[0]}</span>
       )}
       <span className="text-muted">
         Page {page} of {lastPage}, {total} {noun}
       </span>
       {older ? (
         <Link href={older} className={cls}>
-          Older
+          {labels[1]}
         </Link>
       ) : (
-        <span className={`${cls} text-muted/40`}>Older</span>
+        <span className={`${cls} text-muted/40`}>{labels[1]}</span>
       )}
     </nav>
   );
