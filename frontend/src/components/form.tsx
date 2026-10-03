@@ -15,14 +15,14 @@ export function Field({
   const hintId = `${inputId}-hint`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-sm text-ink">
+      <label htmlFor={inputId} className="text-sm font-semibold text-ink">
         {label}
       </label>
       <input
         {...props}
         id={inputId}
         aria-describedby={hint ? hintId : undefined}
-        className="h-11 rounded-md border border-line bg-panel-2 px-3 text-ink placeholder:text-muted/60 focus:border-water focus:outline-none"
+        className="h-11 rounded-md border border-line bg-panel px-3 text-ink shadow-sm placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none"
       />
       {hint && (
         <span id={hintId} className="text-xs text-muted">
@@ -42,14 +42,14 @@ export function TextAreaField({
   const hintId = `${id}-hint`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm text-ink">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
       </label>
       <textarea
         {...props}
         id={id}
         aria-describedby={hint ? hintId : undefined}
-        className="min-h-28 rounded-md border border-line bg-panel-2 px-3 py-2.5 text-ink placeholder:text-muted/60 focus:border-water focus:outline-none"
+        className="min-h-28 rounded-md border border-line bg-panel px-3 py-2.5 text-ink shadow-sm placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none"
       />
       {hint && (
         <span id={hintId} className="text-xs text-muted">
@@ -68,13 +68,13 @@ export function SelectField({
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm text-ink">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
       </label>
       <select
         {...props}
         id={id}
-        className="h-11 rounded-md border border-line bg-panel-2 px-3 text-ink focus:border-water focus:outline-none"
+        className="h-11 rounded-md border border-line bg-panel px-3 text-ink shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none"
       >
         {children}
       </select>
@@ -95,7 +95,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className="h-11 rounded-md bg-water px-5 font-semibold text-ground transition-colors hover:bg-[#4dbac8] disabled:cursor-wait disabled:opacity-60"
+      className="h-11 rounded-md bg-water px-5 font-semibold text-white transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60"
     >
       {pending ? pendingText : children}
     </button>

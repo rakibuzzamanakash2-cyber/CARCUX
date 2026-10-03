@@ -23,7 +23,7 @@ export function PageHeader({
           </Link>
         )}
         {kicker && <div className="mb-1.5 text-sm text-muted">{kicker}</div>}
-        <h1 className="display text-3xl sm:text-4xl">{title}</h1>
+        <h1 className="display text-2xl sm:text-3xl">{title}</h1>
         {description && <p className="mt-2 max-w-2xl text-muted">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
@@ -50,12 +50,12 @@ export function Panel({
   return (
     <section
       aria-labelledby={title && id ? id : undefined}
-      className={`rounded-lg border bg-panel ${tone === "critical" ? "border-critical/50" : "border-line"}`}
+      className={`rounded-lg border bg-panel shadow-sm ${tone === "critical" ? "border-critical/50" : "border-line"}`}
     >
       {title && (
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3 md:px-5">
           <div>
-            <h2 id={id} className="display text-xl">
+            <h2 id={id} className="display text-lg">
               {title}
             </h2>
             {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
@@ -69,6 +69,6 @@ export function Panel({
 }
 
 export const buttonPrimary =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-water px-4 font-semibold text-ground transition-colors hover:bg-[#4dbac8] disabled:cursor-wait disabled:opacity-60";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60";
 export const buttonSecondary =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-panel-2 px-4 text-ink transition-colors hover:border-muted disabled:cursor-wait disabled:opacity-60";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-panel px-4 font-semibold text-ink shadow-sm transition-colors hover:border-brand hover:text-brand disabled:cursor-wait disabled:opacity-60";

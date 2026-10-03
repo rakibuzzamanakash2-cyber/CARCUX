@@ -22,10 +22,7 @@ export function DhakaClock() {
     return () => window.clearInterval(id);
   }, []);
   return (
-    <time
-      className="font-[family-name:var(--font-condensed)] text-[15px] text-muted tabular-nums"
-      suppressHydrationWarning
-    >
+    <time className="text-sm text-muted tabular-nums" suppressHydrationWarning>
       {now ? `${fmt.format(now)} Dhaka` : " "}
     </time>
   );

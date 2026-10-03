@@ -41,7 +41,7 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
               `Change ${user.full_name}'s role? They will be signed out.`,
             )
           }
-          className="rounded-md border border-line bg-panel-2 px-2 py-1 text-bone focus:border-muted focus:outline-none disabled:opacity-60"
+          className="rounded-md border border-line bg-panel px-2 py-1 text-ink shadow-sm focus:border-brand focus:outline-none disabled:opacity-60"
         >
           {ROLES.map((r) => (
             <option key={r.value} value={r.value}>

@@ -13,7 +13,7 @@ import type { CarcuxEvent, FieldReport, Priority } from "@/lib/types";
 
 const MapView = dynamic(() => import("./map-view"), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-ground" aria-busy="true" />,
+  loading: () => <div className="h-full w-full bg-sea" aria-busy="true" />,
 });
 
 const RANK: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -68,8 +68,8 @@ export function Situation({
   );
 
   return (
-    <div className="grid grid-rows-[60vh_auto] md:h-full md:grid-cols-[1fr_24rem] md:grid-rows-1">
-      <div className="relative min-h-0">
+    <div className="grid grid-rows-[60vh_auto] gap-3 p-3 md:h-full md:grid-cols-[1fr_23rem] md:grid-rows-1 md:gap-4 md:p-4">
+      <div className="relative min-h-0 overflow-hidden rounded-lg border border-line shadow-sm">
         <MapView
           events={visible}
           reports={canSeeReports && showReports ? reports : []}
@@ -89,7 +89,7 @@ export function Situation({
             Key
           </button>
           <div
-            className={`pointer-events-auto absolute bottom-12 left-0 rounded-md border border-line bg-panel/95 px-3 py-2 text-xs text-muted md:static md:block ${
+            className={`pointer-events-auto absolute bottom-12 left-0 rounded-md border border-line bg-panel/95 px-3 py-2 text-xs text-muted shadow-sm md:static md:block ${
               legend ? "block" : "hidden"
             }`}
           >
@@ -107,13 +107,13 @@ export function Situation({
             <p className="flex flex-wrap gap-x-3 gap-y-1">
               {FAMILIES.map((f) => (
                 <span key={f.value} className="flex items-center gap-1.5">
-                  <ShapeKey shape={FAMILY_SHAPE[f.value]} color="#8da2ad" />
+                  <ShapeKey shape={FAMILY_SHAPE[f.value]} color="#5b6b62" />
                   {f.label}
                 </span>
               ))}
               {canSeeReports && showReports && (
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-water" />
+                  <span className="h-2 w-2 rounded-full bg-brand" />
                   Report, 48 h
                 </span>
               )}
@@ -122,7 +122,7 @@ export function Situation({
           {canSubmit && (
             <Link
               href="/field-reports/new"
-              className="pointer-events-auto inline-flex h-12 items-center gap-2 rounded-full whitespace-nowrap bg-water px-5 font-semibold text-ground shadow-lg shadow-black/30 transition-colors hover:bg-[#4dbac8]"
+              className="pointer-events-auto inline-flex h-12 items-center gap-2 rounded-full whitespace-nowrap bg-water px-5 font-semibold text-white shadow-lg shadow-brand/30 transition-colors hover:bg-brand-strong"
             >
               <Plus size={18} strokeWidth={2.25} aria-hidden="true" />
               New report
@@ -138,8 +138,8 @@ export function Situation({
               onClick={() => setShowReports((v) => !v)}
               className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors ${
                 showReports
-                  ? "border-water bg-water-soft text-ink"
-                  : "border-line bg-panel text-muted hover:text-ink"
+                  ? "border-brand bg-brand-soft text-brand"
+                  : "border-line bg-panel text-muted shadow-sm hover:text-ink"
               }`}
             >
               <MapPinned size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -153,8 +153,8 @@ export function Situation({
             title="Street-level map tiles from OpenStreetMap (needs internet)"
             className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors ${
               streetDetail
-                ? "border-water bg-water-soft text-ink"
-                : "border-line bg-panel text-muted hover:text-ink"
+                ? "border-brand bg-brand-soft text-brand"
+                : "border-line bg-panel text-muted shadow-sm hover:text-ink"
             }`}
           >
             <Layers size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -165,12 +165,14 @@ export function Situation({
 
       <aside
         aria-label="Open events"
-        className="flex min-h-0 flex-col border-t border-line bg-panel md:border-t-0 md:border-l"
+        className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-sm"
       >
         <div className="border-b border-line px-4 pt-4 pb-3">
           <div className="mb-3 flex items-baseline justify-between">
-            <h1 className="display text-2xl">Open events</h1>
-            <span className="display text-2xl text-muted">{visible.length}</span>
+            <h1 className="display text-xl">Open events</h1>
+            <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-sm font-semibold text-muted">
+              {visible.length}
+            </span>
           </div>
           <div role="group" aria-label="Kind of event" className="flex flex-wrap gap-1.5">
             {[{ value: "", label: "All" }, ...FAMILIES].map((f) => (
@@ -181,7 +183,7 @@ export function Situation({
                 onClick={() => setFamily(f.value)}
                 className={`rounded-full border px-3 py-1 text-[13px] transition-colors ${
                   family === f.value
-                    ? "border-water bg-water-soft text-ink"
+                    ? "border-brand bg-brand-soft font-semibold text-brand"
                     : "border-line text-muted hover:text-ink"
                 }`}
               >
@@ -209,7 +211,7 @@ export function Situation({
                     onClick={() => setSelectedId(e.id)}
                     aria-expanded={active}
                     className={`relative block w-full py-3 pr-4 pl-5 text-left transition-colors ${
-                      active ? "bg-panel-2" : "hover:bg-panel-2/60"
+                      active ? "bg-brand-soft/60" : "hover:bg-panel-2"
                     }`}
                   >
                     <span
@@ -221,13 +223,13 @@ export function Situation({
                       <span>{eventTypeLabel(e.event_type)}</span>
                       <span>{ago(e.started_at)}</span>
                     </span>
-                    <span className="display block text-lg leading-tight">{e.title}</span>
+                    <span className="block text-[16px] leading-snug font-semibold">{e.title}</span>
                     {e.place_name && (
                       <span className="block text-sm text-muted">{e.place_name}</span>
                     )}
                   </button>
                   {active && (
-                    <div className="flex flex-col gap-3 bg-panel-2 px-5 pb-4 text-sm">
+                    <div className="flex flex-col gap-3 bg-brand-soft/60 px-5 pb-4 text-sm">
                       <div className="flex flex-wrap items-center gap-3">
                         <PriorityBadge priority={e.priority} />
                         <AssessmentText assessment={e.assessment} />
@@ -238,7 +240,7 @@ export function Situation({
                       <p className="text-muted">Since {formatDhaka(e.started_at)}</p>
                       <Link
                         href={`/events/${e.id}`}
-                        className="inline-flex h-9 w-fit items-center rounded-md bg-water px-3 font-semibold text-ground hover:bg-[#4dbac8]"
+                        className="inline-flex h-9 w-fit items-center rounded-md bg-water px-3 font-semibold text-white hover:bg-brand-strong"
                       >
                         Open event
                       </Link>

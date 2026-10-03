@@ -80,7 +80,8 @@ OUT.write_text(
 )
 print(f"{OUT} {OUT.stat().st_size // 1024} KB, {len(out)} features")
 
-# A decorative outline for the sign-in page: Bangladesh, its rivers and divisions.
+# A decorative outline for the sign-in page (drawn on the forest-green panel):
+# Bangladesh, its rivers and divisions.
 W, LON0, LON1, LAT0, LAT1 = 600, 87.9, 92.8, 20.5, 26.75
 K = math.cos(math.radians(23.7))
 H = round(W * (LAT1 - LAT0) / ((LON1 - LON0) * K))
@@ -113,13 +114,13 @@ parts = []
 for f in out:
     k = f["properties"]["kind"]
     if k == "country":
-        parts.append(f'<path d="{path(f["geometry"], True)}" fill="#152731" stroke="#2b5562" stroke-width="1.2"/>')
+        parts.append(f'<path d="{path(f["geometry"], True)}" fill="#145236" stroke="#3a8a5e" stroke-width="1.2"/>')
 for f in out:
     k = f["properties"]["kind"]
     if k == "division":
-        parts.append(f'<path d="{path(f["geometry"], True)}" fill="none" stroke="#24414c" stroke-width="0.8" stroke-dasharray="3 4"/>')
+        parts.append(f'<path d="{path(f["geometry"], True)}" fill="none" stroke="#2c6e4a" stroke-width="0.8" stroke-dasharray="3 4"/>')
     elif k == "river":
-        parts.append(f'<path d="{path(f["geometry"], False)}" fill="none" stroke="#2b6f7a" stroke-width="1.4"/>')
+        parts.append(f'<path d="{path(f["geometry"], False)}" fill="none" stroke="#6fbf95" stroke-width="1.4"/>')
 svg = (
     f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">'
     f'<defs><clipPath id="bd"><rect width="{W}" height="{H}"/></clipPath></defs>'

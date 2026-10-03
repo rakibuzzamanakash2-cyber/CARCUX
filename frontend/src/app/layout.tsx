@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
 
 // Self-hosted from npm (SIL OFL): builds work offline and staff browsers never call
-// a third-party font service. Barlow for reading, Barlow Condensed for headings and
-// figures, Hind Siliguri for Bangla text in reports.
-import "@fontsource/barlow/400.css";
-import "@fontsource/barlow/500.css";
-import "@fontsource/barlow/600.css";
-import "@fontsource/barlow-condensed/500.css";
-import "@fontsource/barlow-condensed/600.css";
-import "@fontsource/barlow-condensed/700.css";
+// a third-party font service. Source Sans 3 for the interface, Hind Siliguri for
+// Bangla text in reports.
+import "@fontsource-variable/source-sans-3/wght.css";
 import "@fontsource/hind-siliguri/400.css";
 import "@fontsource/hind-siliguri/600.css";
 import "./globals.css";

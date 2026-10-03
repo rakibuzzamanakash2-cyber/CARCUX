@@ -1,42 +1,54 @@
 @import "tailwindcss";
 
 /*
- * CARCUX: "monsoon night". An operations room looking at a river delta after dark.
- * Slate-blue ground, teal for water and selection, amber and red only for urgency.
+ * CARCUX: the logo's green and red on a light, official workspace.
+ * Green is the brand and the action colour; red only for what is urgent or wrong;
+ * amber for high priority. A deep forest green carries the navigation.
  *
- * Token names are semantic; older names (bone, steel, signal) are kept as aliases so
- * every page picks up the palette.
+ * Some token names predate this palette (water = brand, bone/steel/signal aliases);
+ * they are kept so every page picks up the theme.
  */
 @theme {
-  --color-ground: #0f1a21; /* page, map sea */
-  --color-panel: #15232c; /* panels */
-  --color-panel-2: #1c2e39; /* inputs, hover, raised */
-  --color-line: #263b47; /* borders */
-  --color-ink: #e4ecef; /* primary text */
-  --color-muted: #8da2ad; /* secondary text */
-  --color-water: #3aa6b4; /* rivers, links, selection, focus */
-  --color-water-soft: #173a42;
-  --color-alert: #e9a23b; /* high priority, attention */
-  --color-alert-soft: #3a2c16;
-  --color-critical: #e5484d; /* critical, contradiction, errors */
-  --color-critical-soft: #3d1c20;
-  --color-ok: #4fb477; /* verified, healthy */
-  --color-land: #1b2d36; /* map: Bangladesh */
-  --color-land-near: #14232b; /* map: neighbours */
+  --color-ground: #f3f5f4; /* page */
+  --color-panel: #ffffff; /* cards, panels */
+  --color-panel-2: #eff3f1; /* inputs, hover, subtle fills */
+  --color-line: #dce3df; /* borders */
+  --color-ink: #13231a; /* primary text */
+  --color-muted: #5b6b62; /* secondary text */
 
-  /* Aliases used across existing pages. */
+  --color-brand: #0b7a33; /* logo green, darkened for text contrast */
+  --color-brand-strong: #08622a; /* hover */
+  --color-brand-soft: #e5f3ea; /* selected, success backgrounds */
+  --color-forest: #0b3b24; /* navigation */
+  --color-forest-2: #145236; /* navigation: active item */
+  --color-forest-ink: #cfe5d8; /* navigation text */
+
+  --color-alert: #b26a00; /* high priority */
+  --color-alert-soft: #fff3dc;
+  --color-critical: #d3262e; /* logo red: critical, contradiction, errors */
+  --color-critical-soft: #fdebec;
+  --color-ok: #0b7a33;
+
+  --color-sea: #dbe8ec; /* map */
+  --color-land: #ffffff;
+  --color-land-near: #e9edeb;
+
+  /* Older names, kept as aliases. */
+  --color-water: var(--color-brand);
+  --color-water-strong: var(--color-brand-strong);
+  --color-water-soft: var(--color-brand-soft);
   --color-bone: var(--color-ink);
   --color-steel: var(--color-muted);
   --color-signal: var(--color-critical);
   --color-signal-soft: var(--color-critical-soft);
   --color-amber: var(--color-alert);
 
-  --font-sans: "Barlow", "Hind Siliguri", system-ui, sans-serif;
-  --font-condensed: "Barlow Condensed", "Hind Siliguri", system-ui, sans-serif;
+  --font-sans: "Source Sans 3 Variable", "Hind Siliguri", system-ui, sans-serif;
+  --font-condensed: var(--font-sans);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -47,21 +59,20 @@ body {
   font-feature-settings: "tnum" 1; /* figures line up in counts and times */
 }
 
-/* Headings and big figures: road-signage condensed. */
+/* Headings and big figures. */
 .display {
-  font-family: var(--font-condensed);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 a {
   text-underline-offset: 3px;
 }
 
-/* Visible keyboard focus everywhere, in the selection colour. */
+/* Visible keyboard focus everywhere, in the brand colour. */
 :focus-visible {
-  outline: 2px solid var(--color-water);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -89,34 +100,33 @@ a {
   }
 }
 
-/* Leaflet sits on the ground colour; controls follow the palette. */
-/* Doubled class: beats leaflet.css, which loads after this file. */
+/* Leaflet: doubled class beats leaflet.css, which loads after this file. */
 .leaflet-container.leaflet-container {
-  background: var(--color-ground);
+  background: var(--color-sea);
   font-family: var(--font-sans);
 }
 .leaflet-control-attribution {
-  background: rgba(15, 26, 33, 0.8) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   color: var(--color-muted) !important;
   font-size: 11px;
 }
 .leaflet-control-attribution a {
-  color: var(--color-water) !important;
+  color: var(--color-brand) !important;
+}
+.leaflet-bar {
+  border: 1px solid var(--color-line) !important;
+  box-shadow: 0 1px 2px rgba(19, 35, 26, 0.08) !important;
 }
 .leaflet-bar a {
-  background: var(--color-panel) !important;
   color: var(--color-ink) !important;
   border-color: var(--color-line) !important;
-}
-.leaflet-bar a:hover {
-  background: var(--color-panel-2) !important;
 }
 .leaflet-tooltip.carcux-tip {
   background: var(--color-panel);
   color: var(--color-ink);
   border: 1px solid var(--color-line);
-  border-radius: 4px;
-  box-shadow: none;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(19, 35, 26, 0.12);
   font-size: 13px;
   padding: 4px 8px;
 }
@@ -127,9 +137,13 @@ a {
   background: transparent;
   border: 0;
   box-shadow: none;
-  color: var(--color-muted);
+  color: #4a5a52;
   font-size: 12px;
+  font-weight: 600;
   padding: 0;
+  text-shadow:
+    0 0 3px #fff,
+    0 0 3px #fff;
 }
 .leaflet-tooltip.city-label::before {
   display: none;

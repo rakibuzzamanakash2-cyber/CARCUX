@@ -71,8 +71,8 @@ export const relationLabel = (v: EvidenceRelation) => find(RELATIONS, v)?.label 
 /** Red is a signal: only critical priority and refuted/conflicting assessments use it. */
 export const PRIORITY_STYLE: Record<Priority, string> = {
   critical: "bg-critical text-white",
-  high: "bg-alert-soft text-alert ring-1 ring-alert/50",
-  medium: "bg-panel-2 text-ink ring-1 ring-line",
+  high: "bg-alert-soft text-alert ring-1 ring-alert/40",
+  medium: "bg-[#e8eff8] text-[#2f5a8f] ring-1 ring-[#3f6fa8]/30",
   low: "text-muted ring-1 ring-line",
 };
 
@@ -87,7 +87,7 @@ export const ASSESSMENT_STYLE: Record<Assessment, string> = {
 
 export const RELATION_STYLE: Record<EvidenceRelation, string> = {
   supports: "border-ok",
-  partially_supports: "border-ok/50",
+  partially_supports: "border-ok/40",
   contradicts: "border-critical",
   related: "border-line",
 };
@@ -102,10 +102,10 @@ export const familyLabel = (v: string) => FAMILIES.find((f) => f.value === v)?.l
 
 /** Marker colours on the map, by priority. */
 export const PRIORITY_COLOR: Record<Priority, string> = {
-  critical: "#e5484d",
-  high: "#e9a23b",
-  medium: "#c9d4d9",
-  low: "#6f8590",
+  critical: "#d3262e",
+  high: "#e08a00",
+  medium: "#3f6fa8",
+  low: "#8a9a91",
 };
 
 /** Marker shapes on the map, by family: easy to tell apart without colour. */

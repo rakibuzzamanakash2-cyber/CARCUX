@@ -38,7 +38,7 @@ export function LinkButtons({
             onClick={() =>
               startTransition(async () => setState(await linkReport(eventId, reportId, r.value)))
             }
-            className="h-9 rounded-md border border-line bg-panel-2 px-3 text-sm text-ink transition-colors hover:border-water disabled:cursor-wait disabled:opacity-60"
+            className="h-9 rounded-md border border-line bg-panel px-3 text-sm font-semibold text-ink shadow-sm transition-colors hover:border-brand hover:text-brand disabled:cursor-wait disabled:opacity-60"
           >
             {r.label}
           </button>
@@ -85,7 +85,7 @@ export function EvidenceControls({
               ),
             )
           }
-          className="h-9 rounded-md border border-line bg-panel-2 px-2 text-sm text-ink focus:border-muted focus:outline-none disabled:opacity-60"
+          className="h-9 rounded-md border border-line bg-panel px-2 text-sm text-ink shadow-sm focus:border-brand focus:outline-none disabled:opacity-60"
         >
           {RELATIONS.map((r) => (
             <option key={r.value} value={r.value}>

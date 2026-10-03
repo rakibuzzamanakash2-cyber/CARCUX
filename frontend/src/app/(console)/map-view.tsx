@@ -49,9 +49,9 @@ function eventIcon(event: CarcuxEvent, selected: boolean): L.DivIcon {
       ? `<circle class="pulse-ring" cx="${c}" cy="${c}" r="${s / 2}" fill="none" stroke="${color}" stroke-width="2"/>`
       : "";
   const ring = selected
-    ? `<circle cx="${c}" cy="${c}" r="${s / 2 + 6}" fill="none" stroke="#e4ecef" stroke-width="2"/>`
+    ? `<circle cx="${c}" cy="${c}" r="${s / 2 + 6}" fill="none" stroke="#13231a" stroke-width="2"/>`
     : "";
-  const html = `<svg width="${box}" height="${box}" viewBox="0 0 ${box} ${box}" aria-hidden="true">${pulse}${ring}<g transform="translate(${pad} ${pad})"><path d="${shapePath(shape, s)}" fill="${color}" stroke="#0f1a21" stroke-width="2"/></g></svg>`;
+  const html = `<svg width="${box}" height="${box}" viewBox="0 0 ${box} ${box}" aria-hidden="true">${pulse}${ring}<g transform="translate(${pad} ${pad})"><path d="${shapePath(shape, s)}" fill="${color}" stroke="#ffffff" stroke-width="2"/></g></svg>`;
   return L.divIcon({ html, className: "", iconSize: [box, box], iconAnchor: [c, c] });
 }
 
@@ -85,7 +85,7 @@ function Cities({ cities }: { cities: CityFeature[] }) {
               key={c.properties.name}
               center={[lat, lon]}
               radius={(c.properties.rank ?? 9) <= 2 ? 3 : 2}
-              pathOptions={{ color: "#8da2ad", weight: 0, fillOpacity: 0.8 }}
+              pathOptions={{ color: "#4a5a52", weight: 0, fillOpacity: 0.8 }}
               interactive={false}
             >
               <Tooltip permanent direction="right" offset={[4, 0]} className="city-label">
@@ -101,13 +101,13 @@ function Cities({ cities }: { cities: CityFeature[] }) {
 function basemapStyle(feature?: Feature<Geometry, BasemapProps>): L.PathOptions {
   switch (feature?.properties.kind) {
     case "country":
-      return { color: "#3d5866", weight: 1.2, fillColor: "#1b2d36", fillOpacity: 1 };
+      return { color: "#7f9a8b", weight: 1.2, fillColor: "#ffffff", fillOpacity: 1 };
     case "neighbour":
-      return { color: "#22343e", weight: 1, fillColor: "#14232b", fillOpacity: 1 };
+      return { color: "#c9d3ce", weight: 1, fillColor: "#e9edeb", fillOpacity: 1 };
     case "division":
-      return { color: "#2f4855", weight: 1, dashArray: "3 4", fill: false };
+      return { color: "#b3c2ba", weight: 1, dashArray: "3 4", fill: false };
     case "river":
-      return { color: "#2b6f7a", weight: 1.6, opacity: 0.9 };
+      return { color: "#7db3c6", weight: 1.6, opacity: 0.95 };
     default:
       return {};
   }
@@ -181,7 +181,7 @@ export default function MapView({
       )}
       {streetDetail && (
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           subdomains="abcd"
           opacity={0.85}
@@ -196,9 +196,9 @@ export default function MapView({
             center={[r.latitude, r.longitude]}
             radius={4}
             pathOptions={{
-              color: "#0f1a21",
-              weight: 1,
-              fillColor: r.integrity_flags.length ? "#e5484d" : "#3aa6b4",
+              color: "#ffffff",
+              weight: 1.5,
+              fillColor: r.integrity_flags.length ? "#d3262e" : "#0b7a33",
               fillOpacity: 0.9,
             }}
             eventHandlers={{ click: () => router.push(`/field-reports/${r.id}`) }}

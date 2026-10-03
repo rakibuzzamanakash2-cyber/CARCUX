@@ -52,7 +52,7 @@ export default async function FieldReportsPage({
 
   const tabCls = (on: boolean) =>
     `rounded-md px-3 py-1.5 text-sm transition-colors ${
-      on ? "bg-panel-2 text-ink" : "text-muted hover:text-ink"
+      on ? "bg-brand-soft font-semibold text-brand" : "text-muted hover:bg-panel-2 hover:text-ink"
     }`;
 
   return (

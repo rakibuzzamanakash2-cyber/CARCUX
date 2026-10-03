@@ -30,10 +30,10 @@ docker compose -f deployment/docker-compose.yml up --build
 
 ## Situation map (home page)
 
-- **Layout:** status bar on top (critical, high and open events; reports in 24 h; for reviewers also flagged and to-review counts; Dhaka clock), an icon rail on the left (a tab bar on phones), the map in the middle and open events on the right.
-- **Markers:** colour is priority (red critical, amber high, light medium, grey low); shape is the kind of event (circle natural calamity, diamond road and infrastructure, triangle urban emergency), so they read without colour too. Critical events pulse: the one animation in the console, off when the system asks for reduced motion.
+- **Layout:** white header with the logo and a status line (critical, high and open events; reports in 24 h; for reviewers also flagged and to-review counts; Dhaka clock); forest-green sidebar (a tab bar on phones); the map and the open-events list as two cards.
+- **Markers:** colour is priority (red critical, amber high, blue medium, grey low); shape is the kind of event (circle natural calamity, diamond road and infrastructure, triangle urban emergency), so they read without colour too. Critical events pulse: the one animation in the console, off when the system asks for reduced motion.
 - **Selecting** a marker or a list item flies the map to it and opens its card with priority, assessment, evidence and **Open event**. The kind filter narrows list and markers together.
-- **Field reports** from the last 48 hours show as small dots for analysts and admins (red if flagged); click one to open it. Field workers get a **New report** button instead.
+- **Field reports** from the last 48 hours show as small dots for analysts and admins (green, red if flagged); click one to open it. Field workers get a **New report** button instead.
 - **Works offline.** The basemap (Bangladesh, divisions, major rivers, cities, neighbours) is a 107 KB GeoJSON built from Natural Earth (public domain) by `scripts/build-basemap.py`, served from `public/geo/`. **Street detail** adds OpenStreetMap/CARTO tiles when there is internet.
 
 ## Field reports
@@ -94,9 +94,10 @@ src/
 
 ## Design
 
-"Monsoon night": an operations room looking at a river delta after dark.
+The logo's green and red on a light, official workspace.
 
-- **Colour** (`src/app/globals.css`): slate-blue ground and panels, teal for water, links, selection and focus; amber and red only for urgency (high, critical, contradictions, errors); green for verified.
-- **Type:** Barlow for reading, Barlow Condensed for headings and figures (road-signage voice), Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource/*`, SIL OFL), so builds and browsers never call a font service.
+- **Colour** (`src/app/globals.css`): white panels on a light grey-green page, a deep forest-green sidebar, brand green (`#0b7a33`, the logo green darkened for contrast) for actions, links, selection and focus. Logo red only for what is urgent or wrong (critical, contradictions, errors); amber for high priority; blue for medium on the map.
+- **Type:** Source Sans 3 for the interface, Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource*`, SIL OFL), so builds and browsers never call a font service.
+- **Logo:** `public/carcux-logo.png` (transparent background); `src/app/icon.png` is the leaf C.
 - **Icons:** lucide-react.
 - Ordinary pages use `PageHeader` and `Panel` (`src/components/page-header.tsx`); detail pages put the work on the left and facts and decisions on the right.

@@ -16,7 +16,7 @@ function Counter({
   const dot = {
     critical: "bg-critical",
     alert: "bg-alert",
-    water: "bg-water",
+    water: "bg-brand",
     plain: "bg-muted",
   }[tone];
   const quiet = value === 0;
@@ -31,7 +31,7 @@ function Counter({
         aria-hidden="true"
         className={`relative top-[-1px] inline-block h-2 w-2 rounded-full ${quiet ? "bg-line" : dot}`}
       />
-      <span className="display text-xl">{value}</span>
+      <span className="text-xl font-bold">{value}</span>
       <span className="text-[13px] text-muted">{label}</span>
     </Link>
   );
@@ -44,7 +44,10 @@ export function StatusBar({ overview }: { overview: Overview | null }) {
   }
   const p = overview.open_by_priority;
   return (
-    <div className="flex items-center gap-x-1 whitespace-nowrap lg:flex-wrap" aria-label="Current situation">
+    <div
+      className="flex items-center gap-x-1 whitespace-nowrap lg:flex-wrap"
+      aria-label="Current situation"
+    >
       <Counter value={p.critical} label="critical" tone="critical" href="/events" />
       <Counter value={p.high} label="high" tone="alert" href="/events" />
       <Counter value={overview.open_events} label="open events" tone="plain" href="/events" />

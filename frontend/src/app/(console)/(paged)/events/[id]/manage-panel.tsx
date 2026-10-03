@@ -8,7 +8,7 @@ import { ASSESSMENTS, PRIORITIES, STATUSES } from "@/lib/events";
 import type { ActionState, CarcuxEvent } from "@/lib/types";
 
 const selectCls =
-  "h-10 w-full rounded-md border border-line bg-panel-2 px-3 text-ink focus:border-water focus:outline-none disabled:opacity-60";
+  "h-10 w-full rounded-md border border-line bg-panel px-3 text-ink shadow-sm focus:border-brand focus:outline-none disabled:opacity-60";
 
 /** Status, priority and assessment save on change; title, place and summary on Save. */
 export function ManagePanel({ event }: { event: CarcuxEvent }) {
@@ -128,7 +128,7 @@ export function ManagePanel({ event }: { event: CarcuxEvent }) {
             <button
               type="submit"
               disabled={pending}
-              className="h-11 rounded-md bg-water px-5 font-semibold text-ground hover:bg-[#4dbac8] disabled:opacity-60"
+              className="h-11 rounded-md bg-water px-5 font-semibold text-white hover:bg-brand-strong disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save"}
             </button>

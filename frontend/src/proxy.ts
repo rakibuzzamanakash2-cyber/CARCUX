@@ -15,5 +15,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except the login page, Next.js internals and static files.
-  matcher: ["/((?!login|_next/static|_next/image|icon.png|carcux-logo-light.png|geo/).*)"],
+  matcher: ["/((?!login|_next/static|_next/image|icon.png|carcux-logo.png|geo/).*)"],
 };
