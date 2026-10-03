@@ -76,6 +76,12 @@ const ACTIONS: Record<string, { label: string; icon: LucideIcon; tone: string }>
   "source.created": { label: "Added a news feed", icon: Rss, tone: "text-brand" },
   "source.updated": { label: "Changed a source", icon: Rss, tone: "text-medium" },
   "source.fetched": { label: "Read a source now", icon: Rss, tone: "text-medium" },
+  "signal.imported": {
+    label: "Imported a list of news items",
+    icon: RadioTower,
+    tone: "text-brand",
+  },
+  "source.backfilled": { label: "Filled in a past period", icon: Rss, tone: "text-medium" },
   "dataset.exported": { label: "Exported the dataset", icon: ScrollText, tone: "text-brand" },
 };
 

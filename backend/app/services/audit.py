@@ -31,6 +31,8 @@ class AuditAction:
     SOURCE_UPDATED = "source.updated"
     SOURCE_FETCHED = "source.fetched"
     DATASET_EXPORTED = "dataset.exported"
+    SIGNALS_IMPORTED = "signal.imported"
+    SOURCE_BACKFILLED = "source.backfilled"
 
 
 def record(

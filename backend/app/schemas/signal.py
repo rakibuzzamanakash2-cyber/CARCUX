@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -103,6 +103,8 @@ class IngestRunRead(BaseModel):
     updated: int
     skipped: int
     error: str | None
+    window_start: date | None = None
+    window_end: date | None = None
 
 
 class SignalRead(BaseModel):
@@ -222,6 +224,33 @@ class SignalReview(BaseModel):
         if self.status == SignalStatus.DISMISSED and not self.note:
             raise ValueError("Say why the signal is dismissed")
         return self
+
+
+class BackfillRequest(BaseModel):
+    """A past period to read from the source's archive (at most a year)."""
+
+    start: date
+    end: date
+
+
+class ImportRow(BaseModel):
+    line: int
+    status: str
+    title: str
+    message: str
+    event_type: str | None
+    place: str | None
+    publisher: str | None
+    signal_id: str | None
+
+
+class ImportResultRead(BaseModel):
+    dry_run: bool
+    added: int
+    duplicates: int
+    errors: int
+    new_publishers: list[str]
+    rows: list[ImportRow]
 
 
 class District(BaseModel):

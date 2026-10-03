@@ -117,6 +117,10 @@ Signals are evidence from outside CARCUX: disaster alerts, official bulletins an
 | `POST /api/v1/sources/{id}/fetch`, `GET .../runs` | admin; analyst, admin | Read a source now; recent runs |
 | `GET /api/v1/places/districts` | everyone signed in | Districts and their centres |
 
+**Past periods (backfill).** For case studies, archives can be read for a period of up to a year: `POST /api/v1/sources/{id}/backfill` with `{start, end}` (admin), or `python -m app.cli backfill gdacs 2024-08-15 2024-09-10`. GDACS uses its event search API (floods, cyclones, earthquakes; ids match the live feed, so nothing is stored twice); ReliefWeb searches by the reports' original date. Each backfill is an ingest run with its period recorded; the live schedule is not touched.
+
+**Importing a list of past news.** News archives have no feed that goes back in time, so annotators collect links in a CSV (`url, title, published, publisher` required; `excerpt, event_type, place, language, severity` optional) and upload it: `POST /api/v1/signals/import?dry_run=true` checks every row without saving, `dry_run=false` imports. Type and place are found from the headline when not given; publishers are matched by name or domain, or added. Only headline, excerpt (300 characters at most) and link are kept.
+
 **The ingest worker.** `python -m app.cli ingest --loop` reads every enabled source when it is due (the `ingest` service in Docker Compose). `--once` reads what is due and exits; `--source gdacs` reads one source now.
 
 ## The CARCUX-BD dataset

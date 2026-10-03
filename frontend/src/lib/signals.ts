@@ -57,7 +57,7 @@ export const ADAPTER: Record<SourceAdapter, { label: string; icon: LucideIcon }>
   gdacs: { label: "Disaster alerts feed", icon: Satellite },
   rss: { label: "News feed", icon: Newspaper },
   reliefweb: { label: "ReliefWeb reports", icon: Globe2 },
-  manual: { label: "Entered by hand", icon: PenLine },
+  manual: { label: "Entered or imported by hand", icon: PenLine },
 };
 
 export function precisionText(m: number | null): string {

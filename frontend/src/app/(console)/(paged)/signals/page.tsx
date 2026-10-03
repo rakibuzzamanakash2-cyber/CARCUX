@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  FileUp,
   Inbox,
   Landmark,
   Newspaper,
@@ -90,10 +91,16 @@ export default async function SignalsPage({ searchParams }: { searchParams: Prom
         description="Disaster alerts, official bulletins and news about Bangladesh, collected automatically or entered by analysts. Each can be linked to an event as evidence."
         actions={
           reviewer && (
-            <Link href="/signals/new" className={buttonOnBand}>
-              <PenLine size={17} strokeWidth={2.25} aria-hidden="true" />
-              Enter a bulletin
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/signals/import" className={buttonOnBand}>
+                <FileUp size={17} strokeWidth={2.25} aria-hidden="true" />
+                Import a list
+              </Link>
+              <Link href="/signals/new" className={buttonOnBand}>
+                <PenLine size={17} strokeWidth={2.25} aria-hidden="true" />
+                Enter a bulletin
+              </Link>
+            </div>
           )
         }
       />
