@@ -428,3 +428,36 @@ def test_open_event_matches_reports_until_now(client, analyst, worker):
 
     assert [c["event"]["id"] for c in candidates] == [event["id"]]
     assert candidates[0]["hours_apart"] == 0
+
+
+def test_list_search_and_priority_filter(client, analyst):
+    fire = create(
+        client,
+        analyst,
+        title="Fire at Karwan Bazar market",
+        event_type="fire",
+        place_name="Karwan Bazar",
+        priority="critical",
+    ).json()
+    mirpur = create(client, analyst, priority="high").json()  # "Mirpur" in title and place
+    create(
+        client,
+        analyst,
+        title="Flood near 100% submerged_area",
+        event_type="flood",
+        place_name="Sylhet",
+        summary="Roads under Mirpur-style water",
+    )
+
+    def ids(**params):
+        return [e["id"] for e in client.get(URL, params=params, headers=analyst).json()["items"]]
+
+    assert ids(q="karwan") == [fire["id"]]
+    assert set(ids(q="MIRPUR 10")) == {mirpur["id"]}
+    assert len(ids(q="mirpur")) == 2  # the summary matches too
+    assert len(ids(q="100%")) == 1  # LIKE wildcards are literal
+    assert len(ids(q="_")) == 1
+    assert ids(priority="critical") == [fire["id"]]
+    both = client.get(URL, params=[("priority", "critical"), ("priority", "high")], headers=analyst)
+    assert both.json()["total"] == 2
+    assert client.get(URL, params={"priority": "urgent"}, headers=analyst).status_code == 422

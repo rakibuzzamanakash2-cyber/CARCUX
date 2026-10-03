@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 
 from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.core.event_types import EVENT_TYPE_FAMILY
-from app.models.event import Event, EventEvidence, EventStatus
+from app.models.event import Event, EventEvidence, EventStatus, Priority
 from app.models.user import Role, User
 from app.schemas.event import (
     CandidateReport,
@@ -58,13 +58,25 @@ def list_events(
         Query(alias="status", description="Repeat to include several; default all"),
     ] = None,
     family: Annotated[str | None, Query(description=f"One of: {', '.join(FAMILIES)}")] = None,
+    priority: Annotated[
+        list[Priority] | None, Query(description="Repeat to include several; default all")
+    ] = None,
+    q: Annotated[
+        str | None, Query(max_length=100, description="Words in the title, place or summary")
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     if family is not None and family not in FAMILIES:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown family '{family}'")
     items, total = service.list_events(
-        db, statuses=status_, family=family, limit=limit, offset=offset
+        db,
+        statuses=status_,
+        family=family,
+        priorities=priority,
+        search=q.strip() if q and q.strip() else None,
+        limit=limit,
+        offset=offset,
     )
     return EventPage(
         items=[EventRead.model_validate(e) for e in items], total=total, limit=limit, offset=offset

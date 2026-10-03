@@ -1,6 +1,6 @@
 # CARCUX frontend
 
-Next.js (App Router) console for CARCUX staff: sign-in, overview, account management, field reports and events. Sections whose backend is not built yet (map, review queue, audit log) show what they will do.
+Next.js (App Router) console for CARCUX staff: a command-center layout that opens on the situation map, with events, field reports and account management. Sections whose backend is not built yet (review queue, audit log) show what they will do.
 
 ## Run locally
 
@@ -28,6 +28,14 @@ docker compose -f deployment/docker-compose.yml up --build
 - Every Server Action re-checks the user's role. Server Actions are public endpoints, so hiding a button is never enough.
 - The `?next=` redirect after login only accepts paths on this site.
 
+## Situation map (home page)
+
+- **Layout:** white header with the logo and a status line (critical, high and open events; reports in 24 h; for reviewers also flagged and to-review counts; Dhaka clock); forest-green sidebar (a tab bar on phones); the map and the open-events list as two cards.
+- **Markers:** colour is priority (red critical, amber high, blue medium, grey low); shape is the kind of event (circle natural calamity, diamond road and infrastructure, triangle urban emergency), so they read without colour too. Critical events pulse: the one animation in the console, off when the system asks for reduced motion.
+- **Selecting** a marker or a list item flies the map to it and opens its card with priority, assessment, evidence and **Open event**. The kind filter narrows list and markers together.
+- **Field reports** from the last 48 hours show as small dots for analysts and admins (green, red if flagged); click one to open it. Field workers get a **New report** button instead.
+- **Works offline.** The basemap (Bangladesh, divisions, major rivers, cities, neighbours) is a 107 KB GeoJSON built from Natural Earth (public domain) by `scripts/build-basemap.py`, served from `public/geo/`. **Street detail** adds OpenStreetMap/CARTO tiles when there is internet.
+
 ## Field reports
 
 | Page | Who | What |
@@ -48,10 +56,10 @@ docker compose -f deployment/docker-compose.yml up --build
 | Page | Who | What |
 |---|---|---|
 | `/` | everyone | Open events, most urgent first (priority, then newest). |
-| `/events` | everyone | **Open / Resolved / Dismissed / All**, filter by kind. Priority, assessment, status and an evidence summary per event. |
+| `/events` | everyone | Tiles (open, critical or high, verified, new today), search, filters for status, kind and priority, and a table with priority, assessment, evidence, status and start. |
 | `/events/new` | analyst, admin | Create an event. From a report (`?from_report=`), type, place, location and time are prefilled and the report is attached as support. |
-| `/events/{id}` | everyone; reviewers see more | Details and evidence counts for all. Reviewers also get **Analyst decision** (status, priority, assessment, edit title/place/summary), **Evidence** (change relation, unlink), **Possibly related reports** (one-click link as supports / partly supports / contradicts / related) and **History** in plain words. |
-| `/field-reports/{id}` | analyst, admin | An **Events** section: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
+| `/events/{id}` | everyone; reviewers see more | Overview (summary, details) for all. Reviewers also get **Analyst decision** on the overview, an **Evidence** tab (linked reports with relation and unlink; possibly related reports with one-click linking) and a **History** tab in plain words. |
+| `/field-reports/{id}` | analyst, admin | An **Events** tab: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
 
 - Suggestions come from place and time only (5 km, 48 h); the page says so. Analysts decide.
 - Closing an event (resolved or dismissed) records its end time; reopening clears it.
@@ -74,14 +82,24 @@ CI runs the same commands.
 src/
 ├── proxy.ts                 # redirect to /login when there is no session cookie
 ├── lib/                     # backend client, session cookie, auth checks (server-only); formatting, event types (shared)
-├── components/              # shared UI (sidebar, form fields, placeholders)
+├── components/              # shared UI (rail, status bar, page header, form fields, badges)
 └── app/
     ├── login/               # sign-in page
     ├── actions/             # Server Actions: login, logout, users, field reports, events
     ├── fonts/               # self-hosted Archivo (SIL OFL)
-    └── (console)/           # signed-in pages: overview, users, field reports, events, and upcoming sections
+    └── (console)/           # signed-in shell: status bar, rail
+        ├── page.tsx         # situation map (map-view.tsx: Leaflet; situation.tsx: panel)
+        └── (paged)/         # events, field reports, users, and upcoming sections
 ```
 
 ## Design
 
-Dark console matching the CARCUX logo. Red is a signal, never decoration: it marks the current page, priority and errors. One typeface (Archivo) in two widths: condensed for headings, normal for reading.
+Built from the reference mock-ups: a night-green frame around a light workspace, with Bangladesh drawn into it.
+
+- **Frame:** dark header (logo on dark with the tagline, live counts, Dhaka date and time, account menu, review bell) and a dark sidebar with counts that need attention (critical/high events in red, reports to review in amber) and Sundarbans mangroves with a tiger fading in at the bottom.
+- **Situation map:** night style. Bangladesh in green with white division lines and blue rivers, a scale bar and north arrow, and event cards with type icons, priority pills and time since start.
+- **Pages:** each opens with a banner drawn from the country (`public/art/`, built by `scripts/build-art.py`): the Sundarbans with a Royal Bengal tiger and a nouka (events, sign-in), paddy fields with a farmer, a water buffalo and egrets (field reports), the misty Chittagong Hill Tracts with a hilltop kyang (users, review, audit), and the Padma at sunset with sail boats and a river dolphin (detail pages). Then figure tiles with icons, a search and filter bar, and tables with type icons, people's initials, pills and an open button per row. Detail pages use tabs.
+- **Colour:** the logo's green for structure and actions, its red for what is critical; amber high, blue medium.
+- **Type:** Source Sans 3, with Hind Siliguri for Bangla. Self-hosted from npm (SIL OFL). **Icons:** lucide-react.
+- **Logo:** `public/carcux-logo-on-dark.png` (white letters, green leaf C, red stroke) for dark surfaces; `public/carcux-logo.png` for light ones; `src/app/icon.png` is the leaf C.
+- **Credits:** some scene outlines are from game-icons.net (CC BY 3.0); see `public/art/CREDITS.txt`.

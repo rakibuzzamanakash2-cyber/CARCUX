@@ -169,3 +169,12 @@ export interface HistoryEntry {
   actor: { id: string; full_name: string } | null;
   details: Record<string, unknown>;
 }
+
+export interface Overview {
+  as_of: string;
+  open_events: number;
+  open_by_priority: Record<Priority, number>;
+  reports_24h: number;
+  flagged_24h: number | null;
+  unreviewed_reports: number | null;
+}

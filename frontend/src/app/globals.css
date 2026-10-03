@@ -1,64 +1,115 @@
 @import "tailwindcss";
 
 /*
- * CARCUX console tokens.
- * Red is a signal, not decoration: active location, priority, errors.
+ * CARCUX: the logo's green and red, and Bangladesh itself. Navigation and the map sit
+ * in "night" greens (the Sundarbans after dusk); lists, forms and details sit on a
+ * light workspace under banners drawn from the country: mangroves and the tiger,
+ * paddy and the water buffalo, the Chittagong hills, the Padma (public/art/).
+ * Red marks what is critical; the logo carries the brand red.
+ *
+ * Some token names predate this palette (water = brand, bone/steel/signal aliases);
+ * they are kept so every page picks up the theme.
  */
 @theme {
-  --color-ground: #16181b;     /* page */
-  --color-panel: #1e2125;      /* raised surfaces */
-  --color-panel-2: #24282d;    /* inputs, hover */
-  --color-line: #2c3036;       /* hairlines */
-  --color-steel: #a9b0b8;      /* secondary text (logo lettering) */
-  --color-bone: #eceae6;       /* primary text */
-  --color-signal: #d7262e;     /* the one red */
-  --color-signal-soft: #3a1c1f;
-  --color-amber: #d9a441;      /* partial / pending */
-  --color-ok: #6fae86;         /* healthy / verified */
+  /* Light workspace (lists, forms, details). */
+  --color-ground: #f1f5f2;
+  --color-panel: #ffffff;
+  --color-panel-2: #eef3ef;
+  --color-line: #dde5df;
+  --color-ink: #13231a;
+  --color-muted: #5b6b62;
 
-  --font-sans: var(--font-archivo), "Hind Siliguri", system-ui, sans-serif;
+  /* Brand: the logo's green, darkened for text contrast, and its red. */
+  --color-brand: #0f7f3d;
+  --color-brand-strong: #0a6630;
+  --color-brand-soft: #e3f3e8;
+  --color-red: #d42a2f;
+  --color-red-strong: #b21f24;
+  --color-red-soft: #fdecec;
+
+  /* Night: header, navigation and the situation map, like the Sundarbans after dusk. */
+  --color-night: #0a2117;
+  --color-night-2: #0f2c1f;
+  --color-night-3: #163a29;
+  --color-night-line: #23503a;
+  --color-night-ink: #e6f1ea;
+  --color-night-muted: #9db8a8;
+  --color-forest: #0c2a1c;
+  --color-forest-2: #1a8a46; /* active navigation pill */
+  --color-forest-ink: #cfe5d8;
+
+  /* Priority and state. */
+  --color-critical: #e0333a;
+  --color-critical-soft: #fdebec;
+  --color-alert: #c76a00; /* high, on light */
+  --color-alert-bright: #f2912c; /* high, on dark */
+  --color-alert-soft: #fff1de;
+  --color-medium: #2f74d0;
+  --color-medium-soft: #e6effb;
+  --color-ok: #0f7f3d;
+
+  --color-sea: #0b2a33;
+  --color-land: #1c4a2f;
+  --color-land-near: #10291e;
+
+  /* Older names, kept as aliases. */
+  --color-water: var(--color-brand);
+  --color-water-strong: var(--color-brand-strong);
+  --color-water-soft: var(--color-brand-soft);
+  --color-bone: var(--color-ink);
+  --color-steel: var(--color-muted);
+  --color-signal: var(--color-critical);
+  --color-signal-soft: var(--color-critical-soft);
+  --color-amber: var(--color-alert);
+
+  --font-sans: "Source Sans 3 Variable", "Hind Siliguri", system-ui, sans-serif;
+  --font-condensed: var(--font-sans);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   background: var(--color-ground);
-  color: var(--color-bone);
+  color: var(--color-ink);
   font-family: var(--font-sans);
-  font-variation-settings: "wdth" 100;
+  font-size: 15px;
+  font-feature-settings: "tnum" 1; /* figures line up in counts and times */
 }
 
-/* Condensed headings: the signage voice. */
+/* Headings and big figures. */
 .display {
-  font-variation-settings: "wdth" 72;
   font-weight: 650;
-  letter-spacing: 0.005em;
-  line-height: 1.05;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
-/* The meridian: the logo's vertical red line with a diamond. */
-.meridian {
-  position: relative;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, var(--color-signal) 18%, var(--color-signal) 82%, transparent);
-}
-.meridian::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  background: var(--color-signal);
-  transform: translate(-50%, -50%) rotate(45deg);
+a {
+  text-underline-offset: 3px;
 }
 
-/* Visible keyboard focus everywhere. */
+/* Visible keyboard focus everywhere, in the brand colour. */
 :focus-visible {
-  outline: 2px solid var(--color-bone);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/* The one animation: critical events pulse on the map. */
+@keyframes carcux-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.pulse-ring {
+  animation: carcux-pulse 2s ease-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -66,4 +117,71 @@ body {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Leaflet, night style. The doubled class beats leaflet.css, which loads later. */
+.leaflet-container.leaflet-container {
+  background: var(--color-sea);
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  background: rgba(10, 33, 23, 0.8) !important;
+  color: var(--color-night-muted) !important;
+  font-size: 11px;
+}
+.leaflet-control-attribution a {
+  color: #7fd39b !important;
+}
+.leaflet-bar {
+  border: 1px solid var(--color-night-line) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+.leaflet-bar a {
+  background: var(--color-night-2) !important;
+  color: var(--color-night-ink) !important;
+  border-color: var(--color-night-line) !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+}
+.leaflet-bar a:hover {
+  background: var(--color-night-3) !important;
+}
+.leaflet-control-scale-line {
+  background: rgba(10, 33, 23, 0.7) !important;
+  border-color: var(--color-night-ink) !important;
+  color: var(--color-night-ink) !important;
+}
+.leaflet-tooltip.carcux-tip {
+  background: var(--color-night-2);
+  color: var(--color-night-ink);
+  border: 1px solid var(--color-night-line);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.leaflet-tooltip.carcux-tip::before {
+  display: none;
+}
+.leaflet-tooltip.city-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #f2f7f3;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  text-shadow:
+    0 0 4px #0a2117,
+    0 0 4px #0a2117;
+}
+.leaflet-tooltip.city-label::before {
+  display: none;
+}
+
+/* Glow behind event markers on the night map. */
+.marker-glow {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
 }

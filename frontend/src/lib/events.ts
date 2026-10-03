@@ -70,26 +70,26 @@ export const relationLabel = (v: EvidenceRelation) => find(RELATIONS, v)?.label 
 
 /** Red is a signal: only critical priority and refuted/conflicting assessments use it. */
 export const PRIORITY_STYLE: Record<Priority, string> = {
-  critical: "bg-signal text-white",
-  high: "border border-signal text-bone",
-  medium: "border border-line text-bone",
-  low: "border border-line text-steel",
+  critical: "bg-critical-soft text-critical ring-1 ring-critical/30",
+  high: "bg-alert-soft text-alert ring-1 ring-alert/30",
+  medium: "bg-medium-soft text-medium ring-1 ring-medium/25",
+  low: "bg-panel-2 text-muted ring-1 ring-line",
 };
 
 export const ASSESSMENT_STYLE: Record<Assessment, string> = {
   verified: "text-ok",
   partially_verified: "text-ok",
-  conflicting: "text-amber",
-  unverified: "text-amber",
-  refuted: "text-signal",
-  insufficient_evidence: "text-steel",
+  conflicting: "text-alert",
+  unverified: "text-alert",
+  refuted: "text-critical",
+  insufficient_evidence: "text-muted",
 };
 
 export const RELATION_STYLE: Record<EvidenceRelation, string> = {
-  supports: "border-ok",
-  partially_supports: "border-ok/50",
-  contradicts: "border-signal",
-  related: "border-line",
+  supports: "border-l-ok",
+  partially_supports: "border-l-ok/50",
+  contradicts: "border-l-critical",
+  related: "border-l-muted/40",
 };
 
 export const FAMILIES = [
@@ -99,3 +99,18 @@ export const FAMILIES = [
 ] as const;
 
 export const familyLabel = (v: string) => FAMILIES.find((f) => f.value === v)?.label ?? v;
+
+/** Marker colours on the map, by priority. */
+export const PRIORITY_COLOR: Record<Priority, string> = {
+  critical: "#ef3b42",
+  high: "#f2912c",
+  medium: "#3f8ef0",
+  low: "#9aaba2",
+};
+
+/** Marker shapes on the map, by family: easy to tell apart without colour. */
+export const FAMILY_SHAPE: Record<string, "circle" | "diamond" | "triangle"> = {
+  natural_calamity: "circle",
+  road_infrastructure: "diamond",
+  urban_emergency: "triangle",
+};
