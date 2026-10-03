@@ -1,18 +1,24 @@
-import { Plus } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  Paperclip,
+  Plus,
+  Radar,
+  ShieldCheck,
+  Siren,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 
-import { DataTable, EmptyState, rowCls, td, th, wide } from "@/components/data-table";
-import {
-  AssessmentText,
-  EvidenceSummary,
-  PriorityBadge,
-  StatusText,
-} from "@/components/event-badges";
+import { DataTable, EmptyState, RowOpen, rowCls, td, th, wide } from "@/components/data-table";
+import { AssessmentText, PriorityBadge, StatusText } from "@/components/event-badges";
 import { FilterBar } from "@/components/filter-bar";
 import { buttonOnBand, PageBand, PageBody, StatTile, StatTiles } from "@/components/page-header";
 import { Pager } from "@/components/pager";
 import { api } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
+import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FAMILIES, PRIORITIES } from "@/lib/events";
 import { formatDhaka } from "@/lib/format";
@@ -84,6 +90,8 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <PageBand
+        scene="sundarbans"
+        icon={Radar}
         title="Events"
         description="Every situation being tracked, with the analysts' assessment and the evidence behind it."
         actions={
@@ -98,13 +106,15 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
       <PageBody>
         <StatTiles>
           <StatTile
+            icon={Radar}
             value={stats.open}
             label="Open events"
             note="Active or monitoring"
-            tone="forest"
+            tone="green"
             href="/events"
           />
           <StatTile
+            icon={Siren}
             value={stats.urgent}
             label="Critical or high"
             note={`${stats.critical} critical`}
@@ -112,12 +122,14 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
             href={href({ priority: "critical" })}
           />
           <StatTile
+            icon={ShieldCheck}
             value={stats.verified}
             label="Verified"
             note="Fully or partly, of the open ones"
             tone="green"
           />
           <StatTile
+            icon={Clock}
             value={stats.fresh}
             label="New today"
             note="Opened in the last 24 hours"
@@ -168,8 +180,11 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <th scope="col" className={`${th} ${wide}`}>
                 Status
               </th>
-              <th scope="col" className={`${th} ${wide} text-right`}>
+              <th scope="col" className={`${th} ${wide}`}>
                 Started
+              </th>
+              <th scope="col" className={th}>
+                <span className="sr-only">Open</span>
               </th>
             </tr>
           }
@@ -187,37 +202,72 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
             ) : undefined
           }
         >
-          {data.items.map((e) => (
-            <tr key={e.id} className={rowCls}>
-              <td className={td}>
-                <PriorityBadge priority={e.priority} />
-              </td>
-              <td className={td}>
-                <Link
-                  href={`/events/${e.id}`}
-                  className="font-semibold text-ink hover:text-brand hover:underline"
-                >
-                  {e.title}
-                </Link>
-                <span className="mt-0.5 flex flex-wrap gap-x-3 text-muted">
-                  <span>{eventTypeLabel(e.event_type)}</span>
-                  {e.place_name && <span>{e.place_name}</span>}
-                </span>
-              </td>
-              <td className={td}>
-                <AssessmentText assessment={e.assessment} />
-              </td>
-              <td className={`${td} ${wide}`}>
-                <EvidenceSummary counts={e.evidence_counts} />
-              </td>
-              <td className={`${td} ${wide}`}>
-                <StatusText status={e.status} />
-              </td>
-              <td className={`${td} ${wide} text-right whitespace-nowrap text-muted`}>
-                {formatDhaka(e.started_at)}
-              </td>
-            </tr>
-          ))}
+          {data.items.map((e) => {
+            const TypeIcon = eventTypeIcon(e.event_type);
+            const ev = e.evidence_counts;
+            const supporting = ev.supports + ev.partially_supports;
+            return (
+              <tr key={e.id} className={rowCls}>
+                <td className={td}>
+                  <PriorityBadge priority={e.priority} />
+                </td>
+                <td className={td}>
+                  <Link
+                    href={`/events/${e.id}`}
+                    className="text-[15px] font-semibold text-ink hover:text-brand hover:underline"
+                  >
+                    {e.title}
+                  </Link>
+                  <span className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-muted">
+                    {e.place_name && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={14} aria-hidden="true" />
+                        {e.place_name}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <TypeIcon size={14} aria-hidden="true" />
+                      {eventTypeLabel(e.event_type)}
+                    </span>
+                  </span>
+                </td>
+                <td className={td}>
+                  <AssessmentText assessment={e.assessment} />
+                </td>
+                <td className={`${td} ${wide}`}>
+                  {supporting + ev.contradicts + ev.related === 0 ? (
+                    <span className="text-muted">No evidence yet</span>
+                  ) : (
+                    <span className="flex flex-col gap-0.5 text-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Paperclip size={14} aria-hidden="true" />
+                        {supporting} supporting
+                        {ev.contradicts > 0 && (
+                          <span className="text-critical">, {ev.contradicts} contradicting</span>
+                        )}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <UserRound size={14} aria-hidden="true" />
+                        {ev.reporters} {ev.reporters === 1 ? "field worker" : "field workers"}
+                      </span>
+                    </span>
+                  )}
+                </td>
+                <td className={`${td} ${wide}`}>
+                  <StatusText status={e.status} />
+                </td>
+                <td className={`${td} ${wide} whitespace-nowrap text-muted`}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays size={15} aria-hidden="true" />
+                    {formatDhaka(e.started_at)}
+                  </span>
+                </td>
+                <td className={`${td} w-12`}>
+                  <RowOpen href={`/events/${e.id}`} label={e.title} />
+                </td>
+              </tr>
+            );
+          })}
         </DataTable>
 
         {data.total > PAGE_SIZE && (

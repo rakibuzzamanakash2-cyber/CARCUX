@@ -1,3 +1,4 @@
+import { ShieldCheck, UserCheck, Users as UsersIcon, UserRoundCog } from "lucide-react";
 import { PageBand, PageBody, Panel, StatTile, StatTiles } from "@/components/page-header";
 import { api } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
@@ -16,19 +17,23 @@ export default async function UsersPage() {
   return (
     <>
       <PageBand
+        scene="hills"
+        icon={UsersIcon}
         title="Users"
         description={`${users.length} ${users.length === 1 ? "account" : "accounts"}, ${active} active. Changing someone's role or deactivating them signs them out immediately.`}
       />
       <PageBody>
         <StatTiles>
-          <StatTile value={users.length} label="Accounts" tone="forest" />
+          <StatTile icon={UsersIcon} value={users.length} label="Accounts" tone="green" />
           <StatTile
+            icon={UserCheck}
             value={active}
             label="Active"
             note={`${users.length - active} deactivated`}
-            tone="green"
+            tone="blue"
           />
           <StatTile
+            icon={ShieldCheck}
             value={
               users.filter((u) => u.is_active && (u.role === "admin" || u.role === "analyst"))
                 .length
@@ -37,6 +42,7 @@ export default async function UsersPage() {
             tone="red"
           />
           <StatTile
+            icon={UserRoundCog}
             value={users.filter((u) => u.is_active && u.role === "field_worker").length}
             label="Field workers"
             tone="amber"
@@ -45,7 +51,7 @@ export default async function UsersPage() {
 
         <section
           aria-label="Accounts"
-          className="overflow-x-auto rounded-lg border border-line bg-panel px-4 shadow-sm"
+          className="overflow-x-auto rounded-xl border border-line bg-panel px-4 shadow-sm"
         >
           <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b border-line text-steel">

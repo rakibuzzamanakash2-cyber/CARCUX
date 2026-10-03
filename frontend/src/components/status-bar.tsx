@@ -5,75 +5,76 @@ import type { Overview } from "@/lib/types";
 function Counter({
   value,
   label,
-  tone,
+  dot,
   href,
 }: {
   value: number;
   label: string;
-  tone: "critical" | "alert" | "water" | "plain";
+  dot: string;
   href: string;
 }) {
-  const dot = {
-    critical: "bg-critical",
-    alert: "bg-alert",
-    water: "bg-brand",
-    plain: "bg-muted",
-  }[tone];
-  const quiet = value === 0;
   return (
     <Link
       href={href}
-      className={`flex items-baseline gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-panel-2 ${
-        quiet ? "text-muted" : "text-ink"
-      }`}
+      className="flex shrink-0 flex-col justify-center rounded-md px-4 py-1 transition-colors hover:bg-white/5"
     >
-      <span
-        aria-hidden="true"
-        className={`relative top-[-1px] inline-block h-2 w-2 rounded-full ${quiet ? "bg-line" : dot}`}
-      />
-      <span className="text-xl font-bold">{value}</span>
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="flex items-center gap-2">
+        <span
+          aria-hidden="true"
+          className={`h-2.5 w-2.5 rounded-full ${value === 0 ? "bg-night-muted/40" : dot}`}
+        />
+        <span className="text-xl leading-none font-bold text-white">{value}</span>
+      </span>
+      <span className="mt-1 text-xs whitespace-nowrap text-night-muted">{label}</span>
     </Link>
   );
 }
 
-/** What needs attention now, in one line. Hidden counters stay out rather than showing "–". */
+/** What needs attention now. Reviewers also see flags and the review backlog. */
 export function StatusBar({ overview }: { overview: Overview | null }) {
   if (!overview) {
-    return <p className="text-sm text-critical">Backend not reachable</p>;
+    return <p className="px-4 text-sm text-critical">Backend not reachable</p>;
   }
   const p = overview.open_by_priority;
+  const items = [
+    { value: p.critical, label: "Critical", dot: "bg-critical", href: "/events?priority=critical" },
+    { value: p.high, label: "High", dot: "bg-alert-bright", href: "/events?priority=high" },
+    { value: overview.open_events, label: "Open events", dot: "bg-medium", href: "/events" },
+    {
+      value: overview.reports_24h,
+      label: "Reports (24h)",
+      dot: "bg-[#2fbf68]",
+      href: "/field-reports",
+    },
+    ...(overview.flagged_24h !== null
+      ? [
+          {
+            value: overview.flagged_24h,
+            label: "Flagged",
+            dot: "bg-critical",
+            href: "/field-reports?flagged=1",
+          },
+        ]
+      : []),
+    ...(overview.unreviewed_reports !== null
+      ? [
+          {
+            value: overview.unreviewed_reports,
+            label: "To review",
+            dot: "bg-alert-bright",
+            href: "/review",
+          },
+        ]
+      : []),
+  ];
   return (
     <div
-      className="flex items-center gap-x-1 whitespace-nowrap lg:flex-wrap"
+      className="flex items-center divide-x divide-white/10 overflow-x-auto"
       aria-label="Current situation"
     >
-      <Counter value={p.critical} label="critical" tone="critical" href="/events" />
-      <Counter value={p.high} label="high" tone="alert" href="/events" />
-      <Counter value={overview.open_events} label="open events" tone="plain" href="/events" />
-      <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line sm:block" />
-      <Counter
-        value={overview.reports_24h}
-        label="reports, 24 h"
-        tone="water"
-        href="/field-reports"
-      />
-      {overview.flagged_24h !== null && (
-        <Counter
-          value={overview.flagged_24h}
-          label="flagged"
-          tone="critical"
-          href="/field-reports?flagged=1"
-        />
-      )}
-      {overview.unreviewed_reports !== null && (
-        <Counter
-          value={overview.unreviewed_reports}
-          label="to review"
-          tone="alert"
-          href="/review"
-        />
-      )}
+      {items.map((i) => (
+        <Counter key={i.label} {...i} />
+      ))}
     </div>
   );
 }

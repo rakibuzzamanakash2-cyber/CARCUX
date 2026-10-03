@@ -1,3 +1,5 @@
+import { CircleAlert } from "lucide-react";
+
 import {
   ASSESSMENT_STYLE,
   assessmentLabel,
@@ -10,8 +12,11 @@ import type { Assessment, EventStatus, EvidenceCounts, Priority } from "@/lib/ty
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ${PRIORITY_STYLE[priority]}`}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-semibold whitespace-nowrap ${PRIORITY_STYLE[priority]}`}
     >
+      {(priority === "critical" || priority === "high") && (
+        <CircleAlert size={14} strokeWidth={2.2} aria-hidden="true" />
+      )}
       {priorityLabel(priority)}
     </span>
   );
@@ -27,8 +32,17 @@ export function AssessmentText({ assessment }: { assessment: Assessment }) {
 }
 
 export function StatusText({ status }: { status: EventStatus }) {
-  const dim = status === "resolved" || status === "dismissed";
-  return <span className={dim ? "text-muted" : "text-ink"}>{statusLabel(status)}</span>;
+  const tone =
+    status === "active"
+      ? "bg-brand-soft text-brand"
+      : status === "monitoring"
+        ? "bg-medium-soft text-medium"
+        : "bg-panel-2 text-muted";
+  return (
+    <span className={`inline-flex rounded-md px-2.5 py-1 text-[13px] font-semibold ${tone}`}>
+      {statusLabel(status)}
+    </span>
+  );
 }
 
 /** Evidence at a glance: supporting, contradicting, related, and how many people. */

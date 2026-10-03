@@ -12,7 +12,7 @@ export function LoginForm({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
 
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <form action={action} className="flex flex-col gap-5 [&_label]:text-night-ink">
       <input type="hidden" name="next" value={next ?? "/"} />
       <Field
         label="Email"

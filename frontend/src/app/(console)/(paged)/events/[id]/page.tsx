@@ -1,3 +1,4 @@
+import { History as HistoryIcon, LayoutGrid, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,6 +7,7 @@ import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
 import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
+import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import {
   assessmentLabel,
@@ -188,6 +190,8 @@ export default async function EventPage({
   return (
     <>
       <PageBand
+        scene="padma"
+        icon={eventTypeIcon(event.event_type)}
         back={{ href: "/events", label: "All events" }}
         kicker={eventTypeLabel(event.event_type)}
         title={event.title}
@@ -216,10 +220,11 @@ export default async function EventPage({
           <Tabs
             active={tab}
             items={[
-              { key: "overview", label: "Overview", href: base },
+              { key: "overview", label: "Overview", href: base, icon: LayoutGrid },
               {
                 key: "evidence",
                 label: "Evidence",
+                icon: Paperclip,
                 href: `${base}?tab=evidence`,
                 count: evidence.length,
               },
@@ -228,6 +233,7 @@ export default async function EventPage({
                 label: "History",
                 href: `${base}?tab=history`,
                 count: history.length,
+                icon: HistoryIcon,
               },
             ]}
           />

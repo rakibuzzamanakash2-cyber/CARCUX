@@ -1,3 +1,4 @@
+import { Radar } from "lucide-react";
 import { PageBand, PageBody, Panel } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
@@ -52,6 +53,8 @@ export default async function NewEventPage({
   return (
     <>
       <PageBand
+        scene="sundarbans"
+        icon={Radar}
         back={{ href: "/events", label: "All events" }}
         title="New event"
         description="One record per real situation. Before creating one, check the map for an open event at the same place."

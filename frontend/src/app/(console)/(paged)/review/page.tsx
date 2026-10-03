@@ -1,3 +1,5 @@
+import { Inbox } from "lucide-react";
+
 import { ComingNext } from "@/components/coming-next";
 import { requireRole } from "@/lib/dal";
 
@@ -7,6 +9,7 @@ export default async function ReviewPage() {
   await requireRole("admin", "analyst");
   return (
     <ComingNext
+      icon={Inbox}
       title="Review queue"
       purpose="Assessments waiting for a person to confirm them. The system suggests; people decide."
       shows={[

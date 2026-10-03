@@ -1,4 +1,4 @@
-import { Construction } from "lucide-react";
+import { Construction, type LucideIcon } from "lucide-react";
 
 import { PageBand, PageBody, Panel } from "@/components/page-header";
 
@@ -8,7 +8,9 @@ export function ComingNext({
   purpose,
   shows,
   needs,
+  icon,
 }: {
+  icon?: LucideIcon;
   title: string;
   purpose: string;
   shows: string[];
@@ -16,7 +18,7 @@ export function ComingNext({
 }) {
   return (
     <>
-      <PageBand title={title} description={purpose} />
+      <PageBand scene="hills" icon={icon} title={title} description={purpose} />
       <PageBody>
         <div className="flex max-w-3xl flex-col gap-6">
           <Panel>

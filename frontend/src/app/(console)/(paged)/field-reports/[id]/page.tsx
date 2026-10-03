@@ -1,3 +1,4 @@
+import { LayoutGrid, Radar, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,6 +7,7 @@ import { LinkButtons } from "@/components/evidence-controls";
 import { buttonSecondary, PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
+import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { RELATION_STYLE, relationLabel } from "@/lib/events";
 import { FLAG_INFO, flagLabel, formatBytes, formatCoords, formatDhaka, isUuid } from "@/lib/format";
@@ -77,6 +79,8 @@ export default async function FieldReportPage({
   return (
     <>
       <PageBand
+        scene="padma"
+        icon={eventTypeIcon(report.event_type)}
         back={{ href: "/field-reports", label: "All field reports" }}
         kicker={
           <span className="flex flex-wrap gap-x-3">
@@ -120,14 +124,21 @@ export default async function FieldReportPage({
           <Tabs
             active={tab}
             items={[
-              { key: "overview", label: "Overview", href: base },
+              { key: "overview", label: "Overview", href: base, icon: LayoutGrid },
               {
                 key: "integrity",
                 label: "Integrity",
+                icon: ShieldCheck,
                 href: `${base}?tab=integrity`,
                 count: flags.length,
               },
-              { key: "events", label: "Events", href: `${base}?tab=events`, count: links.length },
+              {
+                key: "events",
+                label: "Events",
+                href: `${base}?tab=events`,
+                count: links.length,
+                icon: Radar,
+              },
             ]}
           />
         )}

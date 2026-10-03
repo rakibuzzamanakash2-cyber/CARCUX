@@ -94,10 +94,12 @@ src/
 
 ## Design
 
-The logo's green and red on a light, official workspace, like the flag.
+Built from the reference mock-ups: a night-green frame around a light workspace, with Bangladesh drawn into it.
 
-- **Green carries the structure and main actions:** forest-green sidebar, the green band that opens every page, green buttons and links (`#0b7a33`, the logo green darkened for contrast).
-- **Red is the accent:** the stripe under the header, the rule under each page band, the active menu mark and tab underline, the short underline under section titles, secondary buttons (red outline) and key figures. It also marks what is critical. Amber is high priority; blue is medium on the map.
-- **Page structure:** green band (title, purpose, main action) → figure tiles → filter bar (search + dropdowns) → table. Detail pages use tabs (`?tab=`): events have Overview, Evidence and History; field reports have Overview, Integrity and Events. Building blocks live in `src/components/page-header.tsx` (`PageBand`, `PageBody`, `Panel`, `StatTile`, `Tabs`), `filter-bar.tsx` and `data-table.tsx`.
-- **Type:** Source Sans 3 for the interface, Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource*`, SIL OFL).
-- **Logo:** `public/carcux-logo.png` (transparent background); `src/app/icon.png` is the leaf C. **Icons:** lucide-react.
+- **Frame:** dark header (logo on dark with the tagline, live counts, Dhaka date and time, account menu, review bell) and a dark sidebar with counts that need attention (critical/high events in red, reports to review in amber) and Sundarbans mangroves with a tiger fading in at the bottom.
+- **Situation map:** night style. Bangladesh in green with white division lines and blue rivers, a scale bar and north arrow, and event cards with type icons, priority pills and time since start.
+- **Pages:** each opens with a banner drawn from the country (`public/art/`, built by `scripts/build-art.py`): the Sundarbans with a Royal Bengal tiger and a nouka (events, sign-in), paddy fields with a farmer, a water buffalo and egrets (field reports), the misty Chittagong Hill Tracts with a hilltop kyang (users, review, audit), and the Padma at sunset with sail boats and a river dolphin (detail pages). Then figure tiles with icons, a search and filter bar, and tables with type icons, people's initials, pills and an open button per row. Detail pages use tabs.
+- **Colour:** the logo's green for structure and actions, its red for what is critical; amber high, blue medium.
+- **Type:** Source Sans 3, with Hind Siliguri for Bangla. Self-hosted from npm (SIL OFL). **Icons:** lucide-react.
+- **Logo:** `public/carcux-logo-on-dark.png` (white letters, green leaf C, red stroke) for dark surfaces; `public/carcux-logo.png` for light ones; `src/app/icon.png` is the leaf C.
+- **Credits:** some scene outlines are from game-icons.net (CC BY 3.0); see `public/art/CREDITS.txt`.

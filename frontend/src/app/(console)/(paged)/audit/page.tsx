@@ -1,3 +1,5 @@
+import { ScrollText } from "lucide-react";
+
 import { ComingNext } from "@/components/coming-next";
 import { requireRole } from "@/lib/dal";
 
@@ -7,6 +9,7 @@ export default async function AuditPage() {
   await requireRole("admin");
   return (
     <ComingNext
+      icon={ScrollText}
       title="Audit log"
       purpose="A permanent record of who did what and when. Entries can never be edited or deleted."
       shows={[

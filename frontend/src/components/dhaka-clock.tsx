@@ -1,18 +1,23 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const fmt = new Intl.DateTimeFormat("en-GB", {
+const day = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Asia/Dhaka",
   weekday: "short",
   day: "numeric",
   month: "short",
+  year: "numeric",
+});
+const time = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Dhaka",
   hour: "2-digit",
   minute: "2-digit",
   hourCycle: "h23",
 });
 
-/** Dhaka time, ticking each minute. Rendered on the client only, so it never mismatches. */
+/** Dhaka date and time, ticking. Rendered on the client only, so it never mismatches. */
 export function DhakaClock() {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -22,8 +27,12 @@ export function DhakaClock() {
     return () => window.clearInterval(id);
   }, []);
   return (
-    <time className="text-sm text-muted tabular-nums" suppressHydrationWarning>
-      {now ? `${fmt.format(now)} Dhaka` : " "}
-    </time>
+    <div className="flex items-center gap-3 text-sm">
+      <CalendarDays size={22} strokeWidth={1.6} aria-hidden="true" className="text-[#5fd38a]" />
+      <span className="leading-tight tabular-nums" suppressHydrationWarning>
+        <span className="block font-semibold text-white">{now ? day.format(now) : " "}</span>
+        <span className="block text-night-muted">{now ? `${time.format(now)} Dhaka` : " "}</span>
+      </span>
+    </div>
   );
 }

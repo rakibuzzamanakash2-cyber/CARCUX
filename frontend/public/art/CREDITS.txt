@@ -1,0 +1,11 @@
+CARCUX scene art (public/art/*.svg)
+
+Drawn for CARCUX by scripts/build-art.py from hand-built silhouettes
+(scripts/art_shapes.py: Royal Bengal tiger, water buffalo, farmer, nouka, kyang)
+and layered, generated landscapes.
+
+Some outlines come from game-icons.net, licensed CC BY 3.0
+(https://creativecommons.org/licenses/by/3.0/):
+  palm-tree, hut, heron  by Lorc and Delapouite
+  dolphin                by Delapouite
+Changes: scaled, recoloured and placed in scenes.

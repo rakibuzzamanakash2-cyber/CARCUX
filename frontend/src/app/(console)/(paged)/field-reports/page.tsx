@@ -1,7 +1,26 @@
-import { Camera, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  Camera,
+  ClipboardList,
+  Eye,
+  FileText,
+  Flag,
+  ImageIcon,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 
-import { DataTable, EmptyState, rowCls, td, th, wide } from "@/components/data-table";
+import {
+  DataTable,
+  EmptyState,
+  Initials,
+  Pill,
+  RowOpen,
+  rowCls,
+  td,
+  th,
+  wide,
+} from "@/components/data-table";
 import { FilterBar } from "@/components/filter-bar";
 import { buttonOnBand, PageBand, PageBody, StatTile, StatTiles } from "@/components/page-header";
 import { Pager } from "@/components/pager";
@@ -69,6 +88,8 @@ export default async function FieldReportsPage({
   return (
     <>
       <PageBand
+        scene="paddy"
+        icon={ClipboardList}
         title={ownOnly ? "Your field reports" : "Field reports"}
         description={
           ownOnly
@@ -87,6 +108,7 @@ export default async function FieldReportsPage({
       <PageBody>
         <StatTiles>
           <StatTile
+            icon={ClipboardList}
             value={overview.reports_24h}
             label="Last 24 hours"
             note={ownOnly ? "Reports you sent" : "Reports observed"}
@@ -95,6 +117,7 @@ export default async function FieldReportsPage({
           {reviewer ? (
             <>
               <StatTile
+                icon={Flag}
                 value={overview.flagged_24h ?? 0}
                 label="Flagged"
                 note="In the last 24 hours"
@@ -102,6 +125,7 @@ export default async function FieldReportsPage({
                 href={href({ flagged: "1" })}
               />
               <StatTile
+                icon={Eye}
                 value={overview.unreviewed_reports ?? 0}
                 label="To review"
                 note="Not yet placed against an event"
@@ -111,10 +135,11 @@ export default async function FieldReportsPage({
             </>
           ) : null}
           <StatTile
+            icon={FileText}
             value={all.total}
             label={ownOnly ? "All your reports" : "All reports"}
             note="Since the start"
-            tone="forest"
+            tone="blue"
           />
         </StatTiles>
 
@@ -163,6 +188,9 @@ export default async function FieldReportsPage({
               <th scope="col" className={th}>
                 Status
               </th>
+              <th scope="col" className={th}>
+                <span className="sr-only">Open</span>
+              </th>
             </tr>
           }
           empty={
@@ -179,51 +207,72 @@ export default async function FieldReportsPage({
         >
           {data.items.map((r) => (
             <tr key={r.id} className={rowCls}>
-              <td className={`${td} whitespace-nowrap text-muted`}>{formatDhaka(r.observed_at)}</td>
+              <td className={`${td} whitespace-nowrap text-muted`}>
+                <span className="inline-flex items-center gap-2">
+                  <CalendarDays size={16} aria-hidden="true" className="text-brand" />
+                  {formatDhaka(r.observed_at)}
+                </span>
+              </td>
               <td className={`${td} max-w-md`}>
                 <Link
                   href={`/field-reports/${r.id}`}
-                  className="line-clamp-2 font-semibold text-ink hover:text-brand hover:underline"
+                  className="line-clamp-2 text-[15px] font-semibold text-ink hover:text-brand hover:underline"
                 >
                   {r.text}
                 </Link>
-                <span className="mt-0.5 flex flex-wrap gap-x-3 text-muted">
-                  <span>{eventTypeLabel(r.event_type)}</span>
-                  {r.place_name && <span>{r.place_name}</span>}
+                <span className="mt-0.5 block text-muted italic">
+                  {eventTypeLabel(r.event_type)}
+                  {r.place_name && <span className="not-italic">, {r.place_name}</span>}
                 </span>
               </td>
-              {!ownOnly && <td className={`${td} ${wide}`}>{r.reporter.full_name}</td>}
-              <td className={`${td} ${wide}`}>
-                {r.media.length > 0 ? (
-                  <span className="inline-flex items-center gap-1 text-muted">
-                    <Camera size={14} strokeWidth={1.75} aria-hidden="true" />
-                    {r.media.length}
+              {!ownOnly && (
+                <td className={`${td} ${wide}`}>
+                  <span className="flex items-center gap-2">
+                    <Initials name={r.reporter.full_name} />
+                    {r.reporter.full_name}
                   </span>
-                ) : (
-                  <span className="text-muted">None</span>
-                )}
+                </td>
+              )}
+              <td className={`${td} ${wide}`}>
+                <span className="inline-flex items-center gap-1.5 text-muted">
+                  {r.media.length > 0 ? (
+                    <ImageIcon size={16} aria-hidden="true" />
+                  ) : (
+                    <Camera size={16} aria-hidden="true" />
+                  )}
+                  {r.media.length > 0 ? r.media.length : "None"}
+                </span>
               </td>
               {reviewer && (
                 <td className={td}>
-                  <span className="flex flex-wrap gap-1.5 text-xs">
-                    {r.integrity_flags.length === 0 && <span className="text-muted">None</span>}
-                    {r.integrity_flags.map((f, i) => (
-                      <span
-                        key={`${f.code}-${i}`}
-                        className="rounded bg-critical-soft px-2 py-0.5 font-semibold text-critical"
-                      >
-                        {flagLabel(f.code)}
-                      </span>
-                    ))}
+                  <span className="flex flex-wrap gap-1.5">
+                    {r.integrity_flags.length === 0 ? (
+                      <Pill tone="grey">
+                        <Flag size={13} aria-hidden="true" />
+                        None
+                      </Pill>
+                    ) : (
+                      r.integrity_flags.map((f, i) => (
+                        <Pill key={`${f.code}-${i}`} tone="red">
+                          <Flag size={13} aria-hidden="true" />
+                          {flagLabel(f.code)}
+                        </Pill>
+                      ))
+                    )}
                   </span>
                 </td>
               )}
               <td className={td}>
-                <span
-                  className={r.status === "submitted" ? "font-semibold text-alert" : "text-muted"}
+                <Pill
+                  tone={
+                    r.status === "submitted" ? "amber" : r.status === "reviewed" ? "green" : "grey"
+                  }
                 >
                   {STATUS_LABEL[r.status] ?? r.status}
-                </span>
+                </Pill>
+              </td>
+              <td className={`${td} w-12`}>
+                <RowOpen href={`/field-reports/${r.id}`} label="report" />
               </td>
             </tr>
           ))}

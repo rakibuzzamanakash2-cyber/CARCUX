@@ -1,3 +1,4 @@
+import { ClipboardList } from "lucide-react";
 import { randomUUID } from "node:crypto";
 
 import { PageBand, PageBody } from "@/components/page-header";
@@ -15,6 +16,8 @@ export default async function NewReportPage() {
   return (
     <>
       <PageBand
+        scene="paddy"
+        icon={ClipboardList}
         back={{ href: "/field-reports", label: "Field reports" }}
         title="New field report"
         description="Say what you see, where, and when. Photos help analysts confirm it. If sending fails, press Send again: a report is never stored twice."
