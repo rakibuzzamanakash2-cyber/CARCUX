@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 /*
- * CARCUX: the logo's green and red on a light, official workspace.
- * Green is the brand and the action colour; red only for what is urgent or wrong;
- * amber for high priority. A deep forest green carries the navigation.
+ * CARCUX: the logo's green and red on a light, official workspace, like the flag.
+ * Green carries the structure and the main actions (sidebar, page bands, buttons);
+ * red is the accent (header stripe, active marks, section underlines, key figures)
+ * and also marks what is critical. Amber for high priority.
  *
  * Some token names predate this palette (water = brand, bone/steel/signal aliases);
  * they are kept so every page picks up the theme.
@@ -22,6 +23,10 @@
   --color-forest: #0b3b24; /* navigation */
   --color-forest-2: #145236; /* navigation: active item */
   --color-forest-ink: #cfe5d8; /* navigation text */
+
+  --color-red: #d42a2f; /* logo red: brand accent (stripes, active marks, underlines) */
+  --color-red-strong: #b21f24;
+  --color-red-soft: #fdecec;
 
   --color-alert: #b26a00; /* high priority */
   --color-alert-soft: #fff3dc;

@@ -51,7 +51,7 @@ export function Sidebar({ role }: { role: Role }) {
                       {active && (
                         <span
                           aria-hidden="true"
-                          className="absolute top-2 bottom-2 -left-3 w-1 rounded-r bg-[#3fbf6a]"
+                          className="absolute top-1.5 bottom-1.5 -left-3 w-1 rounded-r bg-red"
                         />
                       )}
                       <Icon size={18} strokeWidth={1.75} aria-hidden="true" />

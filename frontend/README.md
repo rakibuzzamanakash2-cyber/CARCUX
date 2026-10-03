@@ -56,10 +56,10 @@ docker compose -f deployment/docker-compose.yml up --build
 | Page | Who | What |
 |---|---|---|
 | `/` | everyone | Open events, most urgent first (priority, then newest). |
-| `/events` | everyone | **Open / Resolved / Dismissed / All**, filter by kind. Priority, assessment, status and an evidence summary per event. |
+| `/events` | everyone | Tiles (open, critical or high, verified, new today), search, filters for status, kind and priority, and a table with priority, assessment, evidence, status and start. |
 | `/events/new` | analyst, admin | Create an event. From a report (`?from_report=`), type, place, location and time are prefilled and the report is attached as support. |
-| `/events/{id}` | everyone; reviewers see more | Details and evidence counts for all. Reviewers also get **Analyst decision** (status, priority, assessment, edit title/place/summary), **Evidence** (change relation, unlink), **Possibly related reports** (one-click link as supports / partly supports / contradicts / related) and **History** in plain words. |
-| `/field-reports/{id}` | analyst, admin | An **Events** section: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
+| `/events/{id}` | everyone; reviewers see more | Overview (summary, details) for all. Reviewers also get **Analyst decision** on the overview, an **Evidence** tab (linked reports with relation and unlink; possibly related reports with one-click linking) and a **History** tab in plain words. |
+| `/field-reports/{id}` | analyst, admin | An **Events** tab: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
 
 - Suggestions come from place and time only (5 km, 48 h); the page says so. Analysts decide.
 - Closing an event (resolved or dismissed) records its end time; reopening clears it.
@@ -94,10 +94,10 @@ src/
 
 ## Design
 
-The logo's green and red on a light, official workspace.
+The logo's green and red on a light, official workspace, like the flag.
 
-- **Colour** (`src/app/globals.css`): white panels on a light grey-green page, a deep forest-green sidebar, brand green (`#0b7a33`, the logo green darkened for contrast) for actions, links, selection and focus. Logo red only for what is urgent or wrong (critical, contradictions, errors); amber for high priority; blue for medium on the map.
-- **Type:** Source Sans 3 for the interface, Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource*`, SIL OFL), so builds and browsers never call a font service.
-- **Logo:** `public/carcux-logo.png` (transparent background); `src/app/icon.png` is the leaf C.
-- **Icons:** lucide-react.
-- Ordinary pages use `PageHeader` and `Panel` (`src/components/page-header.tsx`); detail pages put the work on the left and facts and decisions on the right.
+- **Green carries the structure and main actions:** forest-green sidebar, the green band that opens every page, green buttons and links (`#0b7a33`, the logo green darkened for contrast).
+- **Red is the accent:** the stripe under the header, the rule under each page band, the active menu mark and tab underline, the short underline under section titles, secondary buttons (red outline) and key figures. It also marks what is critical. Amber is high priority; blue is medium on the map.
+- **Page structure:** green band (title, purpose, main action) → figure tiles → filter bar (search + dropdowns) → table. Detail pages use tabs (`?tab=`): events have Overview, Evidence and History; field reports have Overview, Integrity and Events. Building blocks live in `src/components/page-header.tsx` (`PageBand`, `PageBody`, `Panel`, `StatTile`, `Tabs`), `filter-bar.tsx` and `data-table.tsx`.
+- **Type:** Source Sans 3 for the interface, Hind Siliguri for Bangla. Self-hosted from npm (`@fontsource*`, SIL OFL).
+- **Logo:** `public/carcux-logo.png` (transparent background); `src/app/icon.png` is the leaf C. **Icons:** lucide-react.

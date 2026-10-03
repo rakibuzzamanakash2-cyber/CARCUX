@@ -28,10 +28,10 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
 
   return (
     <div className="grid min-h-dvh grid-rows-[auto_1fr] md:h-dvh md:overflow-hidden">
-      <header className="sticky top-0 z-[1001] flex items-center gap-4 border-b border-line bg-panel px-3 py-2 md:static md:px-0 md:py-0">
+      <header className="sticky top-0 z-[1001] flex items-center gap-4 border-b-[3px] border-red bg-panel px-3 py-2 md:static md:px-0 md:py-0">
         <Link
           href="/"
-          className="flex shrink-0 items-center md:h-16 md:w-60 md:justify-center md:border-r md:border-line"
+          className="flex shrink-0 items-center md:h-16 md:w-60 md:justify-center"
           aria-label="CARCUX situation map"
         >
           <Image

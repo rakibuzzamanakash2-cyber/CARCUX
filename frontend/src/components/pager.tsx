@@ -17,7 +17,7 @@ export function Pager({
 }) {
   const cls = "rounded-md border border-line px-3 py-1.5 transition-colors hover:border-muted";
   return (
-    <nav aria-label="Pages" className="mt-4 flex items-center gap-3 text-sm">
+    <nav aria-label="Pages" className="flex items-center gap-3 text-sm">
       {newer ? (
         <Link href={newer} className={cls}>
           Newer

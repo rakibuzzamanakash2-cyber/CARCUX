@@ -86,10 +86,10 @@ export const ASSESSMENT_STYLE: Record<Assessment, string> = {
 };
 
 export const RELATION_STYLE: Record<EvidenceRelation, string> = {
-  supports: "border-ok",
-  partially_supports: "border-ok/40",
-  contradicts: "border-critical",
-  related: "border-line",
+  supports: "border-l-ok",
+  partially_supports: "border-l-ok/50",
+  contradicts: "border-l-critical",
+  related: "border-l-muted/40",
 };
 
 export const FAMILIES = [

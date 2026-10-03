@@ -1,4 +1,4 @@
-import { PageHeader, Panel } from "@/components/page-header";
+import { PageBand, PageBody, Panel } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -50,15 +50,19 @@ export default async function NewEventPage({
       };
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
+    <>
+      <PageBand
         back={{ href: "/events", label: "All events" }}
         title="New event"
         description="One record per real situation. Before creating one, check the map for an open event at the same place."
       />
-      <Panel>
-        <EventForm draft={draft} />
-      </Panel>
-    </div>
+      <PageBody>
+        <div className="flex max-w-3xl flex-col gap-6">
+          <Panel>
+            <EventForm draft={draft} />
+          </Panel>
+        </div>
+      </PageBody>
+    </>
   );
 }

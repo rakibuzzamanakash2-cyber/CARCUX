@@ -14,18 +14,15 @@ export function CreateUserForm() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
 
-  const [state, action, pending] = useActionState(
-    async (prev: ActionState, formData: FormData) => {
-      const result = await createUser(prev, formData);
-      if (result?.ok) {
-        setFullName("");
-        setEmail("");
-        setRole("");
-      }
-      return result;
-    },
-    undefined,
-  );
+  const [state, action, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
+    const result = await createUser(prev, formData);
+    if (result?.ok) {
+      setFullName("");
+      setEmail("");
+      setRole("");
+    }
+    return result;
+  }, undefined);
 
   return (
     <form action={action} className="grid max-w-3xl gap-5 sm:grid-cols-2">

@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  AssessmentText,
-  EvidenceSummary,
-  PriorityBadge,
-  StatusText,
-} from "@/components/event-badges";
+import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
-import { PageHeader, Panel } from "@/components/page-header";
+import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -69,7 +64,7 @@ function describe(entry: HistoryEntry): React.ReactNode {
   const reportLink = d.field_report_id ? (
     <Link
       href={`/field-reports/${String(d.field_report_id)}`}
-      className="text-water hover:underline"
+      className="text-brand hover:underline"
     >
       a report
     </Link>
@@ -123,10 +118,10 @@ export default async function EventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; tab?: string }>;
 }) {
   const user = await verifySession();
-  const [{ id }, { created }] = await Promise.all([params, searchParams]);
+  const [{ id }, { created, tab: tabParam }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
 
   let event: CarcuxEvent;
@@ -138,6 +133,8 @@ export default async function EventPage({
   }
 
   const reviewer = REPORT_REVIEWERS.includes(user.role);
+  const tab =
+    reviewer && (tabParam === "evidence" || tabParam === "history") ? tabParam : "overview";
   const [evidence, candidates, history] = reviewer
     ? await Promise.all([
         api<Evidence[]>(`/events/${id}/evidence`),
@@ -149,210 +146,257 @@ export default async function EventPage({
     : [[] as Evidence[], [] as CandidateReport[], [] as HistoryEntry[]];
 
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
+  const base = `/events/${event.id}`;
+
+  const details = (
+    <Panel id="details" title="Details">
+      <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2.5 text-sm">
+        <dt className="text-muted">Type</dt>
+        <dd>
+          {eventTypeLabel(event.event_type)}, {familyLabel(event.family).toLowerCase()}
+        </dd>
+        <dt className="text-muted">Place</dt>
+        <dd>{event.place_name ?? "Not named"}</dd>
+        <dt className="text-muted">Location</dt>
+        <dd>
+          {formatCoords(event.latitude, event.longitude)}
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-2 font-semibold text-brand hover:underline"
+          >
+            Open map
+          </a>
+        </dd>
+        <dt className="text-muted">Started</dt>
+        <dd>{formatDhaka(event.started_at)}</dd>
+        <dt className="text-muted">Ended</dt>
+        <dd>{event.ended_at ? formatDhaka(event.ended_at) : "Ongoing"}</dd>
+        <dt className="text-muted">Evidence</dt>
+        <dd>
+          <EvidenceSummary counts={event.evidence_counts} />
+        </dd>
+        <dt className="text-muted">Created by</dt>
+        <dd>
+          {event.created_by.full_name}, {formatDhaka(event.created_at)}
+        </dd>
+      </dl>
+    </Panel>
+  );
 
   return (
     <>
-      <PageHeader
+      <PageBand
         back={{ href: "/events", label: "All events" }}
-        kicker={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{eventTypeLabel(event.event_type)}</span>
-            <span>{familyLabel(event.family)}</span>
-          </span>
-        }
+        kicker={eventTypeLabel(event.event_type)}
         title={event.title}
-      />
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded bg-white px-0.5 py-0.5">
+            <PriorityBadge priority={event.priority} />
+          </span>
+          <span className="rounded bg-white px-2 py-0.5 text-sm">
+            <AssessmentText assessment={event.assessment} />
+          </span>
+          <span className="rounded bg-white/15 px-2 py-0.5 text-sm">
+            {statusLabel(event.status)}
+          </span>
+        </div>
+      </PageBand>
 
-      {created && (
-        <p role="status" className="mb-6 rounded-md border border-ok/50 bg-ok/10 px-3 py-2">
-          Event created. Link more reports below as they come in.
-        </p>
-      )}
+      <PageBody>
+        {created && (
+          <p role="status" className="rounded-md border border-ok/40 bg-brand-soft px-3 py-2">
+            Event created. Link more reports under Evidence as they come in.
+          </p>
+        )}
 
-      <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-line bg-panel px-4 py-3">
-        <PriorityBadge priority={event.priority} />
-        <AssessmentText assessment={event.assessment} />
-        <StatusText status={event.status} />
-        <span className="text-sm">
-          <EvidenceSummary counts={event.evidence_counts} />
-        </span>
-      </div>
+        {reviewer && (
+          <Tabs
+            active={tab}
+            items={[
+              { key: "overview", label: "Overview", href: base },
+              {
+                key: "evidence",
+                label: "Evidence",
+                href: `${base}?tab=evidence`,
+                count: evidence.length,
+              },
+              {
+                key: "history",
+                label: "History",
+                href: `${base}?tab=history`,
+                count: history.length,
+              },
+            ]}
+          />
+        )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
-          {event.summary && (
-            <p className="text-lg leading-relaxed whitespace-pre-wrap">{event.summary}</p>
-          )}
-
-          {reviewer && (
-            <>
-              <Panel
-                id="evidence"
-                title="Evidence"
-                description="Reports placed against this event, and how each bears on it."
-              >
-                {evidence.length === 0 ? (
-                  <p className="text-sm text-muted">No reports linked yet.</p>
+        {tab === "overview" && (
+          <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
+            <div className="flex min-w-0 flex-col gap-6">
+              <Panel id="summary" title="Summary">
+                {event.summary ? (
+                  <p className="text-[17px] leading-relaxed whitespace-pre-wrap">{event.summary}</p>
                 ) : (
-                  <ul className="flex flex-col gap-4">
-                    {evidence.map((item) => {
-                      const r = item.field_report;
-                      return (
-                        <li
-                          key={item.id}
-                          className={`border-l-2 pl-4 ${RELATION_STYLE[item.relation]}`}
-                        >
-                          <p className="flex flex-wrap gap-x-3 text-sm text-muted">
-                            <span>{formatDhaka(r.observed_at)}</span>
-                            <span>{r.reporter.full_name}</span>
-                            {r.place_name && <span>{r.place_name}</span>}
-                            {r.media.length > 0 && (
-                              <span>
-                                {r.media.length} {r.media.length === 1 ? "photo" : "photos"}
-                              </span>
-                            )}
-                          </p>
-                          <p className="mb-2">
-                            <Link href={`/field-reports/${r.id}`} className="hover:underline">
-                              {r.text}
-                            </Link>
-                          </p>
-                          {r.integrity_flags.length > 0 && (
-                            <p className="mb-2 flex flex-wrap gap-2 text-xs">
-                              {r.integrity_flags.map((f, i) => (
-                                <span
-                                  key={i}
-                                  className="rounded bg-critical-soft px-2 py-0.5 ring-1 ring-critical/40"
-                                >
-                                  {flagLabel(f.code)}
-                                </span>
-                              ))}
-                            </p>
+                  <p className="text-muted">
+                    No summary yet.
+                    {reviewer && " Add one with Edit title, place and summary."}
+                  </p>
+                )}
+              </Panel>
+              {details}
+            </div>
+            {reviewer && (
+              <Panel id="manage" title="Analyst decision">
+                <ManagePanel event={event} />
+              </Panel>
+            )}
+          </div>
+        )}
+
+        {tab === "evidence" && (
+          <div className="flex flex-col gap-6">
+            <Panel
+              id="evidence"
+              title="Linked reports"
+              description="Reports placed against this event, and how each bears on it."
+            >
+              {evidence.length === 0 ? (
+                <p className="text-sm text-muted">No reports linked yet.</p>
+              ) : (
+                <ul className="flex flex-col gap-4">
+                  {evidence.map((item) => {
+                    const r = item.field_report;
+                    return (
+                      <li
+                        key={item.id}
+                        className={`rounded-md border border-line border-l-4 bg-panel p-3 ${RELATION_STYLE[item.relation]}`}
+                      >
+                        <p className="flex flex-wrap gap-x-3 text-sm text-muted">
+                          <span>{formatDhaka(r.observed_at)}</span>
+                          <span>{r.reporter.full_name}</span>
+                          {r.place_name && <span>{r.place_name}</span>}
+                          {r.media.length > 0 && (
+                            <span>
+                              {r.media.length} {r.media.length === 1 ? "photo" : "photos"}
+                            </span>
                           )}
-                          <EvidenceControls
-                            eventId={event.id}
-                            evidenceId={item.id}
-                            reportId={r.id}
-                            relation={item.relation}
-                          />
-                          <p className="mt-1 text-xs text-muted">
-                            Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                        </p>
+                        <p className="mb-2">
+                          <Link
+                            href={`/field-reports/${r.id}`}
+                            className="hover:text-brand hover:underline"
+                          >
+                            {r.text}
+                          </Link>
+                        </p>
+                        {r.integrity_flags.length > 0 && (
+                          <p className="mb-2 flex flex-wrap gap-2 text-xs">
+                            {r.integrity_flags.map((f, i) => (
+                              <span
+                                key={i}
+                                className="rounded bg-critical-soft px-2 py-0.5 text-critical ring-1 ring-critical/30"
+                              >
+                                {flagLabel(f.code)}
+                              </span>
+                            ))}
                           </p>
-                        </li>
-                      );
-                    })}
+                        )}
+                        <EvidenceControls
+                          eventId={event.id}
+                          evidenceId={item.id}
+                          reportId={r.id}
+                          relation={item.relation}
+                        />
+                        <p className="mt-1 text-xs text-muted">
+                          Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Panel>
+
+            {event.status !== "dismissed" && (
+              <Panel
+                id="candidates"
+                title="Possibly related reports"
+                description="Unlinked reports within 5 km and 48 hours, same type first. Chosen by place and time only: read each one before linking it."
+              >
+                {candidates.length === 0 ? (
+                  <p className="text-sm text-muted">None right now.</p>
+                ) : (
+                  <ul className="flex flex-col divide-y divide-line">
+                    {candidates.map((c) => (
+                      <li
+                        key={c.report.id}
+                        className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <div>
+                          <p className="flex flex-wrap gap-x-3 text-sm text-muted">
+                            <span>
+                              {c.distance_km < 1
+                                ? `${Math.round(c.distance_km * 1000)} m away`
+                                : `${c.distance_km.toFixed(1)} km away`}
+                            </span>
+                            <span>
+                              {c.hours_apart === 0
+                                ? "during the event"
+                                : `${c.hours_apart} h outside the event's time`}
+                            </span>
+                            {c.same_type ? (
+                              <span className="font-semibold text-brand">same type</span>
+                            ) : (
+                              <span>{eventTypeLabel(c.report.event_type)}</span>
+                            )}
+                            <span>{c.report.reporter.full_name}</span>
+                          </p>
+                          <Link
+                            href={`/field-reports/${c.report.id}`}
+                            className="hover:text-brand hover:underline"
+                          >
+                            {c.report.text}
+                          </Link>
+                        </div>
+                        <LinkButtons
+                          eventId={event.id}
+                          reportId={c.report.id}
+                          label="Link this report as"
+                        />
+                      </li>
+                    ))}
                   </ul>
                 )}
               </Panel>
+            )}
+          </div>
+        )}
 
-              {event.status !== "dismissed" && (
-                <Panel
-                  id="candidates"
-                  title="Possibly related reports"
-                  description="Unlinked reports within 5 km and 48 hours, same type first. Chosen by place and time only: read each one before linking it."
-                >
-                  {candidates.length === 0 ? (
-                    <p className="text-sm text-muted">None right now.</p>
-                  ) : (
-                    <ul className="flex flex-col divide-y divide-line">
-                      {candidates.map((c) => (
-                        <li
-                          key={c.report.id}
-                          className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0"
-                        >
-                          <div>
-                            <p className="flex flex-wrap gap-x-3 text-sm text-muted">
-                              <span>
-                                {c.distance_km < 1
-                                  ? `${Math.round(c.distance_km * 1000)} m away`
-                                  : `${c.distance_km.toFixed(1)} km away`}
-                              </span>
-                              <span>
-                                {c.hours_apart === 0
-                                  ? "during the event"
-                                  : `${c.hours_apart} h outside the event's time`}
-                              </span>
-                              {c.same_type ? (
-                                <span className="text-ink">same type</span>
-                              ) : (
-                                <span>{eventTypeLabel(c.report.event_type)}</span>
-                              )}
-                              <span>{c.report.reporter.full_name}</span>
-                            </p>
-                            <Link
-                              href={`/field-reports/${c.report.id}`}
-                              className="hover:underline"
-                            >
-                              {c.report.text}
-                            </Link>
-                          </div>
-                          <LinkButtons
-                            eventId={event.id}
-                            reportId={c.report.id}
-                            label="Link this report as"
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Panel>
-              )}
-
-              <Panel id="history" title="History">
-                <ol className="flex flex-col gap-2.5 text-sm">
-                  {history.map((h, i) => (
-                    <li key={i} className="grid gap-0.5 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
-                      <span className="text-muted">{formatDhaka(h.occurred_at)}</span>
-                      <span>
-                        <span className="text-ink">{h.actor?.full_name ?? "System"}</span>{" "}
-                        <span className="text-muted">{describe(h)}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </Panel>
-            </>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-6">
-          {reviewer && (
-            <Panel id="manage" title="Analyst decision">
-              <ManagePanel event={event} />
-            </Panel>
-          )}
-          <Panel id="details" title="Details">
-            <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2 text-sm">
-              <dt className="text-muted">Place</dt>
-              <dd>{event.place_name ?? "Not named"}</dd>
-              <dt className="text-muted">Location</dt>
-              <dd>
-                {formatCoords(event.latitude, event.longitude)}
-                <a
-                  href={mapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 text-water hover:underline"
-                >
-                  Open map
-                </a>
-              </dd>
-              <dt className="text-muted">Started</dt>
-              <dd>{formatDhaka(event.started_at)}</dd>
-              <dt className="text-muted">Ended</dt>
-              <dd>{event.ended_at ? formatDhaka(event.ended_at) : "Ongoing"}</dd>
-              <dt className="text-muted">Evidence</dt>
-              <dd>
-                <EvidenceSummary counts={event.evidence_counts} />
-              </dd>
-              <dt className="text-muted">Created by</dt>
-              <dd>
-                {event.created_by.full_name}, {formatDhaka(event.created_at)}
-              </dd>
-            </dl>
+        {tab === "history" && (
+          <Panel id="history" title="History">
+            <ol className="relative flex flex-col gap-4 border-l-2 border-line pl-5 text-sm">
+              {history.map((h, i) => (
+                <li key={i} className="relative">
+                  <span
+                    aria-hidden="true"
+                    className={`absolute top-1.5 -left-[27px] h-3 w-3 rounded-full border-2 border-panel ${
+                      h.action === "event.created" ? "bg-red" : "bg-brand"
+                    }`}
+                  />
+                  <p className="text-muted">{formatDhaka(h.occurred_at)}</p>
+                  <p>
+                    <span className="font-semibold text-ink">{h.actor?.full_name ?? "System"}</span>{" "}
+                    <span className="text-muted">{describe(h)}</span>
+                  </p>
+                </li>
+              ))}
+            </ol>
           </Panel>
-        </div>
-      </div>
+        )}
+      </PageBody>
     </>
   );
 }

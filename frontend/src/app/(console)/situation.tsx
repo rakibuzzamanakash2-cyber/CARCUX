@@ -169,7 +169,10 @@ export function Situation({
       >
         <div className="border-b border-line px-4 pt-4 pb-3">
           <div className="mb-3 flex items-baseline justify-between">
-            <h1 className="display text-xl">Open events</h1>
+            <h1 className="display text-xl">
+              Open events
+              <span aria-hidden="true" className="mt-1 block h-0.5 w-7 rounded bg-red" />
+            </h1>
             <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-sm font-semibold text-muted">
               {visible.length}
             </span>
