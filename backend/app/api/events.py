@@ -166,6 +166,11 @@ def link_evidence(
         "relation": body.relation,
         "note": body.note,
         "ip_address": client_ip(request),
+        "labels": {
+            "conflicts": [str(c) for c in body.conflicts],
+            "stale": body.stale,
+            "confidence": body.confidence,
+        },
     }
     kind = "report" if body.field_report_id else "signal"
     try:
@@ -193,13 +198,16 @@ def update_evidence(
     user: Reviewer,
 ):
     item = _evidence_or_404(db, _event_or_404(db, event_id), evidence_id)
-    return service.update_evidence(
-        db,
-        actor=user,
-        item=item,
-        changes=body.model_dump(exclude_unset=True),
-        ip_address=client_ip(request),
-    )
+    try:
+        return service.update_evidence(
+            db,
+            actor=user,
+            item=item,
+            changes=body.model_dump(exclude_unset=True),
+            ip_address=client_ip(request),
+        )
+    except service.InvalidLabelsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
 
 
 @router.delete("/{event_id}/evidence/{evidence_id}", status_code=status.HTTP_204_NO_CONTENT)

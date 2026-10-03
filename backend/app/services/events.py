@@ -59,6 +59,10 @@ class InvalidTimesError(Exception):
     """ended_at is before started_at."""
 
 
+class InvalidLabelsError(Exception):
+    """The relation and its conflicts do not fit together (see schemas.check_conflicts)."""
+
+
 # --- Events --------------------------------------------------------------------------
 
 
@@ -237,6 +241,7 @@ def _attach(
     *,
     report: FieldReport | None = None,
     signal: Signal | None = None,
+    labels: dict[str, Any] | None = None,
 ) -> EventEvidence:
     item = EventEvidence(
         id=uuid.uuid4(),
@@ -246,6 +251,7 @@ def _attach(
         relation=relation,
         note=note,
         linked_by_id=actor.id,
+        **(labels or {}),
     )
     db.add(item)
     # Evidence someone has placed against an event has been looked at.
@@ -265,7 +271,12 @@ def _attach(
         target_type="event",
         target_id=event.id,
         ip_address=ip_address,
-        details={"evidence_id": str(item.id), **evidence_ref(item), "relation": relation.value},
+        details={
+            "evidence_id": str(item.id),
+            **evidence_ref(item),
+            "relation": relation.value,
+            **({"conflicts": list(item.conflicts)} if item.conflicts else {}),
+        },
     )
     return item
 
@@ -279,11 +290,12 @@ def link_report(
     relation: EvidenceRelation,
     note: str | None,
     ip_address: str | None,
+    labels: dict[str, Any] | None = None,
 ) -> EventEvidence:
     (report,) = _load_reports(db, [report_id])
     if any(e.field_report_id == report_id for e in event.evidence):
         raise AlreadyLinkedError
-    item = _attach(db, actor, event, relation, note, ip_address, report=report)
+    item = _attach(db, actor, event, relation, note, ip_address, report=report, labels=labels)
     return _commit_link(db, event, item)
 
 
@@ -296,11 +308,12 @@ def link_signal(
     relation: EvidenceRelation,
     note: str | None,
     ip_address: str | None,
+    labels: dict[str, Any] | None = None,
 ) -> EventEvidence:
     (signal,) = _load_signals(db, [signal_id])
     if any(e.signal_id == signal_id for e in event.evidence):
         raise AlreadyLinkedError
-    item = _attach(db, actor, event, relation, note, ip_address, signal=signal)
+    item = _attach(db, actor, event, relation, note, ip_address, signal=signal, labels=labels)
     return _commit_link(db, event, item)
 
 
@@ -323,8 +336,19 @@ def update_evidence(
     changes: dict[str, Any],
     ip_address: str | None,
 ) -> EventEvidence:
+    # A related-only item makes no checkable claim: leaving conflicts behind would be wrong.
+    if changes.get("relation") == EvidenceRelation.RELATED and "conflicts" not in changes:
+        changes = {**changes, "conflicts": []}
+    relation = changes.get("relation", item.relation)
+    conflicts = changes.get("conflicts", item.conflicts)
+    if relation == EvidenceRelation.PARTIALLY_SUPPORTS and not conflicts:
+        raise InvalidLabelsError("Say what it gets wrong: partly supports needs a conflict")
+    if relation == EvidenceRelation.RELATED and conflicts:
+        raise InvalidLabelsError("A related-only item has no conflicts")
     diff = {}
     for field, new in changes.items():
+        if field == "conflicts":
+            new = [str(c) for c in new]
         old = getattr(item, field)
         if old != new:
             diff[field] = [_jsonable(old), _jsonable(new)]
