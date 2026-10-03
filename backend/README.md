@@ -119,6 +119,23 @@ Signals are evidence from outside CARCUX: disaster alerts, official bulletins an
 
 **The ingest worker.** `python -m app.cli ingest --loop` reads every enabled source when it is due (the `ingest` service in Docker Compose). `--once` reads what is due and exits; `--source gdacs` reads one source now.
 
+## The CARCUX-BD dataset
+
+Everything analysts do in CARCUX can be exported as the research dataset in `data/` (schema v1.1, guideline 0.2), and the export passes the dataset validator.
+
+| Endpoint / command | Who | What |
+|---|---|---|
+| `GET /api/v1/dataset/summary` | analyst, admin | What an export would contain now, and what keeps records out (with event titles) |
+| `GET /api/v1/dataset/export` | admin | Zip: the five JSON Lines files, `manifest.json`, `problems.json`, `id_map.json`. `?include_unlinked=true` adds reports and signals not linked to an exported event |
+| `python -m app.cli export-dataset DIR [--all]` | server | The same, written to a directory |
+
+- **Events go in once their ground truth is recorded:** `occurred` (yes or no) and at least one source published afterwards (`ground_truth_sources`: reference, published_at, kind), set with `PATCH /events/{id}`.
+- **Links carry the dataset's labels:** `conflicts` (attributes the item gets wrong; required for `partially_supports`, not allowed for `related`), `stale`, and `confidence` 1 to 3.
+- **Assessments at T+1h, T+6h, T+24h and final** are reconstructed from the audit log: the label set in CARCUX at each moment after the first linked item.
+- **Pseudonymous:** annotators are `ANN-001`… in order of account creation, `ANN-000` is CARCUX's automatic checks; field workers appear as "Field worker" sources. Phone numbers and emails are removed from field report text. Names of private individuals cannot be found automatically: read field report text before publishing. Keep `id_map.json` private.
+- Reused photos flagged at submission become `same_media` dependences. News stays an excerpt (300 characters at most).
+- Validate an export: `cd data/tools && python -m carcux_data.validate <dir>`.
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.
@@ -159,7 +176,7 @@ Tests need PostgreSQL. They use `CARCUX_TEST_DATABASE_URL`, default `postgresql+
 backend/
 ├── app/
 │   ├── main.py          # application factory
-│   ├── cli.py           # command-line tasks (create-admin, ingest)
+│   ├── cli.py           # command-line tasks (create-admin, ingest, export-dataset)
 │   ├── ingest/          # source adapters, keyword classifier, gazetteer, runner
 │   ├── data/            # Bangladesh gazetteer (scripts/build_gazetteer.py)
 │   ├── core/            # settings, password hashing, tokens

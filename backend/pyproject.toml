@@ -1,6 +1,6 @@
 [project]
 name = "carcux-backend"
-version = "0.7.0"
+version = "0.8.0"
 description = "CARCUX backend API: field reports, public signals, events, evidence, audit"
 requires-python = ">=3.12"
 dependencies = [
@@ -24,6 +24,7 @@ dev = [
     "pytest>=8",
     "httpx>=0.27",
     "ruff>=0.6",
+    "jsonschema>=4.23",  # tests validate exports with data/tools
 ]
 
 [build-system]

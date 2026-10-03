@@ -9,6 +9,11 @@ Read public sources (GDACS, news feeds, ReliefWeb):
     python -m app.cli ingest --once            # every enabled source that is due
     python -m app.cli ingest --source gdacs    # one source, now
     python -m app.cli ingest --loop            # forever (the ingest worker container)
+
+Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
+
+    python -m app.cli export-dataset out/            # events with ground truth, linked items
+    python -m app.cli export-dataset out/ --all      # also every unlinked report and signal
 """
 
 import argparse
@@ -97,6 +102,38 @@ def ingest(once: bool, source_key: str | None, loop_forever: bool) -> int:
     return 2
 
 
+def export_dataset(directory: str, include_unlinked: bool) -> int:
+    import json
+    from pathlib import Path
+
+    from app.services import dataset
+
+    out = Path(directory)
+    out.mkdir(parents=True, exist_ok=True)
+    engine = make_engine(get_settings().database_url)
+    with make_session_factory(engine)() as db:
+        data = dataset.build(db, include_unlinked=include_unlinked)
+        audit.record(
+            db,
+            audit.AuditAction.DATASET_EXPORTED,
+            details={"counts": data.manifest["counts"], "via": "cli"},
+        )
+        db.commit()
+    engine.dispose()
+    for name, rows in data.files.items():
+        (out / name).write_text(dataset.write_jsonl(rows), encoding="utf-8")
+    (out / "manifest.json").write_text(json.dumps(data.manifest, indent=2, ensure_ascii=False))
+    (out / "problems.json").write_text(
+        json.dumps([p.__dict__ for p in data.problems], indent=2, ensure_ascii=False)
+    )
+    (out / "id_map.json").write_text(json.dumps(data.id_map, indent=2))
+    for name, n in data.manifest["counts"].items():
+        print(f"{name}: {n}")
+    if data.problems:
+        print(f"{len(data.problems)} record(s) left out; see problems.json")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -108,10 +145,15 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--once", action="store_true", help="every enabled source that is due")
     mode.add_argument("--source", help="one source by key, now (e.g. gdacs)")
     mode.add_argument("--loop", action="store_true", help="run due sources every minute")
+    p = sub.add_parser("export-dataset", help="write the CARCUX-BD dataset files")
+    p.add_argument("directory")
+    p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
         return create_admin(args.email, args.name)
+    if args.command == "export-dataset":
+        return export_dataset(args.directory, args.all)
     if args.command == "ingest":
         return ingest(args.once, args.source, args.loop)
     return 2
