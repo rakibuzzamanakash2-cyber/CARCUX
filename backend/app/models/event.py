@@ -13,16 +13,19 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Enum,
     Float,
     ForeignKey,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -66,6 +69,30 @@ class EvidenceRelation(enum.StrEnum):
     RELATED = "related"
 
 
+class ClaimAttribute(enum.StrEnum):
+    """What a claim is about (dataset claim_attribute). Conflicts are recorded per attribute."""
+
+    OCCURRENCE = "occurrence"
+    EVENT_TYPE = "event_type"
+    LOCATION = "location"
+    START_TIME = "start_time"
+    END_TIME = "end_time"
+    STATUS = "status"
+    MAGNITUDE = "magnitude"
+    AFFECTED_COUNT = "affected_count"
+    CASUALTY_COUNT = "casualty_count"
+    CAUSE = "cause"
+
+
+class GroundTruthKind(enum.StrEnum):
+    """Kinds of post-event source (dataset ground_truth.sources[].kind)."""
+
+    OFFICIAL = "official"
+    NEWS_FOLLOWUP = "news_followup"
+    HUMANITARIAN_REPORT = "humanitarian_report"
+    OTHER = "other"
+
+
 class Event(Base):
     __tablename__ = "events"
     __table_args__ = (
@@ -99,6 +126,14 @@ class Event(Base):
 
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Ground truth, established afterwards from post-event sources (dataset ground_truth).
+    # occurred is None until someone has checked. Sources: [{reference, published_at, kind}].
+    occurred: Mapped[bool | None] = mapped_column(Boolean)
+    ground_truth_sources: Mapped[list[dict]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    ground_truth_note: Mapped[str | None] = mapped_column(Text)
 
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -136,6 +171,7 @@ class EventEvidence(Base):
         CheckConstraint(
             "num_nonnulls(field_report_id, signal_id) = 1", name="one_kind_of_evidence"
         ),
+        CheckConstraint("confidence BETWEEN 1 AND 3", name="confidence_1_to_3"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -149,6 +185,12 @@ class EventEvidence(Base):
         Enum(EvidenceRelation, name="evidence_relation", values_callable=_values)
     )
     note: Mapped[str | None] = mapped_column(Text)
+    # Dataset fields: attributes the item gets wrong (required for partially_supports),
+    # whether it was already out of date when published, and how sure the analyst is
+    # (1 unsure, 2 fairly sure, 3 certain).
+    conflicts: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    stale: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    confidence: Mapped[int] = mapped_column(SmallInteger, default=2, server_default="2")
     linked_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
