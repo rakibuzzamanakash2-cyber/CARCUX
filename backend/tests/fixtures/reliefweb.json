@@ -1,0 +1,4 @@
+{"totalCount": 2, "data": [
+ {"id": "4100001", "fields": {"title": "Bangladesh Meteorological Department Special Weather Bulletin No. 13", "url_alias": "https://reliefweb.int/report/bangladesh/bmd-swb-13", "date": {"created": "2026-10-02T09:00:00+00:00"}, "disaster_type": [{"name": "Tropical Cyclone"}], "body": "The deep depression over the Bay of Bengal intensified into a cyclonic storm. Maritime ports of Chattogram, Cox's Bazar, Mongla and Payra have been advised to hoist danger signal no. 7.", "source": [{"shortname": "BMD"}]}},
+ {"id": "4100002", "fields": {"title": "Bangladesh: Annual Country Report 2025", "url_alias": "https://reliefweb.int/report/bangladesh/acr", "date": {"created": "2026-10-01T09:00:00+00:00"}, "disaster_type": [], "body": "Programme results for the year.", "source": [{"shortname": "WFP"}]}}
+]}

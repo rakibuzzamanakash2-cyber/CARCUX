@@ -11,6 +11,7 @@ from app.models.event import Event, EventEvidence, EventStatus, Priority
 from app.models.user import Role, User
 from app.schemas.event import (
     CandidateReport,
+    CandidateSignal,
     EventCreate,
     EventPage,
     EventRead,
@@ -21,6 +22,7 @@ from app.schemas.event import (
     HistoryEntry,
 )
 from app.schemas.field_report import FieldReportRead, ReporterRead
+from app.schemas.signal import SignalRead
 from app.services import events as service
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -47,6 +49,11 @@ def _evidence_or_404(db, event: Event, evidence_id: uuid.UUID) -> EventEvidence:
 def _reports_missing(exc: service.ReportsNotFoundError) -> HTTPException:
     ids = ", ".join(str(m) for m in exc.missing)
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Field report not found: {ids}")
+
+
+def _signals_missing(exc: service.SignalsNotFoundError) -> HTTPException:
+    ids = ", ".join(str(m) for m in exc.missing)
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Signal not found: {ids}")
 
 
 @router.get("", response_model=EventPage)
@@ -85,18 +92,22 @@ def list_events(
 
 @router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
 def create_event(body: EventCreate, request: Request, db: DbSession, user: Reviewer):
-    data = body.model_dump(exclude={"field_report_ids"})
+    data = body.model_dump(exclude={"field_report_ids", "signal_ids"})
     try:
         return service.create_event(
             db,
             actor=user,
             data=data,
             field_report_ids=body.field_report_ids,
+            signal_ids=body.signal_ids,
             ip_address=client_ip(request),
         )
     except service.ReportsNotFoundError as exc:
         db.rollback()
         raise _reports_missing(exc) from None
+    except service.SignalsNotFoundError as exc:
+        db.rollback()
+        raise _signals_missing(exc) from None
 
 
 @router.get("/{event_id}", response_model=EventRead)
@@ -149,22 +160,26 @@ def link_evidence(
     event_id: uuid.UUID, body: EvidenceCreate, request: Request, db: DbSession, user: Reviewer
 ):
     event = _event_or_404(db, event_id)
+    common = {
+        "actor": user,
+        "event": event,
+        "relation": body.relation,
+        "note": body.note,
+        "ip_address": client_ip(request),
+    }
+    kind = "report" if body.field_report_id else "signal"
     try:
-        return service.link_report(
-            db,
-            actor=user,
-            event=event,
-            report_id=body.field_report_id,
-            relation=body.relation,
-            note=body.note,
-            ip_address=client_ip(request),
-        )
+        if body.field_report_id:
+            return service.link_report(db, report_id=body.field_report_id, **common)
+        return service.link_signal(db, signal_id=body.signal_id, **common)
     except service.ReportsNotFoundError as exc:
         raise _reports_missing(exc) from None
+    except service.SignalsNotFoundError as exc:
+        raise _signals_missing(exc) from None
     except service.AlreadyLinkedError:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "This report is already evidence for this event; change its relation instead",
+            f"This {kind} is already evidence for this event; change its relation instead",
         ) from None
 
 
@@ -208,4 +223,19 @@ def candidate_reports(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             same_type=report.event_type == event.event_type,
         )
         for report, m in service.candidate_reports(db, event)
+    ]
+
+
+@router.get("/{event_id}/candidate-signals", response_model=list[CandidateSignal])
+def candidate_signals(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
+    """Unlinked signals whose area and time overlap the event's: suggestions only."""
+    event = _event_or_404(db, event_id)
+    return [
+        CandidateSignal(
+            signal=SignalRead.model_validate(signal),
+            distance_km=m.distance_km,
+            hours_apart=m.hours_apart,
+            same_type=signal.event_type == event.event_type,
+        )
+        for signal, m in service.candidate_signals(db, event)
     ]

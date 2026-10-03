@@ -1,4 +1,5 @@
-# Local development stack: PostgreSQL + PostGIS, Redis, backend API, frontend console.
+# Local development stack: PostgreSQL + PostGIS, Redis, backend API, the ingest worker
+# (reads GDACS, news feeds and ReliefWeb into public signals), frontend console.
 # Run from the repository root:  docker compose -f deployment/docker-compose.yml up --build
 name: carcux
 
@@ -30,6 +31,7 @@ services:
       CARCUX_DATABASE_URL: postgresql+psycopg://carcux:carcux@db:5432/carcux
       CARCUX_REDIS_URL: redis://redis:6379/0
       CARCUX_MEDIA_DIR: /app/media
+      CARCUX_RELIEFWEB_APPNAME: ${CARCUX_RELIEFWEB_APPNAME:-}
     volumes:
       - media_data:/app/media
     ports:
@@ -39,6 +41,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+  # Reads enabled sources on their schedules. Needs internet access.
+  ingest:
+    build: ../backend
+    command: ["python", "-m", "app.cli", "ingest", "--loop"]
+    environment:
+      CARCUX_ENVIRONMENT: development
+      CARCUX_DATABASE_URL: postgresql+psycopg://carcux:carcux@db:5432/carcux
+      # Optional: an approved ReliefWeb app name, then enable ReliefWeb on the Sources page.
+      CARCUX_RELIEFWEB_APPNAME: ${CARCUX_RELIEFWEB_APPNAME:-}
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
 
   frontend:
     build: ../frontend

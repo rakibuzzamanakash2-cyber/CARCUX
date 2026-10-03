@@ -3,10 +3,17 @@
 Create the first admin account (prompts for the password):
 
     python -m app.cli create-admin --email you@example.com --name "Your Name"
+
+Read public sources (GDACS, news feeds, ReliefWeb):
+
+    python -m app.cli ingest --once            # every enabled source that is due
+    python -m app.cli ingest --source gdacs    # one source, now
+    python -m app.cli ingest --loop            # forever (the ingest worker container)
 """
 
 import argparse
 import getpass
+import logging
 import sys
 
 from app.core.config import get_settings
@@ -52,16 +59,61 @@ def create_admin(email: str, name: str) -> int:
     return 0
 
 
+def ingest(once: bool, source_key: str | None, loop_forever: bool) -> int:
+    from sqlalchemy import select
+
+    from app.ingest import runner
+    from app.models.signal import Source
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    settings = get_settings()
+    engine = make_engine(settings.database_url)
+    factory = make_session_factory(engine)
+    try:
+        if loop_forever:
+            runner.loop(factory, settings)
+        if source_key:
+            with factory() as db:
+                source = db.scalar(select(Source).where(Source.key == source_key))
+                if source is None:
+                    print(f"No source with key {source_key!r}.", file=sys.stderr)
+                    return 1
+                try:
+                    run = runner.run_source(db, source, settings)
+                except runner.NotReadableError:
+                    print(f"{source_key} is entered by hand; nothing to fetch.", file=sys.stderr)
+                    return 1
+                print(
+                    f"{source_key}: ok={run.ok} fetched={run.fetched} new={run.created} "
+                    f"updated={run.updated} skipped={run.skipped} {run.error or ''}"
+                )
+                return 0 if run.ok else 1
+        if once:
+            runs = runner.run_due(factory, settings)
+            print(f"Read {len(runs)} source(s); {sum(not r.ok for r in runs)} failed.")
+            return 0 if all(r.ok for r in runs) else 1
+    finally:
+        engine.dispose()
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("create-admin", help="create an admin account")
     p.add_argument("--email", required=True)
     p.add_argument("--name", required=True)
+    p = sub.add_parser("ingest", help="read public sources into signals")
+    mode = p.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--once", action="store_true", help="every enabled source that is due")
+    mode.add_argument("--source", help="one source by key, now (e.g. gdacs)")
+    mode.add_argument("--loop", action="store_true", help="run due sources every minute")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
         return create_admin(args.email, args.name)
+    if args.command == "ingest":
+        return ingest(args.once, args.source, args.loop)
     return 2
 
 

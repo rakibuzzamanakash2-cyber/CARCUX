@@ -1,4 +1,6 @@
-"""Events, their evidence, and rule-based matching between reports and events.
+"""Events, their evidence, and rule-based matching between evidence and events.
+
+Evidence is a field report or a public signal (alert, bulletin, news item).
 
 The matching here is a transparent baseline: same area (5 km) and overlapping time
 (48 h either side). It only *suggests*; an analyst decides. The learned correlation
@@ -21,6 +23,7 @@ from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.audit import AuditLog
 from app.models.event import Event, EventEvidence, EventStatus, EvidenceRelation, Priority
 from app.models.field_report import FieldReport, ReportStatus
+from app.models.signal import Signal, SignalStatus
 from app.models.user import User
 from app.services import audit
 from app.services.integrity import haversine_km
@@ -42,8 +45,14 @@ class ReportsNotFoundError(Exception):
         super().__init__(", ".join(str(m) for m in missing))
 
 
+class SignalsNotFoundError(Exception):
+    def __init__(self, missing: list[uuid.UUID]):
+        self.missing = missing
+        super().__init__(", ".join(str(m) for m in missing))
+
+
 class AlreadyLinkedError(Exception):
-    """This report is already evidence for this event."""
+    """This report or signal is already evidence for this event."""
 
 
 class InvalidTimesError(Exception):
@@ -60,10 +69,12 @@ def create_event(
     data: dict[str, Any],
     field_report_ids: list[uuid.UUID],
     ip_address: str | None,
+    signal_ids: list[uuid.UUID] | None = None,
 ) -> Event:
-    """Create an event, optionally attaching reports as supporting evidence."""
+    """Create an event, optionally attaching reports and signals as supporting evidence."""
     report_ids = list(dict.fromkeys(field_report_ids))  # de-duplicate, keep order
     reports = _load_reports(db, report_ids)
+    signals = _load_signals(db, list(dict.fromkeys(signal_ids or [])))
 
     event = Event(
         id=uuid.uuid4(),
@@ -80,10 +91,17 @@ def create_event(
         target_type="event",
         target_id=event.id,
         ip_address=ip_address,
-        details={"title": event.title, "event_type": event.event_type, "reports": len(reports)},
+        details={
+            "title": event.title,
+            "event_type": event.event_type,
+            "reports": len(reports),
+            "signals": len(signals),
+        },
     )
     for report in reports:
-        _attach(db, actor, event, report, EvidenceRelation.SUPPORTS, None, ip_address)
+        _attach(db, actor, event, EvidenceRelation.SUPPORTS, None, ip_address, report=report)
+    for signal in signals:
+        _attach(db, actor, event, EvidenceRelation.SUPPORTS, None, ip_address, signal=signal)
     db.commit()
     db.refresh(event)
     return event
@@ -192,29 +210,54 @@ def _load_reports(db: Session, ids: list[uuid.UUID]) -> list[FieldReport]:
     return [found[i] for i in ids]
 
 
+def _load_signals(db: Session, ids: list[uuid.UUID]) -> list[Signal]:
+    if not ids:
+        return []
+    found = {s.id: s for s in db.scalars(select(Signal).where(Signal.id.in_(ids)))}
+    missing = [i for i in ids if i not in found]
+    if missing:
+        raise SignalsNotFoundError(missing)
+    return [found[i] for i in ids]
+
+
+def evidence_ref(item: EventEvidence) -> dict[str, str]:
+    """What the evidence is, for audit details: the report or the signal."""
+    if item.signal_id is not None:
+        return {"signal_id": str(item.signal_id)}
+    return {"field_report_id": str(item.field_report_id)}
+
+
 def _attach(
     db: Session,
     actor: User,
     event: Event,
-    report: FieldReport,
     relation: EvidenceRelation,
     note: str | None,
     ip_address: str | None,
+    *,
+    report: FieldReport | None = None,
+    signal: Signal | None = None,
 ) -> EventEvidence:
     item = EventEvidence(
         id=uuid.uuid4(),
         event_id=event.id,
-        field_report_id=report.id,
+        field_report_id=report.id if report else None,
+        signal_id=signal.id if signal else None,
         relation=relation,
         note=note,
         linked_by_id=actor.id,
     )
     db.add(item)
-    # A report someone has placed against an event has been looked at.
-    if report.status == ReportStatus.SUBMITTED:
+    # Evidence someone has placed against an event has been looked at.
+    now = datetime.now(UTC)
+    if report is not None and report.status == ReportStatus.SUBMITTED:
         report.status = ReportStatus.REVIEWED
         report.reviewed_by_id = actor.id
-        report.reviewed_at = datetime.now(UTC)
+        report.reviewed_at = now
+    if signal is not None and signal.status == SignalStatus.NEW:
+        signal.status = SignalStatus.REVIEWED
+        signal.reviewed_by_id = actor.id
+        signal.reviewed_at = now
     audit.record(
         db,
         audit.AuditAction.EVIDENCE_LINKED,
@@ -222,11 +265,7 @@ def _attach(
         target_type="event",
         target_id=event.id,
         ip_address=ip_address,
-        details={
-            "evidence_id": str(item.id),
-            "field_report_id": str(report.id),
-            "relation": relation.value,
-        },
+        details={"evidence_id": str(item.id), **evidence_ref(item), "relation": relation.value},
     )
     return item
 
@@ -244,7 +283,28 @@ def link_report(
     (report,) = _load_reports(db, [report_id])
     if any(e.field_report_id == report_id for e in event.evidence):
         raise AlreadyLinkedError
-    item = _attach(db, actor, event, report, relation, note, ip_address)
+    item = _attach(db, actor, event, relation, note, ip_address, report=report)
+    return _commit_link(db, event, item)
+
+
+def link_signal(
+    db: Session,
+    *,
+    actor: User,
+    event: Event,
+    signal_id: uuid.UUID,
+    relation: EvidenceRelation,
+    note: str | None,
+    ip_address: str | None,
+) -> EventEvidence:
+    (signal,) = _load_signals(db, [signal_id])
+    if any(e.signal_id == signal_id for e in event.evidence):
+        raise AlreadyLinkedError
+    item = _attach(db, actor, event, relation, note, ip_address, signal=signal)
+    return _commit_link(db, event, item)
+
+
+def _commit_link(db: Session, event: Event, item: EventEvidence) -> EventEvidence:
     try:
         db.commit()
     except IntegrityError:  # linked concurrently by someone else
@@ -277,11 +337,7 @@ def update_evidence(
             target_type="event",
             target_id=item.event_id,
             ip_address=ip_address,
-            details={
-                "evidence_id": str(item.id),
-                "field_report_id": str(item.field_report_id),
-                "changes": diff,
-            },
+            details={"evidence_id": str(item.id), **evidence_ref(item), "changes": diff},
         )
         db.commit()
         db.refresh(item)
@@ -298,7 +354,7 @@ def unlink(db: Session, *, actor: User, item: EventEvidence, ip_address: str | N
         ip_address=ip_address,
         details={
             "evidence_id": str(item.id),
-            "field_report_id": str(item.field_report_id),
+            **evidence_ref(item),
             "relation": item.relation.value,
         },
     )
@@ -311,6 +367,16 @@ def links_for_report(db: Session, report_id: uuid.UUID) -> list[EventEvidence]:
         db.scalars(
             select(EventEvidence)
             .where(EventEvidence.field_report_id == report_id)
+            .order_by(EventEvidence.linked_at)
+        )
+    )
+
+
+def links_for_signal(db: Session, signal_id: uuid.UUID) -> list[EventEvidence]:
+    return list(
+        db.scalars(
+            select(EventEvidence)
+            .where(EventEvidence.signal_id == signal_id)
             .order_by(EventEvidence.linked_at)
         )
     )
@@ -396,5 +462,97 @@ def candidate_reports(
             continue
         hours = _hours_outside(report.observed_at, event.started_at, end)
         matches.append((report, Match(round(km, 2), round(hours, 1))))
+    matches.sort(key=lambda m: (m[0].event_type != event.event_type, m[1].distance_km))
+    return matches[:limit]
+
+
+# --- Matching signals ----------------------------------------------------------------
+#
+# Same rule, widened by the signal's own uncertainty: a news item placed at a district
+# centre (30 km) matches events anywhere in that district; a GDACS flood alert covers
+# its whole area. Time is the signal's validity (or its publication) within 48 h of
+# the event's span.
+
+MAX_SIGNAL_REACH_KM = 300.0
+
+
+def _reach_km(signal: Signal) -> float:
+    return MATCH_RADIUS_KM + min((signal.precision_m or 0) / 1000, MAX_SIGNAL_REACH_KM)
+
+
+def _signal_span(signal: Signal) -> tuple[datetime, datetime]:
+    start = signal.valid_from or signal.published_at
+    end = signal.valid_until or signal.published_at
+    return (start, end) if end >= start else (end, start)
+
+
+def _gap_hours(a: tuple[datetime, datetime], b: tuple[datetime, datetime]) -> float:
+    """0 if the spans overlap, else hours between them."""
+    if a[1] < b[0]:
+        return (b[0] - a[1]).total_seconds() / 3600
+    if b[1] < a[0]:
+        return (a[0] - b[1]).total_seconds() / 3600
+    return 0.0
+
+
+def candidate_events_for_signal(
+    db: Session, signal: Signal, *, limit: int = 10
+) -> list[tuple[Event, Match]]:
+    """Open or recent events this signal may be about. Needs the signal's location."""
+    if signal.latitude is None or signal.longitude is None:
+        return []
+    now = datetime.now(UTC)
+    reach = _reach_km(signal)
+    dlat, dlon = _bbox(signal.latitude, signal.longitude, reach)
+    start, end = _signal_span(signal)
+    linked = select(EventEvidence.event_id).where(EventEvidence.signal_id == signal.id)
+    events = db.scalars(
+        select(Event).where(
+            Event.status != EventStatus.DISMISSED,
+            Event.id.not_in(linked),
+            Event.latitude.between(signal.latitude - dlat, signal.latitude + dlat),
+            Event.longitude.between(signal.longitude - dlon, signal.longitude + dlon),
+            Event.started_at <= end + MATCH_WINDOW,
+            func.coalesce(Event.ended_at, now) >= start - MATCH_WINDOW,
+        )
+    ).all()
+    matches = []
+    for event in events:
+        km = haversine_km(signal.latitude, signal.longitude, event.latitude, event.longitude)
+        if km > reach:
+            continue
+        hours = _gap_hours((start, end), (event.started_at, event.ended_at or now))
+        matches.append((event, Match(round(km, 2), round(hours, 1))))
+    matches.sort(key=lambda m: (m[0].event_type != signal.event_type, m[1].distance_km))
+    return matches[:limit]
+
+
+def candidate_signals(db: Session, event: Event, *, limit: int = 25) -> list[tuple[Signal, Match]]:
+    """Signals that may be about this event: placed, not dismissed, not yet linked."""
+    now = datetime.now(UTC)
+    end = event.ended_at or now
+    widest = MATCH_RADIUS_KM + MAX_SIGNAL_REACH_KM
+    dlat, dlon = _bbox(event.latitude, event.longitude, widest)
+    linked = select(EventEvidence.signal_id).where(
+        EventEvidence.event_id == event.id, EventEvidence.signal_id.is_not(None)
+    )
+    signals = db.scalars(
+        select(Signal).where(
+            Signal.status != SignalStatus.DISMISSED,
+            Signal.id.not_in(linked),
+            Signal.latitude.between(event.latitude - dlat, event.latitude + dlat),
+            Signal.longitude.between(event.longitude - dlon, event.longitude + dlon),
+            func.coalesce(Signal.valid_from, Signal.published_at) <= end + MATCH_WINDOW,
+            func.coalesce(Signal.valid_until, Signal.published_at)
+            >= event.started_at - MATCH_WINDOW,
+        )
+    ).all()
+    matches = []
+    for signal in signals:
+        km = haversine_km(signal.latitude, signal.longitude, event.latitude, event.longitude)
+        if km > _reach_km(signal):
+            continue
+        hours = _gap_hours(_signal_span(signal), (event.started_at, end))
+        matches.append((signal, Match(round(km, 2), round(hours, 1))))
     matches.sort(key=lambda m: (m[0].event_type != event.event_type, m[1].distance_km))
     return matches[:limit]

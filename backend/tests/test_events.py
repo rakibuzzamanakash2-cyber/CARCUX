@@ -84,6 +84,7 @@ def test_analyst_creates_event_with_defaults(client, analyst, db):
         "related": 0,
         "reporters": 0,
         "photos": 0,
+        "signals": 0,
     }
     entry = db.scalar(select(AuditLog).where(AuditLog.action == AuditAction.EVENT_CREATED))
     assert entry.target_id == body["id"]

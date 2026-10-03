@@ -6,7 +6,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import audit, auth, events, field_reports, health, overview, users
+from app.api import (
+    audit,
+    auth,
+    events,
+    field_reports,
+    health,
+    overview,
+    signals,
+    sources,
+    users,
+)
 from app.core.config import Settings, get_settings
 from app.db.session import make_engine, make_session_factory
 
@@ -49,6 +59,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         events.router,
         overview.router,
         audit.router,
+        signals.router,
+        signals.places_router,
+        sources.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app
