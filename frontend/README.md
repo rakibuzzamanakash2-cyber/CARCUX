@@ -72,7 +72,8 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/signals` | everyone | Alerts, bulletins and news collected from public sources. Tiles (last 24 hours, severe alerts, new, feeds working), search, filters for source, kind and status. |
 | `/signals/{id}` | everyone; reviewers see more | What it says (excerpt and a link to the original), where and when, and **why it is here** (matched words, the place as written). Reviewers get **Triage** and **Events**: events it may be about with one-click linking, and **Create an event from it**. |
 | `/signals/new` | analyst, admin | **Enter a bulletin** by hand for BMD, FFWC and other publishers without a feed, placed by district. |
-| `/sources` | analyst, admin | Each source with how and how often it is read, the last read or the reason it failed, and signal counts. Admins **Read now**, **Switch off/on** and **Add a news feed**. Desktop only. |
+| `/signals/import` | analyst, admin | **Import a list of past news** (CSV): **Check the file** shows each row as will add, already in, or needs fixing (with the reason), saving nothing; then **Import N items**. A template and the column meanings are on the page. |
+| `/sources` | analyst, admin | Each source with how and how often it is read, the last read or the reason it failed, and signal counts. Admins **Read now**, **Switch off/on**, **Add a news feed** and **Fill in a past period** (GDACS or ReliefWeb archive, with case-study presets such as Cyclone Remal, May 2024). Desktop only. |
 | `/` | everyone | **Public signals** layer: placed signals from the last 72 hours as rings coloured by severity (blue when not rated). |
 | `/events/{id}` | analyst, admin | The Evidence tab lists linked signals beside reports, plus **Possibly related signals**. |
 

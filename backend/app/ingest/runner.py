@@ -11,14 +11,14 @@ import json
 import logging
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.event_types import EVENT_TYPE_FAMILY
-from app.ingest import gdacs, reliefweb, rss
+from app.ingest import gdacs, gdacs_archive, reliefweb, rss
 from app.ingest.base import FetchError, Item, Request, fetch
 from app.models.signal import Adapter, IngestRun, Signal, Source
 from app.models.user import User
@@ -145,6 +145,78 @@ def run_source(
         run.error = source.last_error = f"Could not read the response ({type(exc).__name__})"
     run.finished_at = datetime.now(UTC)
     source.last_run_at = now
+    db.commit()
+    return run
+
+
+# Past periods: sources whose archive can be searched by date.
+ARCHIVES = {Adapter.GDACS: gdacs_archive, Adapter.RELIEFWEB: reliefweb}
+MAX_WINDOW = timedelta(days=366)
+
+
+class NoArchiveError(Exception):
+    """This source cannot be searched for a past period."""
+
+
+class BadWindowError(Exception):
+    """The period is empty, in the future, or too long."""
+
+
+def backfill(
+    db: Session,
+    source: Source,
+    settings: Settings,
+    start: date,
+    end: date,
+    *,
+    fetcher: Fetcher | None = None,
+    actor: User | None = None,
+) -> IngestRun:
+    """Read a past period from the source's archive, page by page. Like run_source,
+    problems go in the run; the source's schedule is left alone."""
+    archive = ARCHIVES.get(source.adapter)
+    if archive is None:
+        raise NoArchiveError
+    today = datetime.now(UTC).date()
+    if end < start or start > today or end - start > MAX_WINDOW:
+        raise BadWindowError
+    got_lock = db.execute(
+        text("SELECT pg_try_advisory_xact_lock(hashtext(:k))"), {"k": f"ingest:{source.key}"}
+    ).scalar()
+    if not got_lock:
+        raise AlreadyRunningError
+
+    fetcher = fetcher or default_fetcher(settings)
+    run = IngestRun(
+        source_id=source.id,
+        started_at=datetime.now(UTC),
+        triggered_by_id=actor.id if actor else None,
+        window_start=start,
+        window_end=min(end, today),
+        fetched=0,
+        created=0,
+        updated=0,
+        skipped=0,
+    )
+    db.add(run)
+    try:
+        for request in archive.pages(source, settings, start, min(end, today)):
+            parsed = archive.parse(fetcher(request), source)
+            run.fetched += parsed.fetched
+            run.skipped += parsed.skipped
+            created, updated = store(db, source, parsed.items)
+            run.created += created
+            run.updated += updated
+            db.flush()
+            if parsed.fetched < archive.PAGE_SIZE:
+                break
+        run.ok = True
+    except (FetchError, ValueError) as exc:
+        run.error = str(exc)[:500]
+    except Exception as exc:  # malformed response: record it
+        log.exception("backfill failed for %s", source.key)
+        run.error = f"Could not read the response ({type(exc).__name__})"
+    run.finished_at = datetime.now(UTC)
     db.commit()
     return run
 

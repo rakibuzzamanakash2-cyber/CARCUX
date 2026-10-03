@@ -6,7 +6,8 @@ ReliefWeb, then set CARCUX_RELIEFWEB_APPNAME and enable the source.
 """
 
 import json
-from datetime import UTC, datetime, timedelta
+from collections.abc import Iterator
+from datetime import UTC, date, datetime, timedelta
 
 from app.ingest.base import Item, Parsed, Request, excerpt, parse_date, plain
 from app.ingest.classify import classify
@@ -28,11 +29,14 @@ DISASTER_TYPES = {
 LOOKBACK = timedelta(days=14)
 
 
-def request(source: Source, settings) -> Request:
+PAGE_SIZE = 500
+MAX_PAGES = 6
+
+
+def _request(source: Source, settings, conditions: list[dict], offset: int, limit: int) -> Request:
     appname = settings.reliefweb_appname
     if not appname:
         raise ValueError("Set CARCUX_RELIEFWEB_APPNAME to an approved ReliefWeb app name")
-    since = (datetime.now(UTC) - LOOKBACK).strftime("%Y-%m-%dT%H:%M:%S+00:00")
     return Request(
         source.url or "https://api.reliefweb.int/v2/reports",
         method="POST",
@@ -40,19 +44,18 @@ def request(source: Source, settings) -> Request:
         json={
             "filter": {
                 "operator": "AND",
-                "conditions": [
-                    {"field": "primary_country.iso3", "value": "bgd"},
-                    {"field": "date.created", "value": {"from": since}},
-                ],
+                "conditions": [{"field": "primary_country.iso3", "value": "bgd"}, *conditions],
             },
             "sort": ["date.created:desc"],
-            "limit": 100,
+            "offset": offset,
+            "limit": limit,
             "fields": {
                 "include": [
                     "title",
                     "url_alias",
                     "url",
                     "date.created",
+                    "date.original",
                     "disaster_type.name",
                     "body",
                     "source.shortname",
@@ -60,6 +63,23 @@ def request(source: Source, settings) -> Request:
             },
         },
     )
+
+
+def request(source: Source, settings) -> Request:
+    """The latest two weeks, for the scheduled read."""
+    since = (datetime.now(UTC) - LOOKBACK).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    return _request(source, settings, [{"field": "date.created", "value": {"from": since}}], 0, 100)
+
+
+def pages(source: Source, settings, start: date, end: date) -> Iterator[Request]:
+    """A past period, by the reports' original publication date."""
+    window = {
+        "field": "date.original",
+        "value": {"from": f"{start.isoformat()}T00:00:00+00:00",
+                  "to": f"{end.isoformat()}T23:59:59+00:00"},
+    }  # fmt: skip
+    for page in range(MAX_PAGES):
+        yield _request(source, settings, [window], page * PAGE_SIZE, PAGE_SIZE)
 
 
 def parse(body: bytes, source: Source) -> Parsed:
@@ -74,7 +94,8 @@ def parse(body: bytes, source: Source) -> Parsed:
         if event_type is None:
             kind = classify(title, text)
             event_type = kind.event_type if kind else None
-        published = parse_date((f.get("date") or {}).get("created"))
+        dates = f.get("date") or {}
+        published = parse_date(dates.get("original")) or parse_date(dates.get("created"))
         if not title or event_type is None or published is None:
             continue
         place = best_place(title, text)

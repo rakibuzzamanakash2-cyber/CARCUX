@@ -9,6 +9,7 @@ Read public sources (GDACS, news feeds, ReliefWeb):
     python -m app.cli ingest --once            # every enabled source that is due
     python -m app.cli ingest --source gdacs    # one source, now
     python -m app.cli ingest --loop            # forever (the ingest worker container)
+    python -m app.cli backfill gdacs 2024-08-15 2024-09-10   # a past period
 
 Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
 
@@ -134,6 +135,45 @@ def export_dataset(directory: str, include_unlinked: bool) -> int:
     return 0
 
 
+def backfill(source_key: str, start: str, end: str) -> int:
+    from datetime import date
+
+    from sqlalchemy import select
+
+    from app.ingest import runner
+    from app.models.signal import Source
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    try:
+        first, last = date.fromisoformat(start), date.fromisoformat(end)
+    except ValueError:
+        print("Dates must look like 2024-08-15.", file=sys.stderr)
+        return 1
+    settings = get_settings()
+    engine = make_engine(settings.database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            source = db.scalar(select(Source).where(Source.key == source_key))
+            if source is None:
+                print(f"No source with key {source_key!r}.", file=sys.stderr)
+                return 1
+            try:
+                run = runner.backfill(db, source, settings, first, last)
+            except runner.NoArchiveError:
+                print(f"{source_key} has no archive to search.", file=sys.stderr)
+                return 1
+            except runner.BadWindowError:
+                print("Choose a past period of at most a year.", file=sys.stderr)
+                return 1
+            print(
+                f"{source_key} {first}..{last}: ok={run.ok} fetched={run.fetched} "
+                f"new={run.created} updated={run.updated} skipped={run.skipped} {run.error or ''}"
+            )
+            return 0 if run.ok else 1
+    finally:
+        engine.dispose()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -145,6 +185,10 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--once", action="store_true", help="every enabled source that is due")
     mode.add_argument("--source", help="one source by key, now (e.g. gdacs)")
     mode.add_argument("--loop", action="store_true", help="run due sources every minute")
+    p = sub.add_parser("backfill", help="read a past period from a source's archive")
+    p.add_argument("source", help="source key, e.g. gdacs or reliefweb")
+    p.add_argument("start", help="first day, e.g. 2024-08-15")
+    p.add_argument("end", help="last day, e.g. 2024-09-10")
     p = sub.add_parser("export-dataset", help="write the CARCUX-BD dataset files")
     p.add_argument("directory")
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
@@ -152,6 +196,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "create-admin":
         return create_admin(args.email, args.name)
+    if args.command == "backfill":
+        return backfill(args.source, args.start, args.end)
     if args.command == "export-dataset":
         return export_dataset(args.directory, args.all)
     if args.command == "ingest":
