@@ -64,7 +64,12 @@ export interface FieldReport {
   content_hash: string;
   integrity_flags: IntegrityFlag[];
   media: ReportMedia[];
+  reviewed_by: { id: string; full_name: string } | null;
+  reviewed_at: string | null;
+  review_note: string | null;
 }
+
+export type ReportStatus = FieldReport["status"];
 
 export interface FieldReportPage {
   items: FieldReport[];
@@ -177,4 +182,23 @@ export interface Overview {
   reports_24h: number;
   flagged_24h: number | null;
   unreviewed_reports: number | null;
+}
+
+export interface AuditEntry {
+  id: number;
+  occurred_at: string;
+  action: string;
+  actor: { id: string; full_name: string } | null;
+  target_type: string | null;
+  target_id: string | null;
+  ip_address: string | null;
+  details: Record<string, unknown>;
+}
+
+export interface AuditPage {
+  items: AuditEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+  actions: string[];
 }
