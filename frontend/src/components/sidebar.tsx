@@ -1,6 +1,16 @@
 "use client";
 
-import { ClipboardList, Inbox, Map, Radar, RadioTower, Rss, ScrollText, Users } from "lucide-react";
+import {
+  ClipboardList,
+  Database,
+  Inbox,
+  Map,
+  Radar,
+  RadioTower,
+  Rss,
+  ScrollText,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -14,6 +24,7 @@ const ICONS: Record<NavIcon, typeof Map> = {
   signals: RadioTower,
   review: Inbox,
   sources: Rss,
+  dataset: Database,
   users: Users,
   audit: ScrollText,
 };

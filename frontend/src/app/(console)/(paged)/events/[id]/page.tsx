@@ -32,6 +32,7 @@ import {
   type Priority,
 } from "@/lib/types";
 
+import { GroundTruthPanel } from "./ground-truth-panel";
 import { ManagePanel } from "./manage-panel";
 
 export const metadata = { title: "Event" };
@@ -48,10 +49,15 @@ const FIELD_NAMES: Record<string, string> = {
   status: "status",
   priority: "priority",
   assessment: "assessment",
+  occurred: "whether it happened",
+  ground_truth_sources: "ground truth sources",
+  ground_truth_note: "ground truth note",
 };
 
 function showValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "nothing";
+  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "source" : "sources"}`;
+  if (typeof value === "boolean") return value ? "yes" : "no";
   const v = String(value);
   if (field === "status") return statusLabel(v as EventStatus);
   if (field === "priority") return priorityLabel(v as Priority);
@@ -112,7 +118,18 @@ function describe(entry: HistoryEntry): React.ReactNode {
           {showValue("relation", rel[1])}
         </>
       ) : (
-        <>changed the note on {reportLink}</>
+        <>
+          changed the{" "}
+          {Object.keys((d.changes ?? {}) as object)
+            .map(
+              (k) =>
+                ({ conflicts: "conflicts", stale: "out-of-date flag", confidence: "confidence" })[
+                  k
+                ] ?? k,
+            )
+            .join(" and ")}{" "}
+          on {reportLink}
+        </>
       );
     }
     case "event.evidence_unlinked":
@@ -275,9 +292,18 @@ export default async function EventPage({
               {details}
             </div>
             {reviewer && (
-              <Panel id="manage" title="Analyst decision">
-                <ManagePanel event={event} />
-              </Panel>
+              <div className="flex flex-col gap-6">
+                <Panel id="manage" title="Analyst decision">
+                  <ManagePanel event={event} />
+                </Panel>
+                <Panel
+                  id="ground-truth"
+                  title="Ground truth"
+                  description="What really happened, from sources published afterwards. Needed before the event can go into the CARCUX-BD dataset."
+                >
+                  <GroundTruthPanel event={event} />
+                </Panel>
+              </div>
             )}
           </div>
         )}
@@ -311,6 +337,9 @@ export default async function EventPage({
                             eventId={event.id}
                             evidenceId={item.id}
                             relation={item.relation}
+                            conflicts={item.conflicts}
+                            stale={item.stale}
+                            confidence={item.confidence}
                             noun="signal"
                           />
                           <p className="mt-1 text-xs text-muted">
@@ -362,6 +391,9 @@ export default async function EventPage({
                           evidenceId={item.id}
                           reportId={r.id}
                           relation={item.relation}
+                          conflicts={item.conflicts}
+                          stale={item.stale}
+                          confidence={item.confidence}
                         />
                         <p className="mt-1 text-xs text-muted">
                           Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
