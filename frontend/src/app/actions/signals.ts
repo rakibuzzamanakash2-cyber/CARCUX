@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
-import { RELATIONS } from "@/lib/events";
+import { CLAIM_ATTRIBUTES, RELATIONS } from "@/lib/events";
 import { DHAKA_OFFSET, isUuid } from "@/lib/format";
 import {
   REPORT_REVIEWERS,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/types";
 
 const RELATION_VALUES = new Set<string>(RELATIONS.map((r) => r.value));
+const CLAIMS = new Set<string>(CLAIM_ATTRIBUTES.map((a) => a.value));
 const STATUSES = new Set<SignalStatus>(["new", "reviewed", "dismissed"]);
 const LOCAL_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -43,6 +44,7 @@ export async function linkSignal(
   eventId: string,
   signalId: string,
   relation: EvidenceRelation,
+  conflicts: string[] = [],
 ): Promise<ActionState> {
   await requireRole(...REPORT_REVIEWERS);
   if (!isUuid(eventId) || !isUuid(signalId) || !RELATION_VALUES.has(relation)) {
@@ -51,7 +53,11 @@ export async function linkSignal(
   try {
     await api(`/events/${eventId}/evidence`, {
       method: "POST",
-      body: JSON.stringify({ signal_id: signalId, relation }),
+      body: JSON.stringify({
+        signal_id: signalId,
+        relation,
+        conflicts: conflicts.filter((c) => CLAIMS.has(c)),
+      }),
     });
   } catch (error) {
     return failure(error, "Could not link the signal.");

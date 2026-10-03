@@ -1,5 +1,12 @@
 /** Labels, meanings and colours for event fields. Shared by server and client components. */
-import type { Assessment, EventStatus, EvidenceRelation, Priority } from "@/lib/types";
+import type {
+  Assessment,
+  ClaimAttribute,
+  EventStatus,
+  EvidenceRelation,
+  GroundTruthKind,
+  Priority,
+} from "@/lib/types";
 
 export const STATUSES: { value: EventStatus; label: string; meaning: string }[] = [
   { value: "active", label: "Active", meaning: "Happening now and needs attention." },
@@ -114,3 +121,32 @@ export const FAMILY_SHAPE: Record<string, "circle" | "diamond" | "triangle"> = {
   road_infrastructure: "diamond",
   urban_emergency: "triangle",
 };
+
+/** What an item can get wrong about an event (dataset claim attributes), in plain words. */
+export const CLAIM_ATTRIBUTES: { value: ClaimAttribute; label: string }[] = [
+  { value: "location", label: "Place" },
+  { value: "start_time", label: "When it started" },
+  { value: "end_time", label: "When it ended" },
+  { value: "status", label: "Whether it is still going on" },
+  { value: "magnitude", label: "How bad (depth, size)" },
+  { value: "affected_count", label: "Number affected" },
+  { value: "casualty_count", label: "Deaths or injuries" },
+  { value: "cause", label: "Cause" },
+  { value: "event_type", label: "Kind of event" },
+];
+
+export const claimLabel = (v: ClaimAttribute) =>
+  CLAIM_ATTRIBUTES.find((a) => a.value === v)?.label ?? v;
+
+export const CONFIDENCE: { value: 1 | 2 | 3; label: string }[] = [
+  { value: 1, label: "Unsure" },
+  { value: 2, label: "Fairly sure" },
+  { value: 3, label: "Certain" },
+];
+
+export const GROUND_TRUTH_KINDS: { value: GroundTruthKind; label: string }[] = [
+  { value: "official", label: "Official statement" },
+  { value: "news_followup", label: "Follow-up news report" },
+  { value: "humanitarian_report", label: "Humanitarian situation report" },
+  { value: "other", label: "Other" },
+];
