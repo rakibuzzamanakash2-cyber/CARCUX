@@ -73,6 +73,12 @@ export function EvidenceSummary({ counts }: { counts: EvidenceCounts }) {
           {counts.reporters === 1 ? "field worker" : "field workers"}
         </span>
       )}
+      {counts.signals > 0 && (
+        <span>
+          <span className="text-ink">{counts.signals}</span>{" "}
+          {counts.signals === 1 ? "public signal" : "public signals"}
+        </span>
+      )}
     </span>
   );
 }

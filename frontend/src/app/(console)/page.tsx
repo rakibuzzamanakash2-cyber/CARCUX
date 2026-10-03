@@ -5,6 +5,7 @@ import {
   REPORT_SUBMITTERS,
   type EventPage,
   type FieldReportPage,
+  type SignalPage,
 } from "@/lib/types";
 
 import { Situation } from "./situation";
@@ -16,6 +17,11 @@ function reportWindowStart(): string {
   return new Date(Date.now() - 48 * 3600 * 1000).toISOString();
 }
 
+/** Public signals on the map: placed ones from the last three days, not dismissed. */
+function signalWindowStart(): string {
+  return new Date(Date.now() - 72 * 3600 * 1000).toISOString();
+}
+
 export default async function SituationPage({
   searchParams,
 }: {
@@ -25,11 +31,14 @@ export default async function SituationPage({
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const since = reportWindowStart();
 
-  const [events, reports] = await Promise.all([
+  const [events, reports, signals] = await Promise.all([
     api<EventPage>("/events?status=active&status=monitoring&limit=200"),
     reviewer
       ? api<FieldReportPage>(`/field-reports?limit=200&since=${encodeURIComponent(since)}`)
       : Promise.resolve(null),
+    api<SignalPage>(
+      `/signals?located=true&status=new&status=reviewed&limit=300&since=${encodeURIComponent(signalWindowStart())}`,
+    ),
   ]);
 
   return (
@@ -45,6 +54,7 @@ export default async function SituationPage({
       <Situation
         events={events.items}
         reports={reports?.items ?? []}
+        signals={signals.items}
         canSubmit={REPORT_SUBMITTERS.includes(user.role)}
         canSeeReports={reviewer}
       />

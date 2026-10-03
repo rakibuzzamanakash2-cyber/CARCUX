@@ -15,6 +15,7 @@ export interface EventDraft {
   longitude: string;
   started_at: string;
   report: { id: string; text: string; reporter: string } | null;
+  signal: { id: string; title: string; source: string } | null;
 }
 
 export function EventForm({ draft }: { draft: EventDraft }) {
@@ -44,6 +45,17 @@ export function EventForm({ draft }: { draft: EventDraft }) {
           </p>
           <p className="line-clamp-2">{draft.report.text}</p>
           <input type="hidden" name="field_report_ids" value={draft.report.id} />
+        </div>
+      )}
+      {draft.signal && (
+        <div className="rounded-md border border-ok/50 bg-ok/10 px-3 py-2 text-sm">
+          <p className="text-steel">
+            Starting from a signal from {draft.signal.source}. It will be attached as supporting
+            evidence. Its location may be a district centre: move it to the exact place if you know
+            it.
+          </p>
+          <p className="line-clamp-2">{draft.signal.title}</p>
+          <input type="hidden" name="signal_ids" value={draft.signal.id} />
         </div>
       )}
       <Field

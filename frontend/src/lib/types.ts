@@ -109,6 +109,7 @@ export interface EvidenceCounts {
   related: number;
   reporters: number;
   photos: number;
+  signals: number;
 }
 
 export interface CarcuxEvent {
@@ -144,7 +145,9 @@ export interface Evidence {
   note: string | null;
   linked_by: { id: string; full_name: string };
   linked_at: string;
-  field_report: FieldReport;
+  /** Exactly one of these is set. */
+  field_report: FieldReport | null;
+  signal: Signal | null;
 }
 
 export interface CandidateReport {
@@ -182,6 +185,8 @@ export interface Overview {
   reports_24h: number;
   flagged_24h: number | null;
   unreviewed_reports: number | null;
+  signals_24h: number;
+  unreviewed_signals: number | null;
 }
 
 export interface AuditEntry {
@@ -201,4 +206,94 @@ export interface AuditPage {
   limit: number;
   offset: number;
   actions: string[];
+}
+
+/** Mirrors the backend's signal and source schemas. */
+export type SourceType = "news" | "public_record" | "other";
+export type SourceAdapter = "gdacs" | "rss" | "reliefweb" | "manual";
+export type SignalStatus = "new" | "reviewed" | "dismissed";
+export type Severity = "minor" | "moderate" | "severe";
+
+export interface SourceBrief {
+  id: string;
+  key: string;
+  name: string;
+  source_type: SourceType;
+  adapter: SourceAdapter;
+  domain: string | null;
+}
+
+export interface Source extends SourceBrief {
+  url: string | null;
+  language: string;
+  enabled: boolean;
+  interval_minutes: number;
+  last_run_at: string | null;
+  last_success_at: string | null;
+  last_error: string | null;
+  signal_count: number;
+  signals_24h: number;
+}
+
+export interface IngestRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  ok: boolean;
+  fetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  error: string | null;
+}
+
+export interface Signal {
+  id: string;
+  source: SourceBrief;
+  external_id: string;
+  title: string;
+  text: string | null;
+  content_policy: "full" | "excerpt" | "reference_only";
+  url: string | null;
+  language: string;
+  event_type: string | null;
+  family: string | null;
+  severity: Severity | null;
+  place_name: string | null;
+  district: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  precision_m: number | null;
+  published_at: string;
+  valid_from: string | null;
+  valid_until: string | null;
+  collected_at: string;
+  updated_at: string;
+  extraction: Record<string, unknown>;
+  status: SignalStatus;
+  reviewed_by: { id: string; full_name: string } | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  entered_by: { id: string; full_name: string } | null;
+}
+
+export interface SignalPage {
+  items: Signal[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CandidateSignal {
+  signal: Signal;
+  distance_km: number;
+  hours_apart: number;
+  same_type: boolean;
+}
+
+export interface District {
+  name: string;
+  division: string;
+  latitude: number;
+  longitude: number;
 }
