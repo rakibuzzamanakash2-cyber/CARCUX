@@ -5,7 +5,7 @@ Only items about a disaster or disruption that name a place in Bangladesh are ke
 headline, a short excerpt and the link, never the article itself.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from defusedxml import ElementTree
 
@@ -19,6 +19,8 @@ CONTENT = "{http://purl.org/rss/1.0/modules/content/}encoded"
 DC_DATE = "{http://purl.org/dc/elements/1.1/}date"
 # How much of the article is read (not stored) when the feed has no summary.
 SUMMARY_CHARS = 600
+# Older items are left out: some feeds redirect to archives that stopped years ago.
+MAX_AGE = timedelta(days=7)
 
 
 def request(source: Source, _settings) -> Request:
@@ -61,13 +63,17 @@ def _entries(root) -> list[tuple[str, str, str, str, str]]:
     return out
 
 
-def parse(body: bytes, source: Source) -> Parsed:
+def parse(body: bytes, source: Source, now: datetime | None = None) -> Parsed:
+    now = now or datetime.now(UTC)
     root = ElementTree.fromstring(body)
     entries = _entries(root)
     items = []
     for guid, raw_title, link, date, summary in entries:
         title = plain(raw_title)
         if not title or not (guid or link):
+            continue
+        published = parse_date(date) or now
+        if published < now - MAX_AGE:
             continue
         kind = classify(title, summary)
         if kind is None:
@@ -89,7 +95,7 @@ def parse(body: bytes, source: Source) -> Parsed:
                 latitude=place.latitude,
                 longitude=place.longitude,
                 precision_m=place.precision_m,
-                published_at=parse_date(date) or datetime.now(UTC),
+                published_at=published,
                 extraction={
                     "matched": kind.matched,
                     "matched_in_headline": kind.in_headline,
