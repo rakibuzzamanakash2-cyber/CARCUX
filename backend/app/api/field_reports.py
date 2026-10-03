@@ -16,7 +16,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse, JSONResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.api.deps import AppSettings, DbSession, client_ip, require_roles
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPE_FAMILY, EVENT_TYPES
@@ -126,12 +126,23 @@ def list_reports(
     since: Annotated[
         datetime | None, Query(description="Only reports observed at or after this time")
     ] = None,
+    q: Annotated[
+        str | None, Query(max_length=100, description="Words in the text or place")
+    ] = None,
 ):
     query = service.visible_reports(user)
     if since is not None:
         if since.tzinfo is None:
             raise _unprocessable("since must include a UTC offset, e.g. +06:00")
         query = query.where(FieldReport.observed_at >= since)
+    if q and q.strip():
+        pattern = f"%{event_service.escape_like(q.strip())}%"
+        query = query.where(
+            or_(
+                FieldReport.text.ilike(pattern, escape="\\"),
+                FieldReport.place_name.ilike(pattern, escape="\\"),
+            )
+        )
     if flagged is True:
         query = query.where(func.jsonb_array_length(FieldReport.integrity_flags) > 0)
     elif flagged is False:

@@ -86,3 +86,16 @@ def test_reports_since_filter(client, analyst, worker):
         "/api/v1/field-reports", params={"since": "2026-10-01T00:00:00"}, headers=analyst
     )
     assert naive.status_code == 422
+
+
+def test_reports_search(client, analyst, worker):
+    hit = submit(
+        client, worker, text="Rasta bondho at Mohakhali flyover", place_name="Mohakhali"
+    ).json()
+    submit(client, worker, text="Pani at Mirpur", place_name="Mirpur 10")
+
+    page = client.get("/api/v1/field-reports", params={"q": "mohakhali"}, headers=analyst).json()
+
+    assert [r["id"] for r in page["items"]] == [hit["id"]]
+    by_place = client.get("/api/v1/field-reports", params={"q": "mirpur 10"}, headers=analyst)
+    assert by_place.json()["total"] == 1

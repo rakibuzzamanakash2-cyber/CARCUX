@@ -13,19 +13,26 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.audit import AuditLog
-from app.models.event import Event, EventEvidence, EventStatus, EvidenceRelation
+from app.models.event import Event, EventEvidence, EventStatus, EvidenceRelation, Priority
 from app.models.field_report import FieldReport, ReportStatus
 from app.models.user import User
 from app.services import audit
 from app.services.integrity import haversine_km
 
 MATCH_RADIUS_KM = 5.0
+
+
+def escape_like(text: str) -> str:
+    """Make user text safe inside a LIKE pattern (backslash is the escape character)."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 MATCH_WINDOW = timedelta(hours=48)
 
 
@@ -135,12 +142,25 @@ def list_events(
     family: str | None,
     limit: int,
     offset: int,
+    priorities: list[Priority] | None = None,
+    search: str | None = None,
 ) -> tuple[list[Event], int]:
     query = select(Event)
     if statuses:
         query = query.where(Event.status.in_(statuses))
     if family:
         query = query.where(Event.family == family)
+    if priorities:
+        query = query.where(Event.priority.in_(priorities))
+    if search:
+        pattern = f"%{escape_like(search)}%"
+        query = query.where(
+            or_(
+                Event.title.ilike(pattern, escape="\\"),
+                Event.place_name.ilike(pattern, escape="\\"),
+                Event.summary.ilike(pattern, escape="\\"),
+            )
+        )
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     items = db.scalars(
         query.order_by(Event.started_at.desc(), Event.id).limit(limit).offset(offset)

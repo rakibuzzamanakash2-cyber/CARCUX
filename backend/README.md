@@ -54,7 +54,7 @@ Field workers submit what they saw; analysts and admins review.
 | Endpoint | Who | What |
 |---|---|---|
 | `POST /api/v1/field-reports` | field worker, admin | Submit (multipart form, up to 4 JPEG/PNG/WebP photos, 8 MB each) |
-| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags; `?since=` (with UTC offset) for recent ones |
+| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags; `?since=` (with UTC offset) for recent ones; `?q=` words in the text or place |
 | `GET /api/v1/field-reports/{id}` | same | One report |
 | `GET /api/v1/field-reports/{id}/media/{media_id}` | same | A photo |
 | `GET /api/v1/field-reports/{id}/verify` | analyst, admin | Check the report has not been changed since submission |
@@ -71,7 +71,7 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 
 | Endpoint | Who | What |
 |---|---|---|
-| `GET /api/v1/events` | everyone signed in | List, newest first; `?status=active&status=monitoring`, `?family=urban_emergency` |
+| `GET /api/v1/events` | everyone signed in | List, newest first; `?status=active&status=monitoring`, `?family=urban_emergency`, `?priority=critical&priority=high`, `?q=` words in title, place or summary |
 | `POST /api/v1/events` | analyst, admin | Create; `field_report_ids` attaches reports as supporting evidence |
 | `GET /api/v1/events/{id}` | everyone signed in | One event with evidence counts (by relation, distinct reporters, photos) |
 | `PATCH /api/v1/events/{id}` | analyst, admin | Change title, type, place, times, status, priority, assessment |
