@@ -20,7 +20,8 @@ function every(minutes: number): string {
 }
 
 function Health({ source }: { source: Source }) {
-  if (source.adapter === "manual") return <span className="text-muted">Entered by analysts</span>;
+  if (source.adapter === "manual")
+    return <span className="text-muted">Entered or imported by analysts</span>;
   if (!source.enabled)
     return (
       <span className="inline-flex items-center gap-1.5 text-muted">
