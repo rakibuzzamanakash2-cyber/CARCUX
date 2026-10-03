@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPES
 from app.models.event import Assessment, EventStatus, EvidenceRelation, Priority
 from app.schemas.field_report import FieldReportRead, ReporterRead
+from app.schemas.signal import SignalRead
 
 
 def _check_event_type(value: str | None) -> str | None:
@@ -81,6 +82,11 @@ class EventCreate(_EventChecks):
         max_length=50,
         description="Reports to attach as supporting evidence when the event is created",
     )
+    signal_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Signals to attach as supporting evidence when the event is created",
+    )
 
     @model_validator(mode="after")
     def _ends_after_start(self) -> "EventCreate":
@@ -123,6 +129,7 @@ class EvidenceCounts(BaseModel):
     related: int = 0
     reporters: int = Field(0, description="Distinct field workers among the evidence")
     photos: int = 0
+    signals: int = Field(0, description="Public signals among the evidence")
 
 
 class EventRead(BaseModel):
@@ -155,9 +162,18 @@ class EventPage(BaseModel):
 
 
 class EvidenceCreate(_NoteCheck):
-    field_report_id: uuid.UUID
+    """Link a field report or a signal (exactly one)."""
+
+    field_report_id: uuid.UUID | None = None
+    signal_id: uuid.UUID | None = None
     relation: EvidenceRelation
     note: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def _exactly_one(self) -> "EvidenceCreate":
+        if (self.field_report_id is None) == (self.signal_id is None):
+            raise ValueError("Give either field_report_id or signal_id")
+        return self
 
 
 class EvidenceUpdate(_NoteCheck):
@@ -179,13 +195,23 @@ class EvidenceRead(BaseModel):
     note: str | None
     linked_by: ReporterRead
     linked_at: datetime
-    field_report: FieldReportRead
+    field_report: FieldReportRead | None
+    signal: SignalRead | None
 
 
 class CandidateReport(BaseModel):
     """A report that may belong to an event: close in space and time, not yet linked."""
 
     report: FieldReportRead
+    distance_km: float
+    hours_apart: float
+    same_type: bool
+
+
+class CandidateSignal(BaseModel):
+    """A signal that may be about an event."""
+
+    signal: SignalRead
     distance_km: float
     hours_apart: float
     same_type: bool

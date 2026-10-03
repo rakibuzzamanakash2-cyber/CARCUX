@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Inbox, Map, Radar, ScrollText, Users } from "lucide-react";
+import { ClipboardList, Inbox, Map, Radar, RadioTower, Rss, ScrollText, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,7 +11,9 @@ const ICONS: Record<NavIcon, typeof Map> = {
   map: Map,
   events: Radar,
   reports: ClipboardList,
+  signals: RadioTower,
   review: Inbox,
+  sources: Rss,
   users: Users,
   audit: ScrollText,
 };
@@ -27,6 +29,7 @@ export function Sidebar({ role, badges }: { role: Role; badges: Record<string, n
   const badgeTone: Record<string, string> = {
     "/events": "bg-critical text-white",
     "/review": "bg-alert-bright text-night",
+    "/signals": "bg-[#7cc7f2] text-night",
   };
 
   return (
@@ -94,6 +97,7 @@ export function Sidebar({ role, badges }: { role: Role; badges: Record<string, n
         <ul className="flex justify-around">
           {groups
             .flatMap((g) => g.items)
+            .filter((item) => !item.desktopOnly)
             .map((item) => {
               const Icon = ICONS[item.icon];
               const active = isActive(item.href);

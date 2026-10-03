@@ -1,12 +1,14 @@
 import type { Role } from "@/lib/types";
 
-export type NavIcon = "map" | "events" | "reports" | "review" | "users" | "audit";
+export type NavIcon =
+  "map" | "events" | "reports" | "signals" | "review" | "sources" | "users" | "audit";
 
 export interface NavItem {
   href: string;
   label: string;
   icon: NavIcon;
   roles?: Role[]; // omitted = everyone
+  desktopOnly?: boolean; // left out of the phone tab bar, which has room for six
 }
 
 export const NAV: { group: string; items: NavItem[] }[] = [
@@ -21,14 +23,33 @@ export const NAV: { group: string; items: NavItem[] }[] = [
         icon: "reports",
         roles: ["admin", "analyst", "field_worker"],
       },
-      { href: "/review", label: "Review queue", icon: "review", roles: ["admin", "analyst"] },
+      { href: "/signals", label: "Public signals", icon: "signals" },
+      {
+        href: "/review",
+        label: "Review queue",
+        icon: "review",
+        roles: ["admin", "analyst"],
+      },
     ],
   },
   {
     group: "Administer",
     items: [
+      {
+        href: "/sources",
+        label: "Sources",
+        icon: "sources",
+        roles: ["admin", "analyst"],
+        desktopOnly: true,
+      },
       { href: "/users", label: "Users", icon: "users", roles: ["admin"] },
-      { href: "/audit", label: "Audit log", icon: "audit", roles: ["admin"] },
+      {
+        href: "/audit",
+        label: "Audit log",
+        icon: "audit",
+        roles: ["admin"],
+        desktopOnly: true,
+      },
     ],
   },
 ];
@@ -38,7 +59,9 @@ export const SHORT_LABEL: Record<string, string> = {
   "/": "Map",
   "/events": "Events",
   "/field-reports": "Reports",
+  "/signals": "Signals",
   "/review": "Review",
+  "/sources": "Sources",
   "/users": "Users",
   "/audit": "Audit",
 };

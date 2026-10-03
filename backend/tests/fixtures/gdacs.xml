@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#" xmlns:gdacs="http://www.gdacs.org" xmlns:glide="http://glidenumber.net" xmlns:georss="http://www.georss.org/georss" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>GDACS RSS information</title>
+<item>
+  <title>Orange flood alert in Bangladesh</title>
+  <description>On 01/10/2026, a flood started in Bangladesh, lasting until 03/10/2026 (last update). The flood caused 4 deaths and 12000 displaced in Sunamganj and Sylhet.</description>
+  <link>https://www.gdacs.org/report.aspx?eventtype=FL&amp;eventid=1104200</link>
+  <pubDate>Fri, 02 Oct 2026 06:00:00 GMT</pubDate>
+  <gdacs:dateadded>Fri, 02 Oct 2026 06:00:00 GMT</gdacs:dateadded>
+  <gdacs:fromdate>Thu, 01 Oct 2026 00:00:00 GMT</gdacs:fromdate>
+  <gdacs:todate>Sat, 03 Oct 2026 00:00:00 GMT</gdacs:todate>
+  <guid isPermaLink="false">FL1104200</guid>
+  <geo:Point><geo:lat>24.95</geo:lat><geo:long>91.40</geo:long></geo:Point>
+  <gdacs:bbox>90.90 91.90 24.45 25.45</gdacs:bbox>
+  <gdacs:eventtype>FL</gdacs:eventtype>
+  <gdacs:alertlevel>Orange</gdacs:alertlevel>
+  <gdacs:eventid>1104200</gdacs:eventid>
+  <gdacs:episodeid>2</gdacs:episodeid>
+  <gdacs:iso3>BGD</gdacs:iso3>
+  <gdacs:country>Bangladesh</gdacs:country>
+</item>
+<item>
+  <title>Red tropical cyclone alert for DANA</title>
+  <description>Tropical cyclone DANA over the Bay of Bengal, expected to make landfall near the Bangladesh-Myanmar coast.</description>
+  <link>https://www.gdacs.org/report.aspx?eventtype=TC&amp;eventid=1001200</link>
+  <pubDate>Fri, 02 Oct 2026 12:00:00 GMT</pubDate>
+  <gdacs:fromdate>Thu, 01 Oct 2026 12:00:00 GMT</gdacs:fromdate>
+  <gdacs:todate>Sun, 04 Oct 2026 00:00:00 GMT</gdacs:todate>
+  <guid isPermaLink="false">TC1001200</guid>
+  <geo:Point><geo:lat>20.10</geo:lat><geo:long>90.80</geo:long></geo:Point>
+  <gdacs:bbox>86.80 94.80 16.10 24.10</gdacs:bbox>
+  <gdacs:eventtype>TC</gdacs:eventtype>
+  <gdacs:alertlevel>Red</gdacs:alertlevel>
+  <gdacs:eventid>1001200</gdacs:eventid>
+  <gdacs:episodeid>5</gdacs:episodeid>
+  <gdacs:iso3>BGD,MMR,IND</gdacs:iso3>
+  <gdacs:country>Bangladesh, Myanmar, India</gdacs:country>
+</item>
+<item>
+  <title>Green flood alert in Thailand</title>
+  <description>On 05/10/2026, a flood started in Thailand.</description>
+  <link>https://www.gdacs.org/report.aspx?eventtype=FL&amp;eventid=1104169</link>
+  <pubDate>Fri, 02 Oct 2026 12:59:16 GMT</pubDate>
+  <guid isPermaLink="false">FL1104169</guid>
+  <geo:Point><geo:lat>17.1053568</geo:lat><geo:long>98.9953943</geo:long></geo:Point>
+  <gdacs:bbox>94.99 102.99 13.10 21.10</gdacs:bbox>
+  <gdacs:eventtype>FL</gdacs:eventtype>
+  <gdacs:alertlevel>Green</gdacs:alertlevel>
+  <gdacs:iso3>THA</gdacs:iso3>
+  <gdacs:country>Thailand</gdacs:country>
+</item>
+<item>
+  <title>Green drought alert in Bangladesh</title>
+  <description>Drought.</description>
+  <pubDate>Fri, 02 Oct 2026 12:59:16 GMT</pubDate>
+  <guid isPermaLink="false">DR1001</guid>
+  <geo:Point><geo:lat>24.0</geo:lat><geo:long>89.0</geo:long></geo:Point>
+  <gdacs:eventtype>DR</gdacs:eventtype>
+  <gdacs:alertlevel>Green</gdacs:alertlevel>
+  <gdacs:iso3>BGD</gdacs:iso3>
+  <gdacs:country>Bangladesh</gdacs:country>
+</item>
+</channel>
+</rss>

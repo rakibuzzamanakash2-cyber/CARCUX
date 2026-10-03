@@ -1,0 +1,2815 @@
+{
+ "credits": "Districts, divisions, upazilas: nuhil/bangladesh-geocode (MIT). Localities: approximate centres by CARCUX.",
+ "divisions": [
+  {
+   "name": "Chattogram",
+   "aliases": [
+    "Chittagong"
+   ],
+   "bn": "চট্টগ্রাম",
+   "lat": 22.8402,
+   "lon": 91.4976
+  },
+  {
+   "name": "Rajshahi",
+   "aliases": [],
+   "bn": "রাজশাহী",
+   "lat": 24.5771,
+   "lon": 89.0147
+  },
+  {
+   "name": "Khulna",
+   "aliases": [],
+   "bn": "খুলনা",
+   "lat": 23.286,
+   "lon": 89.2312
+  },
+  {
+   "name": "Barishal",
+   "aliases": [],
+   "bn": "বরিশাল",
+   "lat": 22.5209,
+   "lon": 90.2793
+  },
+  {
+   "name": "Sylhet",
+   "aliases": [],
+   "bn": "সিলেট",
+   "lat": 24.7034,
+   "lon": 91.6144
+  },
+  {
+   "name": "Dhaka",
+   "aliases": [],
+   "bn": "ঢাকা",
+   "lat": 23.7025,
+   "lon": 90.241
+  },
+  {
+   "name": "Rangpur",
+   "aliases": [],
+   "bn": "রংপুর",
+   "lat": 25.8419,
+   "lon": 89.0462
+  },
+  {
+   "name": "Mymensingh",
+   "aliases": [],
+   "bn": "ময়মনসিংহ",
+   "lat": 24.8939,
+   "lon": 90.2721
+  }
+ ],
+ "districts": [
+  {
+   "name": "Bagerhat",
+   "aliases": [],
+   "bn": "বাগেরহাট",
+   "division": "Khulna",
+   "lat": 22.6516,
+   "lon": 89.7859
+  },
+  {
+   "name": "Bandarban",
+   "aliases": [],
+   "bn": "বান্দরবান",
+   "division": "Chattogram",
+   "lat": 22.1953,
+   "lon": 92.2184
+  },
+  {
+   "name": "Barguna",
+   "aliases": [],
+   "bn": "বরগুনা",
+   "division": "Barishal",
+   "lat": 22.1592,
+   "lon": 90.1256
+  },
+  {
+   "name": "Barishal",
+   "aliases": [
+    "Barisal"
+   ],
+   "bn": "বরিশাল",
+   "division": "Barishal",
+   "lat": 22.7004,
+   "lon": 90.3732
+  },
+  {
+   "name": "Bhola",
+   "aliases": [],
+   "bn": "ভোলা",
+   "division": "Barishal",
+   "lat": 22.6859,
+   "lon": 90.6482
+  },
+  {
+   "name": "Bogura",
+   "aliases": [
+    "Bogra"
+   ],
+   "bn": "বগুড়া",
+   "division": "Rajshahi",
+   "lat": 24.8465,
+   "lon": 89.3778
+  },
+  {
+   "name": "Brahmanbaria",
+   "aliases": [],
+   "bn": "ব্রাহ্মণবাড়িয়া",
+   "division": "Chattogram",
+   "lat": 23.9571,
+   "lon": 91.1119
+  },
+  {
+   "name": "Chandpur",
+   "aliases": [],
+   "bn": "চাঁদপুর",
+   "division": "Chattogram",
+   "lat": 23.2333,
+   "lon": 90.6713
+  },
+  {
+   "name": "Chapainawabganj",
+   "aliases": [
+    "Chapai Nawabganj",
+    "Chapainababganj"
+   ],
+   "bn": "চাঁপাইনবাবগঞ্জ",
+   "division": "Rajshahi",
+   "lat": 24.5965,
+   "lon": 88.2775
+  },
+  {
+   "name": "Chattogram",
+   "aliases": [
+    "Chittagong",
+    "Ctg"
+   ],
+   "bn": "চট্টগ্রাম",
+   "division": "Chattogram",
+   "lat": 22.3351,
+   "lon": 91.8341
+  },
+  {
+   "name": "Chuadanga",
+   "aliases": [],
+   "bn": "চুয়াডাঙ্গা",
+   "division": "Khulna",
+   "lat": 23.6402,
+   "lon": 88.8418
+  },
+  {
+   "name": "Cox's Bazar",
+   "aliases": [
+    "Coxs Bazar",
+    "Coxsbazar",
+    "Cox’s Bazar"
+   ],
+   "bn": "কক্সবাজার",
+   "division": "Chattogram",
+   "lat": 21.4432,
+   "lon": 91.9738
+  },
+  {
+   "name": "Cumilla",
+   "aliases": [
+    "Comilla"
+   ],
+   "bn": "কুমিল্লা",
+   "division": "Chattogram",
+   "lat": 23.4683,
+   "lon": 91.1788
+  },
+  {
+   "name": "Dhaka",
+   "aliases": [],
+   "bn": "ঢাকা",
+   "division": "Dhaka",
+   "lat": 23.7115,
+   "lon": 90.4111
+  },
+  {
+   "name": "Dinajpur",
+   "aliases": [],
+   "bn": "দিনাজপুর",
+   "division": "Rangpur",
+   "lat": 25.6217,
+   "lon": 88.6355
+  },
+  {
+   "name": "Faridpur",
+   "aliases": [],
+   "bn": "ফরিদপুর",
+   "division": "Dhaka",
+   "lat": 23.6071,
+   "lon": 89.8429
+  },
+  {
+   "name": "Feni",
+   "aliases": [],
+   "bn": "ফেনী",
+   "division": "Chattogram",
+   "lat": 23.0232,
+   "lon": 91.3841
+  },
+  {
+   "name": "Gaibandha",
+   "aliases": [],
+   "bn": "গাইবান্ধা",
+   "division": "Rangpur",
+   "lat": 25.3288,
+   "lon": 89.5281
+  },
+  {
+   "name": "Gazipur",
+   "aliases": [],
+   "bn": "গাজীপুর",
+   "division": "Dhaka",
+   "lat": 24.0023,
+   "lon": 90.4264
+  },
+  {
+   "name": "Gopalganj",
+   "aliases": [],
+   "bn": "গোপালগঞ্জ",
+   "division": "Dhaka",
+   "lat": 23.0051,
+   "lon": 89.8266
+  },
+  {
+   "name": "Habiganj",
+   "aliases": [],
+   "bn": "হবিগঞ্জ",
+   "division": "Sylhet",
+   "lat": 24.3749,
+   "lon": 91.4155
+  },
+  {
+   "name": "Jamalpur",
+   "aliases": [],
+   "bn": "জামালপুর",
+   "division": "Mymensingh",
+   "lat": 24.9375,
+   "lon": 89.9378
+  },
+  {
+   "name": "Jashore",
+   "aliases": [
+    "Jessore"
+   ],
+   "bn": "যশোর",
+   "division": "Khulna",
+   "lat": 23.1664,
+   "lon": 89.2081
+  },
+  {
+   "name": "Jhalakathi",
+   "aliases": [
+    "Jhalokathi",
+    "Jhalokati"
+   ],
+   "bn": "ঝালকাঠি",
+   "division": "Barishal",
+   "lat": 22.6423,
+   "lon": 90.2004
+  },
+  {
+   "name": "Jhenaidah",
+   "aliases": [],
+   "bn": "ঝিনাইদহ",
+   "division": "Khulna",
+   "lat": 23.5448,
+   "lon": 89.1539
+  },
+  {
+   "name": "Joypurhat",
+   "aliases": [],
+   "bn": "জয়পুরহাট",
+   "division": "Rajshahi",
+   "lat": 25.0964,
+   "lon": 89.04
+  },
+  {
+   "name": "Khagrachhari",
+   "aliases": [
+    "Khagrachari"
+   ],
+   "bn": "খাগড়াছড়ি",
+   "division": "Chattogram",
+   "lat": 23.1193,
+   "lon": 91.9847
+  },
+  {
+   "name": "Khulna",
+   "aliases": [],
+   "bn": "খুলনা",
+   "division": "Khulna",
+   "lat": 22.8158,
+   "lon": 89.5687
+  },
+  {
+   "name": "Kishoreganj",
+   "aliases": [],
+   "bn": "কিশোরগঞ্জ",
+   "division": "Dhaka",
+   "lat": 24.4449,
+   "lon": 90.7766
+  },
+  {
+   "name": "Kurigram",
+   "aliases": [],
+   "bn": "কুড়িগ্রাম",
+   "division": "Rangpur",
+   "lat": 25.8054,
+   "lon": 89.6362
+  },
+  {
+   "name": "Kushtia",
+   "aliases": [],
+   "bn": "কুষ্টিয়া",
+   "division": "Khulna",
+   "lat": 23.9013,
+   "lon": 89.1205
+  },
+  {
+   "name": "Lakshmipur",
+   "aliases": [
+    "Laxmipur"
+   ],
+   "bn": "লক্ষ্মীপুর",
+   "division": "Chattogram",
+   "lat": 22.9425,
+   "lon": 90.8412
+  },
+  {
+   "name": "Lalmonirhat",
+   "aliases": [],
+   "bn": "লালমনিরহাট",
+   "division": "Rangpur",
+   "lat": 25.9165,
+   "lon": 89.4532
+  },
+  {
+   "name": "Madaripur",
+   "aliases": [],
+   "bn": "মাদারীপুর",
+   "division": "Dhaka",
+   "lat": 23.1641,
+   "lon": 90.1897
+  },
+  {
+   "name": "Magura",
+   "aliases": [],
+   "bn": "মাগুরা",
+   "division": "Khulna",
+   "lat": 23.4873,
+   "lon": 89.42
+  },
+  {
+   "name": "Manikganj",
+   "aliases": [],
+   "bn": "মানিকগঞ্জ",
+   "division": "Dhaka",
+   "lat": 23.8602,
+   "lon": 90.0018
+  },
+  {
+   "name": "Meherpur",
+   "aliases": [],
+   "bn": "মেহেরপুর",
+   "division": "Khulna",
+   "lat": 23.7622,
+   "lon": 88.6318
+  },
+  {
+   "name": "Moulvibazar",
+   "aliases": [
+    "Maulvibazar"
+   ],
+   "bn": "মৌলভীবাজার",
+   "division": "Sylhet",
+   "lat": 24.4829,
+   "lon": 91.7774
+  },
+  {
+   "name": "Munshiganj",
+   "aliases": [],
+   "bn": "মুন্সিগঞ্জ",
+   "division": "Dhaka",
+   "lat": 23.5436,
+   "lon": 90.5354
+  },
+  {
+   "name": "Mymensingh",
+   "aliases": [],
+   "bn": "ময়মনসিংহ",
+   "division": "Mymensingh",
+   "lat": 24.7466,
+   "lon": 90.4072
+  },
+  {
+   "name": "Naogaon",
+   "aliases": [],
+   "bn": "নওগাঁ",
+   "division": "Rajshahi",
+   "lat": 24.8326,
+   "lon": 88.9249
+  },
+  {
+   "name": "Narail",
+   "aliases": [],
+   "bn": "নড়াইল",
+   "division": "Khulna",
+   "lat": 23.1725,
+   "lon": 89.5127
+  },
+  {
+   "name": "Narayanganj",
+   "aliases": [],
+   "bn": "নারায়ণগঞ্জ",
+   "division": "Dhaka",
+   "lat": 23.6337,
+   "lon": 90.4965
+  },
+  {
+   "name": "Narsingdi",
+   "aliases": [],
+   "bn": "নরসিংদী",
+   "division": "Dhaka",
+   "lat": 23.9322,
+   "lon": 90.7154
+  },
+  {
+   "name": "Natore",
+   "aliases": [],
+   "bn": "নাটোর",
+   "division": "Rajshahi",
+   "lat": 24.4206,
+   "lon": 89.0003
+  },
+  {
+   "name": "Netrokona",
+   "aliases": [
+    "Netrakona"
+   ],
+   "bn": "নেত্রকোণা",
+   "division": "Mymensingh",
+   "lat": 24.871,
+   "lon": 90.7279
+  },
+  {
+   "name": "Nilphamari",
+   "aliases": [],
+   "bn": "নীলফামারী",
+   "division": "Rangpur",
+   "lat": 25.9318,
+   "lon": 88.856
+  },
+  {
+   "name": "Noakhali",
+   "aliases": [],
+   "bn": "নোয়াখালী",
+   "division": "Chattogram",
+   "lat": 22.8696,
+   "lon": 91.0994
+  },
+  {
+   "name": "Pabna",
+   "aliases": [],
+   "bn": "পাবনা",
+   "division": "Rajshahi",
+   "lat": 23.9985,
+   "lon": 89.2336
+  },
+  {
+   "name": "Panchagarh",
+   "aliases": [],
+   "bn": "পঞ্চগড়",
+   "division": "Rangpur",
+   "lat": 26.3411,
+   "lon": 88.5542
+  },
+  {
+   "name": "Patuakhali",
+   "aliases": [],
+   "bn": "পটুয়াখালী",
+   "division": "Barishal",
+   "lat": 22.3596,
+   "lon": 90.3299
+  },
+  {
+   "name": "Pirojpur",
+   "aliases": [],
+   "bn": "পিরোজপুর",
+   "division": "Barishal",
+   "lat": 22.5781,
+   "lon": 89.9984
+  },
+  {
+   "name": "Rajbari",
+   "aliases": [],
+   "bn": "রাজবাড়ী",
+   "division": "Dhaka",
+   "lat": 23.7574,
+   "lon": 89.6445
+  },
+  {
+   "name": "Rajshahi",
+   "aliases": [],
+   "bn": "রাজশাহী",
+   "division": "Rajshahi",
+   "lat": 24.3723,
+   "lon": 88.5631
+  },
+  {
+   "name": "Rangamati",
+   "aliases": [],
+   "bn": "রাঙ্গামাটি",
+   "division": "Chattogram",
+   "lat": 22.6556,
+   "lon": 92.1754
+  },
+  {
+   "name": "Rangpur",
+   "aliases": [],
+   "bn": "রংপুর",
+   "division": "Rangpur",
+   "lat": 25.7558,
+   "lon": 89.2445
+  },
+  {
+   "name": "Satkhira",
+   "aliases": [],
+   "bn": "সাতক্ষীরা",
+   "division": "Khulna",
+   "lat": 22.7181,
+   "lon": 89.0687
+  },
+  {
+   "name": "Shariatpur",
+   "aliases": [],
+   "bn": "শরীয়তপুর",
+   "division": "Dhaka",
+   "lat": 23.206,
+   "lon": 90.3478
+  },
+  {
+   "name": "Sherpur",
+   "aliases": [],
+   "bn": "শেরপুর",
+   "division": "Mymensingh",
+   "lat": 25.0205,
+   "lon": 90.0153
+  },
+  {
+   "name": "Sirajganj",
+   "aliases": [],
+   "bn": "সিরাজগঞ্জ",
+   "division": "Rajshahi",
+   "lat": 24.4534,
+   "lon": 89.7007
+  },
+  {
+   "name": "Sunamganj",
+   "aliases": [],
+   "bn": "সুনামগঞ্জ",
+   "division": "Sylhet",
+   "lat": 25.0658,
+   "lon": 91.395
+  },
+  {
+   "name": "Sylhet",
+   "aliases": [],
+   "bn": "সিলেট",
+   "division": "Sylhet",
+   "lat": 24.8898,
+   "lon": 91.8698
+  },
+  {
+   "name": "Tangail",
+   "aliases": [],
+   "bn": "টাঙ্গাইল",
+   "division": "Dhaka",
+   "lat": 24.2641,
+   "lon": 89.918
+  },
+  {
+   "name": "Thakurgaon",
+   "aliases": [],
+   "bn": "ঠাকুরগাঁও",
+   "division": "Rangpur",
+   "lat": 26.0337,
+   "lon": 88.4617
+  }
+ ],
+ "upazilas": [
+  {
+   "name": "Abhaynagar",
+   "bn": "অভয়নগর",
+   "district": "Jashore"
+  },
+  {
+   "name": "Adamdighi",
+   "bn": "আদমদিঘি",
+   "district": "Bogura"
+  },
+  {
+   "name": "Aditmari",
+   "bn": "আদিতমারী",
+   "district": "Lalmonirhat"
+  },
+  {
+   "name": "Agailjhara",
+   "bn": "আগৈলঝাড়া",
+   "district": "Barishal"
+  },
+  {
+   "name": "Ajmiriganj",
+   "bn": "আজমিরীগঞ্জ",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Akhaura",
+   "bn": "আখাউড়া",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Akkelpur",
+   "bn": "আক্কেলপুর",
+   "district": "Joypurhat"
+  },
+  {
+   "name": "Alamdanga",
+   "bn": "আলমডাঙ্গা",
+   "district": "Chuadanga"
+  },
+  {
+   "name": "Alfadanga",
+   "bn": "আলফাডাঙ্গা",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Alikadam",
+   "bn": "আলীকদম",
+   "district": "Bandarban"
+  },
+  {
+   "name": "Amtali",
+   "bn": "আমতলী",
+   "district": "Barguna"
+  },
+  {
+   "name": "Anwara",
+   "bn": "আনোয়ারা",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Araihazar",
+   "bn": "আড়াইহাজার",
+   "district": "Narayanganj"
+  },
+  {
+   "name": "Ashuganj",
+   "bn": "আশুগঞ্জ",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Assasuni",
+   "bn": "আশাশুনি",
+   "district": "Satkhira"
+  },
+  {
+   "name": "Atghoria",
+   "bn": "আটঘরিয়া",
+   "district": "Pabna"
+  },
+  {
+   "name": "Atpara",
+   "bn": "আটপাড়া",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Atrai",
+   "bn": "আত্রাই",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Atwari",
+   "bn": "আটোয়ারী",
+   "district": "Panchagarh"
+  },
+  {
+   "name": "Austagram",
+   "bn": "অষ্টগ্রাম",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Babuganj",
+   "bn": "বাবুগঞ্জ",
+   "district": "Barishal"
+  },
+  {
+   "name": "Badalgachi",
+   "bn": "বদলগাছী",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Badargonj",
+   "bn": "বদরগঞ্জ",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Bagatipara",
+   "bn": "বাগাতিপাড়া",
+   "district": "Natore"
+  },
+  {
+   "name": "Bagha",
+   "bn": "বাঘা",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Baghaichari",
+   "bn": "বাঘাইছড়ি",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Bagherpara",
+   "bn": "বাঘারপাড়া",
+   "district": "Jashore"
+  },
+  {
+   "name": "Bagmara",
+   "bn": "বাগমারা",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Bahubal",
+   "bn": "বাহুবল",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Bajitpur",
+   "bn": "বাজিতপুর",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Bakerganj",
+   "bn": "বাকেরগঞ্জ",
+   "district": "Barishal"
+  },
+  {
+   "name": "Balaganj",
+   "bn": "বালাগঞ্জ",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Baliadangi",
+   "bn": "বালিয়াডাঙ্গী",
+   "district": "Thakurgaon"
+  },
+  {
+   "name": "Baliakandi",
+   "bn": "বালিয়াকান্দি",
+   "district": "Rajbari"
+  },
+  {
+   "name": "Bamna",
+   "bn": "বামনা",
+   "district": "Barguna"
+  },
+  {
+   "name": "Banaripara",
+   "bn": "বানারীপাড়া",
+   "district": "Barishal"
+  },
+  {
+   "name": "Bancharampur",
+   "bn": "বাঞ্ছারামপুর",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Bandar",
+   "bn": "বন্দর",
+   "district": "Narayanganj"
+  },
+  {
+   "name": "Baniachong",
+   "bn": "বানিয়াচং",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Banshkhali",
+   "bn": "বাঁশখালী",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Baraigram",
+   "bn": "বড়াইগ্রাম",
+   "district": "Natore"
+  },
+  {
+   "name": "Barhatta",
+   "bn": "বারহাট্টা",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Barkal",
+   "bn": "বরকল",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Barlekha",
+   "bn": "বড়লেখা",
+   "district": "Moulvibazar"
+  },
+  {
+   "name": "Barura",
+   "bn": "বরুড়া",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Basail",
+   "bn": "বাসাইল",
+   "district": "Tangail"
+  },
+  {
+   "name": "Bauphal",
+   "bn": "বাউফল",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Beanibazar",
+   "bn": "বিয়ানীবাজার",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Begumganj",
+   "bn": "বেগমগঞ্জ",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Belabo",
+   "bn": "বেলাবো",
+   "district": "Narsingdi"
+  },
+  {
+   "name": "Belaichari",
+   "bn": "বিলাইছড়ি",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Belkuchi",
+   "bn": "বেলকুচি",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Betagi",
+   "bn": "বেতাগী",
+   "district": "Barguna"
+  },
+  {
+   "name": "Bhairab",
+   "bn": "ভৈরব",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Bhaluka",
+   "bn": "ভালুকা",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Bhandaria",
+   "bn": "ভান্ডারিয়া",
+   "district": "Pirojpur"
+  },
+  {
+   "name": "Bhanga",
+   "bn": "ভাঙ্গা",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Bhangura",
+   "bn": "ভাঙ্গুড়া",
+   "district": "Pabna"
+  },
+  {
+   "name": "Bhedarganj",
+   "bn": "ভেদরগঞ্জ",
+   "district": "Shariatpur"
+  },
+  {
+   "name": "Bheramara",
+   "bn": "ভেড়ামারা",
+   "district": "Kushtia"
+  },
+  {
+   "name": "Bholahat",
+   "bn": "ভোলাহাট",
+   "district": "Chapainawabganj"
+  },
+  {
+   "name": "Bhuapur",
+   "bn": "ভুয়াপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Bhurungamari",
+   "bn": "ভুরুঙ্গামারী",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Bijoynagar",
+   "bn": "বিজয়নগর",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Birampur",
+   "bn": "বিরামপুর",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Birganj",
+   "bn": "বীরগঞ্জ",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Birol",
+   "bn": "বিরল",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Bishwambarpur",
+   "bn": "বিশ্বম্ভরপুর",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Bishwanath",
+   "bn": "বিশ্বনাথ",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Boalkhali",
+   "bn": "বোয়ালখালী",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Boalmari",
+   "bn": "বোয়ালমারী",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Bochaganj",
+   "bn": "বোচাগঞ্জ",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Bokshiganj",
+   "bn": "বকশীগঞ্জ",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Borhan Sddin",
+   "bn": "বোরহান উদ্দিন",
+   "district": "Bhola"
+  },
+  {
+   "name": "Botiaghata",
+   "bn": "বটিয়াঘাটা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Brahmanpara",
+   "bn": "ব্রাহ্মণপাড়া",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Burichang",
+   "bn": "বুড়িচং",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Chakaria",
+   "bn": "চকরিয়া",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Chandanaish",
+   "bn": "চন্দনাইশ",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Chandina",
+   "bn": "চান্দিনা",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Charbhadrasan",
+   "bn": "চরভদ্রাসন",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Charfesson",
+   "bn": "চরফ্যাশন",
+   "district": "Bhola"
+  },
+  {
+   "name": "Charghat",
+   "bn": "চারঘাট",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Charrajibpur",
+   "bn": "চর রাজিবপুর",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Chatkhil",
+   "bn": "চাটখিল",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Chatmohar",
+   "bn": "চাটমোহর",
+   "district": "Pabna"
+  },
+  {
+   "name": "Chauddagram",
+   "bn": "চৌদ্দগ্রাম",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Chauhali",
+   "bn": "চৌহালি",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Chhagalnaiya",
+   "bn": "ছাগলনাইয়া",
+   "district": "Feni"
+  },
+  {
+   "name": "Chhatak",
+   "bn": "ছাতক",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Chilmari",
+   "bn": "চিলমারী",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Chirirbandar",
+   "bn": "চিরিরবন্দর",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Chitalmari",
+   "bn": "চিতলমারী",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Chougachha",
+   "bn": "চৌগাছা",
+   "district": "Jashore"
+  },
+  {
+   "name": "Chunarughat",
+   "bn": "চুনারুঘাট",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Daganbhuiyan",
+   "bn": "দাগনভূঞা",
+   "district": "Feni"
+  },
+  {
+   "name": "Dakop",
+   "bn": "দাকোপ",
+   "district": "Khulna"
+  },
+  {
+   "name": "Dakshinsurma",
+   "bn": "দক্ষিণ সুরমা",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Damudya",
+   "bn": "ডামুড্যা",
+   "district": "Shariatpur"
+  },
+  {
+   "name": "Damurhuda",
+   "bn": "দামুড়হুদা",
+   "district": "Chuadanga"
+  },
+  {
+   "name": "Dasar",
+   "bn": "ডাসার",
+   "district": "Madaripur"
+  },
+  {
+   "name": "Dashmina",
+   "bn": "দশমিনা",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Daudkandi",
+   "bn": "দাউদকান্দি",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Daulatpur",
+   "bn": "দৌলতপুর",
+   "district": "Kushtia"
+  },
+  {
+   "name": "Debhata",
+   "bn": "দেবহাটা",
+   "district": "Satkhira"
+  },
+  {
+   "name": "Debidwar",
+   "bn": "দেবিদ্বার",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Debiganj",
+   "bn": "দেবীগঞ্জ",
+   "district": "Panchagarh"
+  },
+  {
+   "name": "Delduar",
+   "bn": "দেলদুয়ার",
+   "district": "Tangail"
+  },
+  {
+   "name": "Derai",
+   "bn": "দিরাই",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Dewangonj",
+   "bn": "দেওয়ানগঞ্জ",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Dhamoirhat",
+   "bn": "ধামইরহাট",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Dhamrai",
+   "bn": "ধামরাই",
+   "district": "Dhaka"
+  },
+  {
+   "name": "Dhanbari",
+   "bn": "ধনবাড়ী",
+   "district": "Tangail"
+  },
+  {
+   "name": "Dharmapasha",
+   "bn": "ধর্মপাশা",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Dhobaura",
+   "bn": "ধোবাউড়া",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Dhunot",
+   "bn": "ধুনট",
+   "district": "Bogura"
+  },
+  {
+   "name": "Dighinala",
+   "bn": "দিঘীনালা",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Digholia",
+   "bn": "দিঘলিয়া",
+   "district": "Khulna"
+  },
+  {
+   "name": "Dimla",
+   "bn": "ডিমলা",
+   "district": "Nilphamari"
+  },
+  {
+   "name": "Dohar",
+   "bn": "দোহার",
+   "district": "Dhaka"
+  },
+  {
+   "name": "Domar",
+   "bn": "ডোমার",
+   "district": "Nilphamari"
+  },
+  {
+   "name": "Doulatkhan",
+   "bn": "দৌলতখান",
+   "district": "Bhola"
+  },
+  {
+   "name": "Doulatpur",
+   "bn": "দৌলতপুর",
+   "district": "Manikganj"
+  },
+  {
+   "name": "Dowarabazar",
+   "bn": "দোয়ারাবাজার",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Dumki",
+   "bn": "দুমকি",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Dumuria",
+   "bn": "ডুমুরিয়া",
+   "district": "Khulna"
+  },
+  {
+   "name": "Dupchanchia",
+   "bn": "দুপচাচিঁয়া",
+   "district": "Bogura"
+  },
+  {
+   "name": "Eidgaon",
+   "bn": "ঈদগাঁও",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Fakirhat",
+   "bn": "ফকিরহাট",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Faridgonj",
+   "bn": "ফরিদগঞ্জ",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Fatikchhari",
+   "bn": "ফটিকছড়ি",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Fenchuganj",
+   "bn": "ফেঞ্চুগঞ্জ",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Fulbari",
+   "bn": "ফুলবাড়ী",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Fulbaria",
+   "bn": "ফুলবাড়ীয়া",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Fulgazi",
+   "bn": "ফুলগাজী",
+   "district": "Feni"
+  },
+  {
+   "name": "Fultola",
+   "bn": "ফুলতলা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Gabtali",
+   "bn": "গাবতলী",
+   "district": "Bogura"
+  },
+  {
+   "name": "Gafargaon",
+   "bn": "গফরগাঁও",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Gajaria",
+   "bn": "গজারিয়া",
+   "district": "Munshiganj"
+  },
+  {
+   "name": "Galachipa",
+   "bn": "গলাচিপা",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Gangachara",
+   "bn": "গংগাচড়া",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Gangni",
+   "bn": "গাংনী",
+   "district": "Meherpur"
+  },
+  {
+   "name": "Ghatail",
+   "bn": "ঘাটাইল",
+   "district": "Tangail"
+  },
+  {
+   "name": "Ghoraghat",
+   "bn": "ঘোড়াঘাট",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Goalanda",
+   "bn": "গোয়ালন্দ",
+   "district": "Rajbari"
+  },
+  {
+   "name": "Gobindaganj",
+   "bn": "গোবিন্দগঞ্জ",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Godagari",
+   "bn": "গোদাগাড়ী",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Golapganj",
+   "bn": "গোলাপগঞ্জ",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Gomostapur",
+   "bn": "গোমস্তাপুর",
+   "district": "Chapainawabganj"
+  },
+  {
+   "name": "Gopalpur",
+   "bn": "গোপালপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Gosairhat",
+   "bn": "গোসাইরহাট",
+   "district": "Shariatpur"
+  },
+  {
+   "name": "Gouripur",
+   "bn": "গৌরীপুর",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Gournadi",
+   "bn": "গৌরনদী",
+   "district": "Barishal"
+  },
+  {
+   "name": "Gowainghat",
+   "bn": "গোয়াইনঘাট",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Guimara",
+   "bn": "গুইমারা",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Gurudaspur",
+   "bn": "গুরুদাসপুর",
+   "district": "Natore"
+  },
+  {
+   "name": "Haimchar",
+   "bn": "হাইমচর",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Hajiganj",
+   "bn": "হাজীগঞ্জ",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Hakimpur",
+   "bn": "হাকিমপুর",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Haluaghat",
+   "bn": "হালুয়াঘাট",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Harinakundu",
+   "bn": "হরিণাকুন্ডু",
+   "district": "Jhenaidah"
+  },
+  {
+   "name": "Haripur",
+   "bn": "হরিপুর",
+   "district": "Thakurgaon"
+  },
+  {
+   "name": "Harirampur",
+   "bn": "হরিরামপুর",
+   "district": "Manikganj"
+  },
+  {
+   "name": "Hathazari",
+   "bn": "হাটহাজারী",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Hatia",
+   "bn": "হাতিয়া",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Hatibandha",
+   "bn": "হাতীবান্ধা",
+   "district": "Lalmonirhat"
+  },
+  {
+   "name": "Hizla",
+   "bn": "হিজলা",
+   "district": "Barishal"
+  },
+  {
+   "name": "Homna",
+   "bn": "হোমনা",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Hossainpur",
+   "bn": "হোসেনপুর",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Ishurdi",
+   "bn": "ঈশ্বরদী",
+   "district": "Pabna"
+  },
+  {
+   "name": "Islampur",
+   "bn": "ইসলামপুর",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Iswarganj",
+   "bn": "ঈশ্বরগঞ্জ",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Jagannathpur",
+   "bn": "জগন্নাথপুর",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Jaintiapur",
+   "bn": "জৈন্তাপুর",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Jaldhaka",
+   "bn": "জলঢাকা",
+   "district": "Nilphamari"
+  },
+  {
+   "name": "Jamalganj",
+   "bn": "জামালগঞ্জ",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Jhenaigati",
+   "bn": "ঝিনাইগাতী",
+   "district": "Sherpur"
+  },
+  {
+   "name": "Jhikargacha",
+   "bn": "ঝিকরগাছা",
+   "district": "Jashore"
+  },
+  {
+   "name": "Jibannagar",
+   "bn": "জীবননগর",
+   "district": "Chuadanga"
+  },
+  {
+   "name": "Juraichari",
+   "bn": "জুরাছড়ি",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Kabirhat",
+   "bn": "কবিরহাট",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Kahaloo",
+   "bn": "কাহালু",
+   "district": "Bogura"
+  },
+  {
+   "name": "Kaharol",
+   "bn": "কাহারোল",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Kalai",
+   "bn": "কালাই",
+   "district": "Joypurhat"
+  },
+  {
+   "name": "Kalapara",
+   "bn": "কলাপাড়া",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Kalaroa",
+   "bn": "কলারোয়া",
+   "district": "Satkhira"
+  },
+  {
+   "name": "Kalia",
+   "bn": "কালিয়া",
+   "district": "Narail"
+  },
+  {
+   "name": "Kaliakair",
+   "bn": "কালিয়াকৈর",
+   "district": "Gazipur"
+  },
+  {
+   "name": "Kalihati",
+   "bn": "কালিহাতী",
+   "district": "Tangail"
+  },
+  {
+   "name": "Kalkini",
+   "bn": "কালকিনি",
+   "district": "Madaripur"
+  },
+  {
+   "name": "Kalmakanda",
+   "bn": "কলমাকান্দা",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Kalukhali",
+   "bn": "কালুখালী",
+   "district": "Rajbari"
+  },
+  {
+   "name": "Kamalnagar",
+   "bn": "কমলনগর",
+   "district": "Lakshmipur"
+  },
+  {
+   "name": "Kamarkhand",
+   "bn": "কামারখন্দ",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Kamolganj",
+   "bn": "কমলগঞ্জ",
+   "district": "Moulvibazar"
+  },
+  {
+   "name": "Kanaighat",
+   "bn": "কানাইঘাট",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Kapasia",
+   "bn": "কাপাসিয়া",
+   "district": "Gazipur"
+  },
+  {
+   "name": "Kaptai",
+   "bn": "কাপ্তাই",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Karimgonj",
+   "bn": "করিমগঞ্জ",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Karnafuli",
+   "bn": "কর্ণফুলী",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Kasba",
+   "bn": "কসবা",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Kashiani",
+   "bn": "কাশিয়ানী",
+   "district": "Gopalganj"
+  },
+  {
+   "name": "Kathalia",
+   "bn": "কাঠালিয়া",
+   "district": "Jhalakathi"
+  },
+  {
+   "name": "Katiadi",
+   "bn": "কটিয়াদী",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Kaunia",
+   "bn": "কাউনিয়া",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Kazipur",
+   "bn": "কাজীপুর",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Kendua",
+   "bn": "কেন্দুয়া",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Keraniganj",
+   "bn": "কেরাণীগঞ্জ",
+   "district": "Dhaka"
+  },
+  {
+   "name": "Keshabpur",
+   "bn": "কেশবপুর",
+   "district": "Jashore"
+  },
+  {
+   "name": "Khaliajuri",
+   "bn": "খালিয়াজুরী",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Khansama",
+   "bn": "খানসামা",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Khetlal",
+   "bn": "ক্ষেতলাল",
+   "district": "Joypurhat"
+  },
+  {
+   "name": "Khoksa",
+   "bn": "খোকসা",
+   "district": "Kushtia"
+  },
+  {
+   "name": "Kishorganj",
+   "bn": "কিশোরগঞ্জ",
+   "district": "Nilphamari"
+  },
+  {
+   "name": "Kotalipara",
+   "bn": "কোটালীপাড়া",
+   "district": "Gopalganj"
+  },
+  {
+   "name": "Kotchandpur",
+   "bn": "কোটচাঁদপুর",
+   "district": "Jhenaidah"
+  },
+  {
+   "name": "Koyra",
+   "bn": "কয়রা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Kulaura",
+   "bn": "কুলাউড়া",
+   "district": "Moulvibazar"
+  },
+  {
+   "name": "Kuliarchar",
+   "bn": "কুলিয়ারচর",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Kumarkhali",
+   "bn": "কুমারখালী",
+   "district": "Kushtia"
+  },
+  {
+   "name": "Kutubdia",
+   "bn": "কুতুবদিয়া",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Lakhai",
+   "bn": "লাখাই",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Laksam",
+   "bn": "লাকসাম",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Lalmai",
+   "bn": "লালমাই",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Lalmohan",
+   "bn": "লালমোহন",
+   "district": "Bhola"
+  },
+  {
+   "name": "Lalpur",
+   "bn": "লালপুর",
+   "district": "Natore"
+  },
+  {
+   "name": "Langadu",
+   "bn": "লংগদু",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Laxmichhari",
+   "bn": "লক্ষীছড়ি",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Louhajanj",
+   "bn": "লৌহজং",
+   "district": "Munshiganj"
+  },
+  {
+   "name": "Madan",
+   "bn": "মদন",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Madarganj",
+   "bn": "মাদারগঞ্জ",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Madhabpur",
+   "bn": "মাধবপুর",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Madhukhali",
+   "bn": "মধুখালী",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Madhupur",
+   "bn": "মধুপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Madhyanagar",
+   "bn": "মধ্যনগর",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Manda",
+   "bn": "মান্দা",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Manikchari",
+   "bn": "মানিকছড়ি",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Manirampur",
+   "bn": "মণিরামপুর",
+   "district": "Jashore"
+  },
+  {
+   "name": "Mathbaria",
+   "bn": "মঠবাড়ীয়া",
+   "district": "Pirojpur"
+  },
+  {
+   "name": "Matiranga",
+   "bn": "মাটিরাঙ্গা",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Matlab North",
+   "bn": "মতলব উত্তর",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Matlab South",
+   "bn": "মতলব দক্ষিণ",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Meghna",
+   "bn": "মেঘনা",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Mehendiganj",
+   "bn": "মেহেন্দিগঞ্জ",
+   "district": "Barishal"
+  },
+  {
+   "name": "Melandah",
+   "bn": "মেলান্দহ",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Mirsharai",
+   "bn": "মীরসরাই",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Mirzaganj",
+   "bn": "মির্জাগঞ্জ",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Mirzapur",
+   "bn": "মির্জাপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Mithamoin",
+   "bn": "মিঠামইন",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Mithapukur",
+   "bn": "মিঠাপুকুর",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Mohadevpur",
+   "bn": "মহাদেবপুর",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Mohalchari",
+   "bn": "মহালছড়ি",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Mohammadpur",
+   "bn": "মহম্মদপুর",
+   "district": "Magura"
+  },
+  {
+   "name": "Moheshkhali",
+   "bn": "মহেশখালী",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Moheshpur",
+   "bn": "মহেশপুর",
+   "district": "Jhenaidah"
+  },
+  {
+   "name": "Mohongonj",
+   "bn": "মোহনগঞ্জ",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Mohonpur",
+   "bn": "মোহনপুর",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Mollahat",
+   "bn": "মোল্লাহাট",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Mongla",
+   "bn": "মোংলা",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Monohardi",
+   "bn": "মনোহরদী",
+   "district": "Narsingdi"
+  },
+  {
+   "name": "Monohargonj",
+   "bn": "মনোহরগঞ্জ",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Monpura",
+   "bn": "মনপুরা",
+   "district": "Bhola"
+  },
+  {
+   "name": "Morrelganj",
+   "bn": "মোড়েলগঞ্জ",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Mujibnagar",
+   "bn": "মুজিবনগর",
+   "district": "Meherpur"
+  },
+  {
+   "name": "Muksudpur",
+   "bn": "মুকসুদপুর",
+   "district": "Gopalganj"
+  },
+  {
+   "name": "Muktagacha",
+   "bn": "মুক্তাগাছা",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Muladi",
+   "bn": "মুলাদী",
+   "district": "Barishal"
+  },
+  {
+   "name": "Muradnagar",
+   "bn": "মুরাদনগর",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Nabiganj",
+   "bn": "নবীগঞ্জ",
+   "district": "Habiganj"
+  },
+  {
+   "name": "Nabinagar",
+   "bn": "নবীনগর",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Nachol",
+   "bn": "নাচোল",
+   "district": "Chapainawabganj"
+  },
+  {
+   "name": "Nagarkanda",
+   "bn": "নগরকান্দা",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Nagarpur",
+   "bn": "নাগরপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Nageshwari",
+   "bn": "নাগেশ্বরী",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Naikhongchhari",
+   "bn": "নাইক্ষ্যংছড়ি",
+   "district": "Bandarban"
+  },
+  {
+   "name": "Nalchity",
+   "bn": "নলছিটি",
+   "district": "Jhalakathi"
+  },
+  {
+   "name": "Naldanga",
+   "bn": "নলডাঙ্গা",
+   "district": "Natore"
+  },
+  {
+   "name": "Nalitabari",
+   "bn": "নালিতাবাড়ী",
+   "district": "Sherpur"
+  },
+  {
+   "name": "Nandail",
+   "bn": "নান্দাইল",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Nangalkot",
+   "bn": "নাঙ্গলকোট",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Naniarchar",
+   "bn": "নানিয়ারচর",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Naria",
+   "bn": "নড়িয়া",
+   "district": "Shariatpur"
+  },
+  {
+   "name": "Nasirnagar",
+   "bn": "নাসিরনগর",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Nazirpur",
+   "bn": "নাজিরপুর",
+   "district": "Pirojpur"
+  },
+  {
+   "name": "Nesarabad",
+   "bn": "নেছারাবাদ",
+   "district": "Pirojpur"
+  },
+  {
+   "name": "Niamatpur",
+   "bn": "নিয়ামতপুর",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Nikli",
+   "bn": "নিকলী",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Nokla",
+   "bn": "নকলা",
+   "district": "Sherpur"
+  },
+  {
+   "name": "Nondigram",
+   "bn": "নন্দিগ্রাম",
+   "district": "Bogura"
+  },
+  {
+   "name": "Osmaninagar",
+   "bn": "ওসমানী নগর",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Paikgasa",
+   "bn": "পাইকগাছা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Pakundia",
+   "bn": "পাকুন্দিয়া",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Palash",
+   "bn": "পলাশ",
+   "district": "Narsingdi"
+  },
+  {
+   "name": "Palashbari",
+   "bn": "পলাশবাড়ী",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Panchari",
+   "bn": "পানছড়ি",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Panchbibi",
+   "bn": "পাঁচবিবি",
+   "district": "Joypurhat"
+  },
+  {
+   "name": "Pangsa",
+   "bn": "পাংশা",
+   "district": "Rajbari"
+  },
+  {
+   "name": "Parbatipur",
+   "bn": "পার্বতীপুর",
+   "district": "Dinajpur"
+  },
+  {
+   "name": "Parshuram",
+   "bn": "পরশুরাম",
+   "district": "Feni"
+  },
+  {
+   "name": "Patgram",
+   "bn": "পাটগ্রাম",
+   "district": "Lalmonirhat"
+  },
+  {
+   "name": "Pathorghata",
+   "bn": "পাথরঘাটা",
+   "district": "Barguna"
+  },
+  {
+   "name": "Patiya",
+   "bn": "পটিয়া",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Patnitala",
+   "bn": "পত্নিতলা",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Pekua",
+   "bn": "পেকুয়া",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Phulbari",
+   "bn": "ফুলবাড়ী",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Phulchari",
+   "bn": "ফুলছড়ি",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Phulpur",
+   "bn": "ফুলপুর",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Pirgacha",
+   "bn": "পীরগাছা",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Pirganj",
+   "bn": "পীরগঞ্জ",
+   "district": "Thakurgaon"
+  },
+  {
+   "name": "Pirgonj",
+   "bn": "পীরগঞ্জ",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Porsha",
+   "bn": "পোরশা",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Purbadhala",
+   "bn": "পূর্বধলা",
+   "district": "Netrokona"
+  },
+  {
+   "name": "Puthia",
+   "bn": "পুঠিয়া",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Raigonj",
+   "bn": "রায়গঞ্জ",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Raipur",
+   "bn": "রায়পুর",
+   "district": "Lakshmipur"
+  },
+  {
+   "name": "Raipura",
+   "bn": "রায়পুরা",
+   "district": "Narsingdi"
+  },
+  {
+   "name": "Rajapur",
+   "bn": "রাজাপুর",
+   "district": "Jhalakathi"
+  },
+  {
+   "name": "Rajarhat",
+   "bn": "রাজারহাট",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Rajasthali",
+   "bn": "রাজস্থলী",
+   "district": "Rangamati"
+  },
+  {
+   "name": "Rajnagar",
+   "bn": "রাজনগর",
+   "district": "Moulvibazar"
+  },
+  {
+   "name": "Rajoir",
+   "bn": "রাজৈর",
+   "district": "Madaripur"
+  },
+  {
+   "name": "Ramganj",
+   "bn": "রামগঞ্জ",
+   "district": "Lakshmipur"
+  },
+  {
+   "name": "Ramgarh",
+   "bn": "রামগড়",
+   "district": "Khagrachhari"
+  },
+  {
+   "name": "Ramgati",
+   "bn": "রামগতি",
+   "district": "Lakshmipur"
+  },
+  {
+   "name": "Rampal",
+   "bn": "রামপাল",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Rangabali",
+   "bn": "রাঙ্গাবালী",
+   "district": "Patuakhali"
+  },
+  {
+   "name": "Rangunia",
+   "bn": "রাঙ্গুনিয়া",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Raninagar",
+   "bn": "রাণীনগর",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Ranisankail",
+   "bn": "রাণীশংকৈল",
+   "district": "Thakurgaon"
+  },
+  {
+   "name": "Raozan",
+   "bn": "রাউজান",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Rowangchhari",
+   "bn": "রোয়াংছড়ি",
+   "district": "Bandarban"
+  },
+  {
+   "name": "Rowmari",
+   "bn": "রৌমারী",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Rupganj",
+   "bn": "রূপগঞ্জ",
+   "district": "Narayanganj"
+  },
+  {
+   "name": "Rupsha",
+   "bn": "রূপসা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Sadullapur",
+   "bn": "সাদুল্লাপুর",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Saghata",
+   "bn": "সাঘাটা",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Sakhipur",
+   "bn": "সখিপুর",
+   "district": "Tangail"
+  },
+  {
+   "name": "Saltha",
+   "bn": "সালথা",
+   "district": "Faridpur"
+  },
+  {
+   "name": "Sandwip",
+   "bn": "সন্দ্বীপ",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Santhia",
+   "bn": "সাঁথিয়া",
+   "district": "Pabna"
+  },
+  {
+   "name": "Sapahar",
+   "bn": "সাপাহার",
+   "district": "Naogaon"
+  },
+  {
+   "name": "Sarail",
+   "bn": "সরাইল",
+   "district": "Brahmanbaria"
+  },
+  {
+   "name": "Sarankhola",
+   "bn": "শরণখোলা",
+   "district": "Bagerhat"
+  },
+  {
+   "name": "Sarishabari",
+   "bn": "সরিষাবাড়ী",
+   "district": "Jamalpur"
+  },
+  {
+   "name": "Satkania",
+   "bn": "সাতকানিয়া",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Saturia",
+   "bn": "সাটুরিয়া",
+   "district": "Manikganj"
+  },
+  {
+   "name": "Savar",
+   "bn": "সাভার",
+   "district": "Dhaka"
+  },
+  {
+   "name": "Senbug",
+   "bn": "সেনবাগ",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Shahjadpur",
+   "bn": "শাহজাদপুর",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Shahrasti",
+   "bn": "শাহরাস্তি\t",
+   "district": "Chandpur"
+  },
+  {
+   "name": "Shailkupa",
+   "bn": "শৈলকুপা",
+   "district": "Jhenaidah"
+  },
+  {
+   "name": "Shajahanpur",
+   "bn": "শাজাহানপুর",
+   "district": "Bogura"
+  },
+  {
+   "name": "Shalikha",
+   "bn": "শালিখা",
+   "district": "Magura"
+  },
+  {
+   "name": "Shalla",
+   "bn": "শাল্লা",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Shariakandi",
+   "bn": "সারিয়াকান্দি",
+   "district": "Bogura"
+  },
+  {
+   "name": "Sharsha",
+   "bn": "শার্শা",
+   "district": "Jashore"
+  },
+  {
+   "name": "Shibaloy",
+   "bn": "শিবালয়",
+   "district": "Manikganj"
+  },
+  {
+   "name": "Shibchar",
+   "bn": "শিবচর",
+   "district": "Madaripur"
+  },
+  {
+   "name": "Shibpur",
+   "bn": "শিবপুর",
+   "district": "Narsingdi"
+  },
+  {
+   "name": "Shyamnagar",
+   "bn": "শ্যামনগর",
+   "district": "Satkhira"
+  },
+  {
+   "name": "Singiar",
+   "bn": "সিংগাইর",
+   "district": "Manikganj"
+  },
+  {
+   "name": "Singra",
+   "bn": "সিংড়া",
+   "district": "Natore"
+  },
+  {
+   "name": "Sirajdikhan",
+   "bn": "সিরাজদিখান",
+   "district": "Munshiganj"
+  },
+  {
+   "name": "Sitakunda",
+   "bn": "সীতাকুন্ড",
+   "district": "Chattogram"
+  },
+  {
+   "name": "Sonagazi",
+   "bn": "সোনাগাজী",
+   "district": "Feni"
+  },
+  {
+   "name": "Sonaimori",
+   "bn": "সোনাইমুড়ী",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Sonargaon",
+   "bn": "সোনারগাঁ",
+   "district": "Narayanganj"
+  },
+  {
+   "name": "Sonatala",
+   "bn": "সোনাতলা",
+   "district": "Bogura"
+  },
+  {
+   "name": "South Sunamganj",
+   "bn": "দক্ষিণ সুনামগঞ্জ",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Sreebordi",
+   "bn": "শ্রীবরদী",
+   "district": "Sherpur"
+  },
+  {
+   "name": "Sreemangal",
+   "bn": "শ্রীমঙ্গল",
+   "district": "Moulvibazar"
+  },
+  {
+   "name": "Sreenagar",
+   "bn": "শ্রীনগর",
+   "district": "Munshiganj"
+  },
+  {
+   "name": "Subarnachar",
+   "bn": "সুবর্ণচর",
+   "district": "Noakhali"
+  },
+  {
+   "name": "Sujanagar",
+   "bn": "সুজানগর",
+   "district": "Pabna"
+  },
+  {
+   "name": "Sundarganj",
+   "bn": "সুন্দরগঞ্জ",
+   "district": "Gaibandha"
+  },
+  {
+   "name": "Syedpur",
+   "bn": "সৈয়দপুর",
+   "district": "Nilphamari"
+  },
+  {
+   "name": "Tahirpur",
+   "bn": "তাহিরপুর",
+   "district": "Sunamganj"
+  },
+  {
+   "name": "Taltali",
+   "bn": "তালতলি",
+   "district": "Barguna"
+  },
+  {
+   "name": "Tanore",
+   "bn": "তানোর",
+   "district": "Rajshahi"
+  },
+  {
+   "name": "Taragonj",
+   "bn": "তারাগঞ্জ",
+   "district": "Rangpur"
+  },
+  {
+   "name": "Tarail",
+   "bn": "তাড়াইল",
+   "district": "Kishoreganj"
+  },
+  {
+   "name": "Tarakanda",
+   "bn": "তারাকান্দা",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Tarash",
+   "bn": "তাড়াশ",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Tazumuddin",
+   "bn": "তজুমদ্দিন",
+   "district": "Bhola"
+  },
+  {
+   "name": "Teknaf",
+   "bn": "টেকনাফ",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Terokhada",
+   "bn": "তেরখাদা",
+   "district": "Khulna"
+  },
+  {
+   "name": "Tetulia",
+   "bn": "তেতুলিয়া",
+   "district": "Panchagarh"
+  },
+  {
+   "name": "Thanchi",
+   "bn": "থানচি",
+   "district": "Bandarban"
+  },
+  {
+   "name": "Titas",
+   "bn": "তিতাস",
+   "district": "Cumilla"
+  },
+  {
+   "name": "Tongibari",
+   "bn": "টংগীবাড়ি",
+   "district": "Munshiganj"
+  },
+  {
+   "name": "Trishal",
+   "bn": "ত্রিশাল",
+   "district": "Mymensingh"
+  },
+  {
+   "name": "Tungipara",
+   "bn": "টুংগীপাড়া",
+   "district": "Gopalganj"
+  },
+  {
+   "name": "Ukhiya",
+   "bn": "উখিয়া",
+   "district": "Cox's Bazar"
+  },
+  {
+   "name": "Ulipur",
+   "bn": "উলিপুর",
+   "district": "Kurigram"
+  },
+  {
+   "name": "Ullapara",
+   "bn": "উল্লাপাড়া",
+   "district": "Sirajganj"
+  },
+  {
+   "name": "Wazirpur",
+   "bn": "উজিরপুর",
+   "district": "Barishal"
+  },
+  {
+   "name": "Zajira",
+   "bn": "জাজিরা",
+   "district": "Shariatpur"
+  },
+  {
+   "name": "Zakiganj",
+   "bn": "জকিগঞ্জ",
+   "district": "Sylhet"
+  },
+  {
+   "name": "Zianagar",
+   "bn": "জিয়ানগর",
+   "district": "Pirojpur"
+  }
+ ],
+ "localities": [
+  {
+   "name": "Mirpur",
+   "aliases": [
+    "Mirpur 10",
+    "Mirpur-10"
+   ],
+   "bn": "মিরপুর",
+   "district": "Dhaka",
+   "lat": 23.807,
+   "lon": 90.368
+  },
+  {
+   "name": "Dhanmondi",
+   "aliases": [],
+   "bn": "ধানমন্ডি",
+   "district": "Dhaka",
+   "lat": 23.746,
+   "lon": 90.374
+  },
+  {
+   "name": "Mohammadpur",
+   "aliases": [],
+   "bn": "মোহাম্মদপুর",
+   "district": "Dhaka",
+   "lat": 23.766,
+   "lon": 90.358
+  },
+  {
+   "name": "Uttara",
+   "aliases": [],
+   "bn": "উত্তরা",
+   "district": "Dhaka",
+   "lat": 23.874,
+   "lon": 90.398
+  },
+  {
+   "name": "Gulshan",
+   "aliases": [],
+   "bn": "গুলশান",
+   "district": "Dhaka",
+   "lat": 23.792,
+   "lon": 90.416
+  },
+  {
+   "name": "Banani",
+   "aliases": [],
+   "bn": "বনানী",
+   "district": "Dhaka",
+   "lat": 23.794,
+   "lon": 90.404
+  },
+  {
+   "name": "Motijheel",
+   "aliases": [],
+   "bn": "মতিঝিল",
+   "district": "Dhaka",
+   "lat": 23.733,
+   "lon": 90.418
+  },
+  {
+   "name": "Jatrabari",
+   "aliases": [],
+   "bn": "যাত্রাবাড়ী",
+   "district": "Dhaka",
+   "lat": 23.71,
+   "lon": 90.434
+  },
+  {
+   "name": "Badda",
+   "aliases": [],
+   "bn": "বাড্ডা",
+   "district": "Dhaka",
+   "lat": 23.78,
+   "lon": 90.426
+  },
+  {
+   "name": "Tejgaon",
+   "aliases": [],
+   "bn": "তেজগাঁও",
+   "district": "Dhaka",
+   "lat": 23.763,
+   "lon": 90.393
+  },
+  {
+   "name": "Farmgate",
+   "aliases": [],
+   "bn": "ফার্মগেট",
+   "district": "Dhaka",
+   "lat": 23.757,
+   "lon": 90.389
+  },
+  {
+   "name": "Shantinagar",
+   "aliases": [],
+   "bn": "শান্তিনগর",
+   "district": "Dhaka",
+   "lat": 23.739,
+   "lon": 90.413
+  },
+  {
+   "name": "Malibagh",
+   "aliases": [],
+   "bn": "মালিবাগ",
+   "district": "Dhaka",
+   "lat": 23.749,
+   "lon": 90.413
+  },
+  {
+   "name": "Rampura",
+   "aliases": [],
+   "bn": "রামপুরা",
+   "district": "Dhaka",
+   "lat": 23.762,
+   "lon": 90.421
+  },
+  {
+   "name": "Old Dhaka",
+   "aliases": [
+    "Puran Dhaka"
+   ],
+   "bn": "পুরান ঢাকা",
+   "district": "Dhaka",
+   "lat": 23.711,
+   "lon": 90.407
+  },
+  {
+   "name": "Mohakhali",
+   "aliases": [],
+   "bn": "মহাখালী",
+   "district": "Dhaka",
+   "lat": 23.778,
+   "lon": 90.4
+  },
+  {
+   "name": "Karwan Bazar",
+   "aliases": [
+    "Kawran Bazar",
+    "Kawran Bazaar"
+   ],
+   "bn": "কারওয়ান বাজার",
+   "district": "Dhaka",
+   "lat": 23.751,
+   "lon": 90.393
+  },
+  {
+   "name": "Shahbagh",
+   "aliases": [],
+   "bn": "শাহবাগ",
+   "district": "Dhaka",
+   "lat": 23.738,
+   "lon": 90.395
+  },
+  {
+   "name": "Azimpur",
+   "aliases": [],
+   "bn": "আজিমপুর",
+   "district": "Dhaka",
+   "lat": 23.728,
+   "lon": 90.385
+  },
+  {
+   "name": "Khilgaon",
+   "aliases": [],
+   "bn": "খিলগাঁও",
+   "district": "Dhaka",
+   "lat": 23.752,
+   "lon": 90.426
+  },
+  {
+   "name": "Agrabad",
+   "aliases": [],
+   "bn": "আগ্রাবাদ",
+   "district": "Chattogram",
+   "lat": 22.325,
+   "lon": 91.811
+  },
+  {
+   "name": "Muradpur",
+   "aliases": [],
+   "bn": "মুরাদপুর",
+   "district": "Chattogram",
+   "lat": 22.367,
+   "lon": 91.837
+  },
+  {
+   "name": "Bahaddarhat",
+   "aliases": [],
+   "bn": "বহদ্দারহাট",
+   "district": "Chattogram",
+   "lat": 22.369,
+   "lon": 91.846
+  },
+  {
+   "name": "Chawkbazar",
+   "aliases": [
+    "Chowkbazar"
+   ],
+   "bn": "চকবাজার",
+   "district": "Chattogram",
+   "lat": 22.35,
+   "lon": 91.838
+  },
+  {
+   "name": "Halishahar",
+   "aliases": [],
+   "bn": "হালিশহর",
+   "district": "Chattogram",
+   "lat": 22.327,
+   "lon": 91.786
+  }
+ ]
+}

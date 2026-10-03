@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from app.api.deps import CurrentUser, DbSession
 from app.models.event import Event, EventStatus, Priority
 from app.models.field_report import FieldReport, ReportStatus
+from app.models.signal import Signal, SignalStatus
 from app.models.user import Role
 from app.services.field_reports import visible_reports
 
@@ -26,6 +27,9 @@ class Overview(BaseModel):
     # Reviewers only (null for others): flags and the review backlog.
     flagged_24h: int | None
     unreviewed_reports: int | None
+    # Public signals published in the last 24 hours; reviewers also get the backlog.
+    signals_24h: int
+    unreviewed_signals: int | None
 
 
 @router.get("/overview", response_model=Overview)
@@ -43,7 +47,15 @@ def overview(db: DbSession, user: CurrentUser):
     recent = visible_reports(user).where(FieldReport.observed_at >= now - timedelta(hours=24))
     reports_24h = db.scalar(select(func.count()).select_from(recent.subquery())) or 0
 
-    flagged = unreviewed = None
+    signals_24h = (
+        db.scalar(
+            select(func.count())
+            .select_from(Signal)
+            .where(Signal.published_at >= now - timedelta(hours=24))
+        )
+        or 0
+    )
+    flagged = unreviewed = unreviewed_signals = None
     if user.role in REVIEWERS:
         flagged = (
             db.scalar(
@@ -63,6 +75,12 @@ def overview(db: DbSession, user: CurrentUser):
             )
             or 0
         )
+        unreviewed_signals = (
+            db.scalar(
+                select(func.count()).select_from(Signal).where(Signal.status == SignalStatus.NEW)
+            )
+            or 0
+        )
 
     return Overview(
         as_of=now,
@@ -71,4 +89,6 @@ def overview(db: DbSession, user: CurrentUser):
         reports_24h=reports_24h,
         flagged_24h=flagged,
         unreviewed_reports=unreviewed,
+        signals_24h=signals_24h,
+        unreviewed_signals=unreviewed_signals,
     )

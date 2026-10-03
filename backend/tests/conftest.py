@@ -1,6 +1,8 @@
 """Test fixtures. Tests run against a real PostgreSQL database (CARCUX_TEST_DATABASE_URL)."""
 
+import importlib.util
 import os
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -23,6 +25,18 @@ TEST_DATABASE_URL = os.environ.get(
 )
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 PASSWORD = "correct-horse-battery-staple"  # noqa: S105
+
+
+def _seed_sources() -> list[tuple]:
+    """The starting sources, exactly as migration 0005 inserts them."""
+    path = next((BACKEND_DIR / "migrations" / "versions").glob("0005_*.py"))
+    spec = importlib.util.spec_from_file_location("m0005", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.SEED_SOURCES
+
+
+SEED_SOURCES = _seed_sources()
 
 
 @pytest.fixture(scope="session")
@@ -49,9 +63,20 @@ def _clean_tables(request) -> None:
         conn.execute(
             text(
                 "TRUNCATE event_evidence, events, field_report_media, field_reports, "
-                "audit_log, users RESTART IDENTITY CASCADE"
+                "signals, ingest_runs, sources, audit_log, users RESTART IDENTITY CASCADE"
             )
         )
+        for key, name, stype, adapter, url, domain, lang, enabled, every in SEED_SOURCES:
+            conn.execute(
+                text(
+                    "INSERT INTO sources (id, key, name, source_type, adapter, url, domain, "
+                    "language, enabled, interval_minutes) VALUES (:id, :key, :name, :stype, "
+                    ":adapter, :url, :domain, :lang, :enabled, :every)"
+                ),
+                {"id": uuid.uuid4(), "key": key, "name": name, "stype": stype,
+                 "adapter": adapter, "url": url, "domain": domain, "lang": lang,
+                 "enabled": enabled, "every": every},
+            )  # fmt: skip
 
 
 @pytest.fixture

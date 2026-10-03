@@ -62,10 +62,12 @@ export function TextAreaField({
 
 export function SelectField({
   label,
+  hint,
   children,
   ...props
-}: ComponentProps<"select"> & { label: string }) {
+}: ComponentProps<"select"> & { label: string; hint?: string }) {
   const id = useId();
+  const hintId = `${id}-hint`;
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-semibold text-ink">
@@ -74,10 +76,16 @@ export function SelectField({
       <select
         {...props}
         id={id}
+        aria-describedby={hint ? hintId : undefined}
         className="h-11 rounded-md border border-line bg-panel px-3 text-ink shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none"
       >
         {children}
       </select>
+      {hint && (
+        <span id={hintId} className="text-xs text-muted">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }

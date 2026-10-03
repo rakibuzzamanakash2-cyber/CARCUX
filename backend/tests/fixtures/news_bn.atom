@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>প্রথম আলো</title>
+<entry>
+  <id>urn:pa:b1</id>
+  <title>সুনামগঞ্জে বন্যা পরিস্থিতির অবনতি</title>
+  <link rel="alternate" href="https://example.bn/sunamganj-flood"/>
+  <published>2026-10-03T09:00:00+06:00</published>
+  <summary>সুরমা নদীর পানি বিপৎসীমার ওপর দিয়ে প্রবাহিত হচ্ছে।</summary>
+</entry>
+<entry>
+  <id>urn:pa:b2</id>
+  <title>ক্রিকেট দলের নতুন অধিনায়ক</title>
+  <link href="https://example.bn/cricket"/>
+  <updated>2026-10-03T08:00:00+06:00</updated>
+</entry>
+</feed>

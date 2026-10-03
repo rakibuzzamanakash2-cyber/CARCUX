@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     max_photos_per_report: int = 4
     max_photo_bytes: int = 8 * 1024 * 1024
 
+    # Public signals: reading outside sources (GDACS, news feeds, ReliefWeb).
+    ingest_timeout_seconds: float = 20.0
+    ingest_max_bytes: int = 5 * 1024 * 1024
+    # Feeds on private or local addresses are refused unless this is set (tests, labs).
+    ingest_allow_private_addresses: bool = False
+    # ReliefWeb's API needs an approved app name (https://apidoc.reliefweb.int).
+    reliefweb_appname: str | None = None
+
     @model_validator(mode="after")
     def _production_requires_real_secret(self) -> "Settings":
         if self.environment == "production":
