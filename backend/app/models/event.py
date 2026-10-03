@@ -1,7 +1,7 @@
 """Events and the evidence attached to them.
 
 An event is the analyst's working record of one real-world situation ("waterlogging
-at Mirpur 10, 3 Oct"). Evidence links field reports to it, each with a relation:
+at Mirpur 10, 3 Oct"). Evidence links field reports and public signals to it, each with a relation:
 does the report support the event, only partly, contradict it, or merely relate to
 it? The vocabulary matches the CARCUX-BD dataset (relation.schema.json,
 common.schema.json), so what analysts record here can be compared with the gold
@@ -116,25 +116,35 @@ class Event(Base):
         """Tally of the evidence by relation, plus distinct reporters and photos."""
         counts = {r.value: 0 for r in EvidenceRelation}
         reporters: set[uuid.UUID] = set()
-        photos = 0
+        photos = signals = 0
         for item in self.evidence:
             counts[item.relation.value] += 1
-            reporters.add(item.field_report.reporter_id)
-            photos += len(item.field_report.media)
-        return {**counts, "reporters": len(reporters), "photos": photos}
+            if item.field_report is not None:
+                reporters.add(item.field_report.reporter_id)
+                photos += len(item.field_report.media)
+            else:
+                signals += 1
+        return {**counts, "reporters": len(reporters), "photos": photos, "signals": signals}
 
 
 class EventEvidence(Base):
     __tablename__ = "event_evidence"
     __table_args__ = (
-        # A report is linked to an event at most once; change the relation instead.
+        # A report or signal is linked to an event at most once; change the relation instead.
         UniqueConstraint("event_id", "field_report_id", name="event_report_once"),
+        UniqueConstraint("event_id", "signal_id", name="event_signal_once"),
+        CheckConstraint(
+            "num_nonnulls(field_report_id, signal_id) = 1", name="one_kind_of_evidence"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id"), index=True)
-    # Field reports for now; news and social observations join when source intake lands.
-    field_report_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("field_reports.id"), index=True)
+    # Exactly one of: a field report, or a public signal (alert, bulletin, news item).
+    field_report_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("field_reports.id"), index=True
+    )
+    signal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("signals.id"), index=True)
     relation: Mapped[EvidenceRelation] = mapped_column(
         Enum(EvidenceRelation, name="evidence_relation", values_callable=_values)
     )
@@ -144,4 +154,5 @@ class EventEvidence(Base):
 
     event: Mapped[Event] = relationship(back_populates="evidence")
     field_report = relationship("FieldReport", lazy="joined")
+    signal = relationship("Signal", lazy="joined")
     linked_by = relationship("User", lazy="joined")

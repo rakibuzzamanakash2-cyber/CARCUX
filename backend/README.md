@@ -87,6 +87,37 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 - **Matching is a baseline, and only a suggestion:** within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now). Same type first, then nearest. The correlation engine in `ai/correlation/` will replace it and can be scored against analysts' links.
 - Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
 
+## Public signals
+
+Signals are evidence from outside CARCUX: disaster alerts, official bulletins and news items. They link to events like field reports do (`signal_id` instead of `field_report_id` when linking evidence), and their fields follow the CARCUX-BD observation schema.
+
+| Source | How it is read | Notes |
+|---|---|---|
+| GDACS (EU JRC, UN OCHA) | RSS, every 30 min | Floods, tropical cyclones and earthquakes concerning Bangladesh, with coordinates and green, orange or red alert levels. CC BY 4.0, credit GDACS. |
+| Prothom Alo (English, Bangla), The Daily Star | RSS, every 30 to 60 min | Kept only if keywords say it is a disaster or disruption **and** it names a place in Bangladesh. Headline, an excerpt of at most 300 characters and the link are stored, never the article. |
+| ReliefWeb | API v2 | Off until you set `CARCUX_RELIEFWEB_APPNAME` (an approved app name) and enable it. Carries BMD and FFWC bulletins. |
+| BMD, FFWC | Entered by hand | `POST /api/v1/signals` with a district or coordinates; the full bulletin text can be kept. |
+
+- **Placing news.** `app/ingest/places.py` looks up names in `app/data/bd_gazetteer.json` (64 districts and 8 divisions with coordinates, upazilas, and city localities; English and Bangla; districts and upazilas from [nuhil/bangladesh-geocode](https://github.com/nuhil/bangladesh-geocode), MIT). The first place mentioned anchors the item, refined to the most specific place in its district; precision is the uncertainty radius (2.5 km for a locality, 30 km for a district) and widens when the text names other districts too.
+- **Classifying news.** `app/ingest/classify.py` uses English and Bangla keywords per event type; it needs a match in the headline, or two in the summary. Matched words are stored in `extraction`, so each decision can be explained. Both are baselines for the learned models.
+- **Matching signals to events:** the 5 km / 48 h rule, widened by the signal's precision (up to 300 km) and using its validity period.
+- **Fetching safely:** http(s) only, no private or local addresses, at most 3 redirects (each checked), 5 MB and 20 s limits, XML parsed with `defusedxml`.
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /api/v1/signals` | everyone signed in | Newest first; `?source=`, `?status=new`, `?family=`, `?event_type=`, `?q=`, `?since=`, `?located=true` |
+| `POST /api/v1/signals` | analyst, admin | Enter a bulletin for a manual source (BMD, FFWC) |
+| `GET /api/v1/signals/{id}` | everyone signed in | One signal |
+| `POST /api/v1/signals/{id}/review` | analyst, admin | `new`, `reviewed`, or `dismissed` with a reason |
+| `GET /api/v1/signals/{id}/events`, `/candidate-events` | analyst, admin | Events it is linked to; events it may be about |
+| `GET /api/v1/events/{id}/candidate-signals` | analyst, admin | Signals that may be about the event |
+| `GET /api/v1/sources` | analyst, admin | Sources with last run, last error and signal counts |
+| `POST /api/v1/sources`, `PATCH /api/v1/sources/{id}` | admin | Add a news feed; rename, re-address, switch on or off, change interval |
+| `POST /api/v1/sources/{id}/fetch`, `GET .../runs` | admin; analyst, admin | Read a source now; recent runs |
+| `GET /api/v1/places/districts` | everyone signed in | Districts and their centres |
+
+**The ingest worker.** `python -m app.cli ingest --loop` reads every enabled source when it is due (the `ingest` service in Docker Compose). `--once` reads what is due and exits; `--source gdacs` reads one source now.
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.
@@ -99,7 +130,7 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 
 ## Audit log
 
-Logins (success and failure), account creation and changes, field report submissions and verifications, and every event and evidence change are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
+Logins (success and failure), account creation and changes, field report submissions and verifications, every event and evidence change, signal entry and triage, and source changes are written to `audit_log`. The table is **append-only**: a database trigger rejects every UPDATE and DELETE.
 
 ## Database migrations
 
@@ -127,7 +158,9 @@ Tests need PostgreSQL. They use `CARCUX_TEST_DATABASE_URL`, default `postgresql+
 backend/
 ├── app/
 │   ├── main.py          # application factory
-│   ├── cli.py           # command-line tasks (create-admin)
+│   ├── cli.py           # command-line tasks (create-admin, ingest)
+│   ├── ingest/          # source adapters, keyword classifier, gazetteer, runner
+│   ├── data/            # Bangladesh gazetteer (scripts/build_gazetteer.py)
 │   ├── core/            # settings, password hashing, tokens
 │   ├── db/              # base model, engine and sessions
 │   ├── models/          # database tables
