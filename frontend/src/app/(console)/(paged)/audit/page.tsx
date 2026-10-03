@@ -3,6 +3,8 @@ import {
   KeyRound,
   LogIn,
   Radar,
+  RadioTower,
+  Rss,
   ScrollText,
   ShieldAlert,
   UserCog,
@@ -55,20 +57,25 @@ const ACTIONS: Record<string, { label: string; icon: LucideIcon; tone: string }>
   "event.created": { label: "Created an event", icon: Radar, tone: "text-brand" },
   "event.updated": { label: "Changed an event", icon: Radar, tone: "text-medium" },
   "event.evidence_linked": {
-    label: "Linked a report to an event",
+    label: "Linked evidence to an event",
     icon: Radar,
     tone: "text-brand",
   },
   "event.evidence_updated": {
-    label: "Changed how a report bears on an event",
+    label: "Changed how evidence bears on an event",
     icon: Radar,
     tone: "text-medium",
   },
   "event.evidence_unlinked": {
-    label: "Unlinked a report from an event",
+    label: "Unlinked evidence from an event",
     icon: Radar,
     tone: "text-alert",
   },
+  "signal.entered": { label: "Entered a bulletin", icon: RadioTower, tone: "text-brand" },
+  "signal.reviewed": { label: "Triaged a signal", icon: RadioTower, tone: "text-alert" },
+  "source.created": { label: "Added a news feed", icon: Rss, tone: "text-brand" },
+  "source.updated": { label: "Changed a source", icon: Rss, tone: "text-medium" },
+  "source.fetched": { label: "Read a source now", icon: Rss, tone: "text-medium" },
 };
 
 const GROUPS = [
@@ -77,6 +84,8 @@ const GROUPS = [
   { value: "user.", label: "Accounts" },
   { value: "field_report.", label: "Field reports" },
   { value: "event.", label: "Events and evidence" },
+  { value: "signal.", label: "Public signals" },
+  { value: "source.", label: "Sources" },
 ];
 
 const PERIODS = [
@@ -100,20 +109,22 @@ function sinceFor(period: string): string | null {
   return hours ? new Date(Date.now() - hours * 3_600_000).toISOString() : null;
 }
 
-/** Where the entry points: a link to the event, report or account it concerns. */
+const TARGETS: Record<string, { label: string; href?: (id: string) => string }> = {
+  event: { label: "Event", href: (id) => `/events/${id}` },
+  field_report: { label: "Field report", href: (id) => `/field-reports/${id}` },
+  signal: { label: "Signal", href: (id) => `/signals/${id}` },
+  source: { label: "Source", href: () => "/sources" },
+  user: { label: "Account" },
+};
+
+/** Where the entry points: a link to the event, report, signal or account it concerns. */
 function Target({ entry }: { entry: AuditEntry }) {
   const id = entry.target_id;
   if (!entry.target_type || !id) return <span className="text-muted">None</span>;
   const short = id.slice(0, 8);
-  const to =
-    entry.target_type === "event"
-      ? `/events/${id}`
-      : entry.target_type === "field_report"
-        ? `/field-reports/${id}`
-        : null;
-  const label =
-    { event: "Event", field_report: "Field report", user: "Account" }[entry.target_type] ??
-    entry.target_type;
+  const target = TARGETS[entry.target_type];
+  const label = target?.label ?? entry.target_type;
+  const to = target?.href?.(id);
   return to ? (
     <Link href={to} className="font-semibold text-brand hover:underline">
       {label} {short}
@@ -131,9 +142,11 @@ function Details({ entry }: { entry: AuditEntry }) {
   let summary = "";
   if (entry.action === "auth.login_failed")
     summary = `Reason: ${String(d.reason ?? "unknown").replace(/_/g, " ")}`;
-  else if (entry.action === "field_report.reviewed")
+  else if (entry.action === "field_report.reviewed" || entry.action === "signal.reviewed")
     summary = `${String(d.from)} → ${String(d.to)}${d.note ? `: ${String(d.note)}` : ""}`;
-  else if (entry.action === "event.created") summary = String(d.title ?? "");
+  else if (entry.action === "event.created" || entry.action === "signal.entered")
+    summary = String(d.title ?? "");
+  else if (entry.action === "source.created") summary = String(d.url ?? "");
   else if (entry.action === "event.evidence_linked")
     summary = `As ${String(d.relation ?? "").replace(/_/g, " ")}`;
   else if (d.changes && typeof d.changes === "object")

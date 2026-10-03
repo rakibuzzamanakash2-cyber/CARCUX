@@ -4,26 +4,36 @@ import { Ban, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { reviewReport } from "@/app/actions/review";
-import type { ActionState, ReportStatus } from "@/lib/types";
+import { reviewSignal } from "@/app/actions/signals";
+import type { ActionState, ReportStatus, SignalStatus } from "@/lib/types";
 
-/** Triage buttons for one report: mark reviewed, dismiss with a reason, or reopen. */
+type Triage = "open" | "reviewed" | "dismissed";
+
+/** Triage buttons for one report or signal: mark reviewed, dismiss with a reason, or reopen. */
 export function ReviewControls({
   reportId,
+  signalId,
   status,
   compact = false,
 }: {
-  reportId: string;
-  status: ReportStatus;
+  reportId?: string;
+  signalId?: string;
+  status: ReportStatus | SignalStatus;
   compact?: boolean;
 }) {
+  const noun = signalId ? "signal" : "report";
+  const id = signalId ?? reportId ?? "";
+  const current: Triage = status === "submitted" || status === "new" ? "open" : status;
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<ActionState>();
   const [dismissing, setDismissing] = useState(false);
   const [reason, setReason] = useState("");
 
-  function decide(next: ReportStatus, note?: string) {
+  function decide(next: Triage, note?: string) {
     startTransition(async () => {
-      const result = await reviewReport(reportId, next, note);
+      const result = signalId
+        ? await reviewSignal(signalId, next === "open" ? "new" : next, note)
+        : await reviewReport(id, next === "open" ? "submitted" : next, note);
       setState(result);
       if (result?.ok) {
         setDismissing(false);
@@ -38,7 +48,7 @@ export function ReviewControls({
   return (
     <div className="flex flex-col gap-2" aria-busy={pending}>
       <div className="flex flex-wrap gap-2">
-        {status !== "reviewed" && (
+        {current !== "reviewed" && (
           <button
             type="button"
             disabled={pending}
@@ -49,7 +59,7 @@ export function ReviewControls({
             Mark reviewed
           </button>
         )}
-        {status !== "dismissed" && !dismissing && (
+        {current !== "dismissed" && !dismissing && (
           <button
             type="button"
             disabled={pending}
@@ -60,15 +70,15 @@ export function ReviewControls({
             Dismiss
           </button>
         )}
-        {status !== "submitted" && (
+        {current !== "open" && (
           <button
             type="button"
             disabled={pending}
-            onClick={() => decide("submitted")}
+            onClick={() => decide("open")}
             className={`${btn} border border-line bg-panel text-ink hover:border-muted`}
           >
             <RotateCcw size={16} aria-hidden="true" />
-            {compact ? "Reopen" : "Put back in the queue"}
+            {compact ? "Reopen" : signalId ? "Mark as new" : "Put back in the queue"}
           </button>
         )}
       </div>
@@ -80,16 +90,20 @@ export function ReviewControls({
             decide("dismissed", reason);
           }}
         >
-          <label htmlFor={`reason-${reportId}`} className="text-sm font-semibold">
-            Why is this report not usable?
+          <label htmlFor={`reason-${id}`} className="text-sm font-semibold">
+            Why is this {noun} not usable?
           </label>
           <input
-            id={`reason-${reportId}`}
+            id={`reason-${id}`}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             required
             maxLength={1000}
-            placeholder="e.g. Duplicate of an earlier report; photo is from another place"
+            placeholder={
+              signalId
+                ? "e.g. Old story; not about Bangladesh; placed in the wrong district"
+                : "e.g. Duplicate of an earlier report; photo is from another place"
+            }
             className="h-10 rounded-lg border border-line bg-panel px-3 text-ink focus:border-red focus:outline-none"
           />
           <div className="flex gap-2">
@@ -98,7 +112,7 @@ export function ReviewControls({
               disabled={pending || !reason.trim()}
               className={`${btn} bg-red text-white hover:bg-red-strong`}
             >
-              Dismiss report
+              Dismiss {noun}
             </button>
             <button
               type="button"

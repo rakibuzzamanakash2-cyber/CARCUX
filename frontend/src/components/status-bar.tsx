@@ -46,6 +46,7 @@ export function StatusBar({ overview }: { overview: Overview | null }) {
       dot: "bg-[#2fbf68]",
       href: "/field-reports",
     },
+    { value: overview.signals_24h, label: "Signals (24h)", dot: "bg-[#7cc7f2]", href: "/signals" },
     ...(overview.flagged_24h !== null
       ? [
           {

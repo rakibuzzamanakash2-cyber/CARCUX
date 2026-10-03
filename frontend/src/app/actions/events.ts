@@ -54,6 +54,10 @@ export async function createEvent(_prev: ActionState, formData: FormData): Promi
     .getAll("field_report_ids")
     .map(String)
     .filter((id) => isUuid(id));
+  const signalIds = formData
+    .getAll("signal_ids")
+    .map(String)
+    .filter((id) => isUuid(id));
   const priority = text(formData, "priority");
   const body = {
     title: text(formData, "title"),
@@ -65,6 +69,7 @@ export async function createEvent(_prev: ActionState, formData: FormData): Promi
     started_at: startedAt,
     priority: PRIORITY_VALUES.has(priority) ? priority : "medium",
     field_report_ids: reportIds,
+    signal_ids: signalIds,
   };
   if (!body.event_type) return { ok: false, message: "Choose the type of event." };
   if (Number.isNaN(body.latitude) || Number.isNaN(body.longitude) || !text(formData, "latitude")) {
@@ -78,6 +83,7 @@ export async function createEvent(_prev: ActionState, formData: FormData): Promi
     return failure(error, "Could not create the event.");
   }
   refresh(event.id, reportIds);
+  for (const id of signalIds) revalidatePath(`/signals/${id}`);
   redirect(`/events/${event.id}?created=1`);
 }
 
