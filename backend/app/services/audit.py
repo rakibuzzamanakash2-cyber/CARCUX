@@ -21,6 +21,10 @@ class AuditAction:
     EVIDENCE_LINKED = "event.evidence_linked"
     EVIDENCE_UPDATED = "event.evidence_updated"
     EVIDENCE_UNLINKED = "event.evidence_unlinked"
+    FIELD_REPORT_REVIEWED = "field_report.reviewed"
+    PASSWORD_CHANGED = "auth.password_changed"  # noqa: S105 (an action name)
+    PASSWORD_CHANGE_FAILED = "auth.password_change_failed"  # noqa: S105
+    PASSWORD_RESET = "user.password_reset"  # noqa: S105
 
 
 def record(
