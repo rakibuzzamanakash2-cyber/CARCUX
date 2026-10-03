@@ -9,6 +9,7 @@ import { formatDhaka } from "@/lib/format";
 import { ADAPTER, LANGUAGE_LABEL, SOURCE_TYPE_LABEL } from "@/lib/signals";
 import { REPORT_REVIEWERS, type Source } from "@/lib/types";
 
+import { BackfillForm } from "./backfill-form";
 import { AddFeedForm, SourceActions } from "./source-controls";
 
 export const metadata = { title: "Sources" };
@@ -174,6 +175,20 @@ export default async function SourcesPage() {
             );
           })}
         </DataTable>
+
+        {admin && (
+          <Panel
+            id="backfill"
+            title="Fill in a past period"
+            description="Read a source's archive for a case study. GDACS covers floods, cyclones and earthquakes; ReliefWeb (once switched on) adds BMD and FFWC bulletins. For newspaper articles, import a list under Public signals."
+          >
+            <BackfillForm
+              sources={sources
+                .filter((s) => s.adapter === "gdacs" || s.adapter === "reliefweb")
+                .map((s) => ({ id: s.id, name: s.name }))}
+            />
+          </Panel>
+        )}
 
         {admin && (
           <Panel

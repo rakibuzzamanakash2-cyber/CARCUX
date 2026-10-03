@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
 from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.core.event_types import EVENT_TYPE_FAMILY, EVENT_TYPES
@@ -13,8 +13,17 @@ from app.ingest import places
 from app.models.signal import Signal, SignalStatus, Source
 from app.models.user import Role, User
 from app.schemas.event import CandidateEvent, EventRead, ReportLink
-from app.schemas.signal import District, SignalCreate, SignalPage, SignalRead, SignalReview
+from app.schemas.signal import (
+    District,
+    ImportResultRead,
+    ImportRow,
+    SignalCreate,
+    SignalPage,
+    SignalRead,
+    SignalReview,
+)
 from app.services import events as event_service
+from app.services import signal_import
 from app.services import signals as service
 
 router = APIRouter(prefix="/signals", tags=["signals"])
@@ -99,6 +108,33 @@ def enter_bulletin(body: SignalCreate, request: Request, db: DbSession, user: Re
         raise _unprocessable(f"{source.name} is read automatically; pick a manual source") from None
     except service.UnknownDistrictError:
         raise _unprocessable(f"Unknown district '{body.district}'") from None
+
+
+@router.post("/import", response_model=ImportResultRead)
+async def import_list(
+    request: Request,
+    db: DbSession,
+    user: Reviewer,
+    file: Annotated[UploadFile, File(description="CSV, UTF-8, with a header row")],
+    dry_run: Annotated[bool, Query(description="Check the file without saving")] = True,
+):
+    """Import past news items collected by annotators. Check first (dry_run), then save."""
+    data = await file.read(signal_import.MAX_BYTES + 1)
+    try:
+        result = signal_import.import_csv(
+            db, actor=user, data=data, dry_run=dry_run, ip_address=client_ip(request)
+        )
+    except signal_import.ImportFileError as exc:
+        db.rollback()
+        raise _unprocessable(str(exc)) from None
+    return ImportResultRead(
+        dry_run=dry_run,
+        added=result.count("add"),
+        duplicates=result.count("duplicate"),
+        errors=result.count("error"),
+        new_publishers=result.created_sources,
+        rows=[ImportRow(**r.__dict__) for r in result.rows],
+    )
 
 
 @router.get("/{signal_id}", response_model=SignalRead)

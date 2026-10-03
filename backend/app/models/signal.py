@@ -13,12 +13,13 @@ the link, never the article.
 
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Enum,
     Float,
@@ -190,3 +191,6 @@ class IngestRun(Base):
     skipped: Mapped[int] = mapped_column(Integer, default=0)  # not relevant or not placeable
     error: Mapped[str | None] = mapped_column(Text)
     triggered_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Set for backfills: the past period that was read.
+    window_start: Mapped[date | None] = mapped_column(Date)
+    window_end: Mapped[date | None] = mapped_column(Date)

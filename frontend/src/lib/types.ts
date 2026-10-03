@@ -278,6 +278,8 @@ export interface IngestRun {
   updated: number;
   skipped: number;
   error: string | null;
+  window_start: string | null;
+  window_end: string | null;
 }
 
 export interface Signal {
@@ -346,4 +348,24 @@ export interface DatasetSummary {
   events_total: number;
   problems_by_kind: Record<string, number>;
   problems: DatasetProblem[];
+}
+
+export interface ImportRow {
+  line: number;
+  status: "add" | "duplicate" | "error";
+  title: string;
+  message: string;
+  event_type: string | null;
+  place: string | null;
+  publisher: string | null;
+  signal_id: string | null;
+}
+
+export interface ImportResult {
+  dry_run: boolean;
+  added: number;
+  duplicates: number;
+  errors: number;
+  new_publishers: string[];
+  rows: ImportRow[];
 }

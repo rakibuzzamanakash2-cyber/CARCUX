@@ -11,6 +11,7 @@ import {
   REPORT_REVIEWERS,
   type ActionState,
   type EvidenceRelation,
+  type ImportResult,
   type IngestRun,
   type Signal,
   type SignalStatus,
@@ -188,5 +189,58 @@ export async function fetchNow(sourceId: string): Promise<ActionState> {
   return {
     ok: true,
     message: `Read ${run.fetched} items: ${run.created} new, ${run.updated} updated, ${run.skipped} not relevant.`,
+  };
+}
+
+/** Check (dry run) or import a CSV list of past news items. */
+export async function importList(
+  formData: FormData,
+  save: boolean,
+): Promise<{ ok: true; result: ImportResult } | { ok: false; message: string }> {
+  await requireRole(...REPORT_REVIEWERS);
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0)
+    return { ok: false, message: "Choose a CSV file." };
+  if (file.size > 2 * 1024 * 1024) return { ok: false, message: "The file is larger than 2 MB." };
+  const body = new FormData();
+  body.set("file", file, file.name);
+  let result: ImportResult;
+  try {
+    result = await api<ImportResult>(`/signals/import?dry_run=${save ? "false" : "true"}`, {
+      method: "POST",
+      body,
+    });
+  } catch (error) {
+    return { ok: false, message: failure(error, "Could not read the file.")!.message };
+  }
+  if (save) refresh();
+  return { ok: true, result };
+}
+
+/** Admin: read a past period from a source's archive. */
+export async function backfillSource(
+  sourceId: string,
+  start: string,
+  end: string,
+): Promise<ActionState> {
+  await requireRole("admin");
+  const day = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isUuid(sourceId) || !day.test(start) || !day.test(end))
+    return { ok: false, message: "Choose a source and both dates." };
+  let run: IngestRun;
+  try {
+    run = await api<IngestRun>(`/sources/${sourceId}/backfill`, {
+      method: "POST",
+      body: JSON.stringify({ start, end }),
+    });
+  } catch (error) {
+    return failure(error, "Could not read the archive.");
+  }
+  revalidatePath("/sources");
+  refresh();
+  if (!run.ok) return { ok: false, message: run.error ?? "The archive could not be read." };
+  return {
+    ok: true,
+    message: `Read ${run.fetched} items for ${start} to ${end}: ${run.created} new, ${run.updated} updated, ${run.skipped} not about Bangladesh or not relevant.`,
   };
 }
