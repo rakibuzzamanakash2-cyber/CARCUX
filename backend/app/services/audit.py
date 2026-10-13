@@ -25,6 +25,11 @@ class AuditAction:
     PASSWORD_CHANGED = "auth.password_changed"  # noqa: S105 (an action name)
     PASSWORD_CHANGE_FAILED = "auth.password_change_failed"  # noqa: S105
     PASSWORD_RESET = "user.password_reset"  # noqa: S105
+    SIGNAL_ENTERED = "signal.entered"
+    SIGNAL_REVIEWED = "signal.reviewed"
+    SOURCE_CREATED = "source.created"
+    SOURCE_UPDATED = "source.updated"
+    SOURCE_FETCHED = "source.fetched"
 
 
 def record(

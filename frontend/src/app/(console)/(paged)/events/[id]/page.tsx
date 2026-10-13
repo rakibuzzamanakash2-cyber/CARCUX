@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
 import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
+import { SignalSummary } from "@/components/signal-bits";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
@@ -22,6 +23,7 @@ import {
   REPORT_REVIEWERS,
   type Assessment,
   type CandidateReport,
+  type CandidateSignal,
   type CarcuxEvent,
   type EventStatus,
   type Evidence,
@@ -63,7 +65,11 @@ function showValue(field: string, value: unknown): string {
 /** One audit entry, in words. */
 function describe(entry: HistoryEntry): React.ReactNode {
   const d = entry.details as Record<string, unknown>;
-  const reportLink = d.field_report_id ? (
+  const reportLink = d.signal_id ? (
+    <Link href={`/signals/${String(d.signal_id)}`} className="text-brand hover:underline">
+      a signal
+    </Link>
+  ) : d.field_report_id ? (
     <Link
       href={`/field-reports/${String(d.field_report_id)}`}
       className="text-brand hover:underline"
@@ -76,7 +82,12 @@ function describe(entry: HistoryEntry): React.ReactNode {
   switch (entry.action) {
     case "event.created": {
       const n = Number(d.reports ?? 0);
-      return `created the event${n ? ` from ${n} ${n === 1 ? "report" : "reports"}` : ""}`;
+      const k = Number(d.signals ?? 0);
+      const parts = [
+        n ? `${n} ${n === 1 ? "report" : "reports"}` : "",
+        k ? `${k} ${k === 1 ? "signal" : "signals"}` : "",
+      ].filter(Boolean);
+      return `created the event${parts.length ? ` from ${parts.join(" and ")}` : ""}`;
     }
     case "event.updated": {
       const changes = (d.changes ?? {}) as Record<string, [unknown, unknown]>;
@@ -137,15 +148,19 @@ export default async function EventPage({
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const tab =
     reviewer && (tabParam === "evidence" || tabParam === "history") ? tabParam : "overview";
-  const [evidence, candidates, history] = reviewer
+  const open = event.status !== "dismissed";
+  const [evidence, candidates, candidateSignals, history] = reviewer
     ? await Promise.all([
         api<Evidence[]>(`/events/${id}/evidence`),
-        event.status === "dismissed"
-          ? Promise.resolve([] as CandidateReport[])
-          : api<CandidateReport[]>(`/events/${id}/candidate-reports`),
+        open
+          ? api<CandidateReport[]>(`/events/${id}/candidate-reports`)
+          : Promise.resolve([] as CandidateReport[]),
+        open
+          ? api<CandidateSignal[]>(`/events/${id}/candidate-signals`)
+          : Promise.resolve([] as CandidateSignal[]),
         api<HistoryEntry[]>(`/events/${id}/history`),
       ])
-    : [[] as Evidence[], [] as CandidateReport[], [] as HistoryEntry[]];
+    : [[] as Evidence[], [] as CandidateReport[], [] as CandidateSignal[], [] as HistoryEntry[]];
 
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
   const base = `/events/${event.id}`;
@@ -220,7 +235,12 @@ export default async function EventPage({
           <Tabs
             active={tab}
             items={[
-              { key: "overview", label: "Overview", href: base, icon: LayoutGrid },
+              {
+                key: "overview",
+                label: "Overview",
+                href: base,
+                icon: LayoutGrid,
+              },
               {
                 key: "evidence",
                 label: "Evidence",
@@ -266,20 +286,47 @@ export default async function EventPage({
           <div className="flex flex-col gap-6">
             <Panel
               id="evidence"
-              title="Linked reports"
-              description="Reports placed against this event, and how each bears on it."
+              title="Linked evidence"
+              description="Field reports and public signals placed against this event, and how each bears on it."
             >
               {evidence.length === 0 ? (
-                <p className="text-sm text-muted">No reports linked yet.</p>
+                <p className="text-sm text-muted">Nothing linked yet.</p>
               ) : (
                 <ul className="flex flex-col gap-4">
                   {evidence.map((item) => {
                     const r = item.field_report;
+                    if (!r) {
+                      return item.signal ? (
+                        <li
+                          key={item.id}
+                          className={`rounded-md border border-line border-l-4 bg-panel p-3 ${RELATION_STYLE[item.relation]}`}
+                        >
+                          <p className="mb-1 text-xs font-bold tracking-wide text-[#2f7fb0] uppercase">
+                            Public signal
+                          </p>
+                          <div className="mb-2">
+                            <SignalSummary signal={item.signal} />
+                          </div>
+                          <EvidenceControls
+                            eventId={event.id}
+                            evidenceId={item.id}
+                            relation={item.relation}
+                            noun="signal"
+                          />
+                          <p className="mt-1 text-xs text-muted">
+                            Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                          </p>
+                        </li>
+                      ) : null;
+                    }
                     return (
                       <li
                         key={item.id}
                         className={`rounded-md border border-line border-l-4 bg-panel p-3 ${RELATION_STYLE[item.relation]}`}
                       >
+                        <p className="mb-1 text-xs font-bold tracking-wide text-brand uppercase">
+                          Field report
+                        </p>
                         <p className="flex flex-wrap gap-x-3 text-sm text-muted">
                           <span>{formatDhaka(r.observed_at)}</span>
                           <span>{r.reporter.full_name}</span>
@@ -326,7 +373,7 @@ export default async function EventPage({
               )}
             </Panel>
 
-            {event.status !== "dismissed" && (
+            {open && (
               <Panel
                 id="candidates"
                 title="Possibly related reports"
@@ -371,6 +418,51 @@ export default async function EventPage({
                           eventId={event.id}
                           reportId={c.report.id}
                           label="Link this report as"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
+            )}
+
+            {open && (
+              <Panel
+                id="candidate-signals"
+                title="Possibly related signals"
+                description="Alerts, bulletins and news whose area and time overlap this event. A district-level news item covers its whole district: check the place before linking."
+              >
+                {candidateSignals.length === 0 ? (
+                  <p className="text-sm text-muted">None right now.</p>
+                ) : (
+                  <ul className="flex flex-col divide-y divide-line">
+                    {candidateSignals.map((c) => (
+                      <li
+                        key={c.signal.id}
+                        className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex flex-col gap-1">
+                          <p className="flex flex-wrap gap-x-3 text-sm text-muted">
+                            <span>
+                              {c.distance_km < 1
+                                ? `${Math.round(c.distance_km * 1000)} m away`
+                                : `${c.distance_km.toFixed(1)} km away`}
+                            </span>
+                            <span>
+                              {c.hours_apart === 0
+                                ? "during the event"
+                                : `${c.hours_apart} h outside the event's time`}
+                            </span>
+                            {c.same_type && (
+                              <span className="font-semibold text-brand">same type</span>
+                            )}
+                          </p>
+                          <SignalSummary signal={c.signal} />
+                        </div>
+                        <LinkButtons
+                          eventId={event.id}
+                          signalId={c.signal.id}
+                          label="Link this signal as"
                         />
                       </li>
                     ))}

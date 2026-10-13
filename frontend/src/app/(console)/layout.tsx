@@ -23,6 +23,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const urgent = overview ? overview.open_by_priority.critical + overview.open_by_priority.high : 0;
   const toReview = overview?.unreviewed_reports ?? 0;
+  const newSignals = overview?.unreviewed_signals ?? 0;
 
   return (
     <div className="grid min-h-dvh grid-rows-[auto_1fr] md:h-dvh md:overflow-hidden">
@@ -74,7 +75,14 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
       </header>
 
       <div className="grid min-h-0 md:grid-cols-[15rem_1fr]">
-        <Sidebar role={user.role} badges={{ "/events": urgent, "/review": toReview }} />
+        <Sidebar
+          role={user.role}
+          badges={{
+            "/events": urgent,
+            "/review": toReview,
+            "/signals": newSignals,
+          }}
+        />
         <div className="min-h-0 min-w-0 pb-20 md:overflow-y-auto md:pb-0">
           <div className="overflow-x-auto border-b border-white/10 bg-night px-1 py-1 lg:hidden">
             <StatusBar overview={overview} />

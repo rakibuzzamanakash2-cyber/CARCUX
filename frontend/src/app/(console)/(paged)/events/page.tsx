@@ -7,6 +7,7 @@ import {
   Radar,
   ShieldCheck,
   Siren,
+  RadioTower,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,7 +36,13 @@ const VIEWS: { key: string; label: string; statuses: EventStatus[] }[] = [
   { key: "all", label: "All statuses", statuses: [] },
 ];
 
-type Params = { view?: string; family?: string; priority?: string; q?: string; page?: string };
+type Params = {
+  view?: string;
+  family?: string;
+  priority?: string;
+  q?: string;
+  page?: string;
+};
 
 function href(p: Params): string {
   const params = new URLSearchParams();
@@ -139,13 +146,20 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
 
         <FilterBar
           action="/events"
-          search={{ name: "q", value: q, placeholder: "Search title, place or summary" }}
+          search={{
+            name: "q",
+            value: q,
+            placeholder: "Search title, place or summary",
+          }}
           selects={[
             {
               name: "view",
               label: "Status",
               value: view.key === "open" ? "" : view.key,
-              options: VIEWS.map((v) => ({ value: v.key === "open" ? "" : v.key, label: v.label })),
+              options: VIEWS.map((v) => ({
+                value: v.key === "open" ? "" : v.key,
+                label: v.label,
+              })),
             },
             {
               name: "family",
@@ -246,10 +260,18 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                           <span className="text-critical">, {ev.contradicts} contradicting</span>
                         )}
                       </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <UserRound size={14} aria-hidden="true" />
-                        {ev.reporters} {ev.reporters === 1 ? "field worker" : "field workers"}
-                      </span>
+                      {ev.reporters > 0 && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <UserRound size={14} aria-hidden="true" />
+                          {ev.reporters} {ev.reporters === 1 ? "field worker" : "field workers"}
+                        </span>
+                      )}
+                      {ev.signals > 0 && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <RadioTower size={14} aria-hidden="true" />
+                          {ev.signals} {ev.signals === 1 ? "public signal" : "public signals"}
+                        </span>
+                      )}
                     </span>
                   )}
                 </td>

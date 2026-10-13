@@ -8,6 +8,7 @@ import {
   MapPin,
   MapPinned,
   Plus,
+  RadioTower,
   Siren,
   Triangle,
   Diamond,
@@ -20,14 +21,20 @@ import { AssessmentText } from "@/components/event-badges";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FAMILIES, FAMILY_SHAPE, PRIORITY_COLOR, priorityLabel } from "@/lib/events";
-import type { CarcuxEvent, FieldReport, Priority } from "@/lib/types";
+import { SEVERITY_COLOR } from "@/lib/signals";
+import type { CarcuxEvent, FieldReport, Priority, Signal } from "@/lib/types";
 
 const MapView = dynamic(() => import("./map-view"), {
   ssr: false,
   loading: () => <div className="h-full w-full bg-sea" aria-busy="true" />,
 });
 
-const RANK: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+const RANK: Record<Priority, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
 const FAMILY_ICON = {
   natural_calamity: Droplets,
   road_infrastructure: Diamond,
@@ -81,14 +88,17 @@ function NorthArrow() {
 export function Situation({
   events,
   reports,
+  signals,
   canSubmit,
   canSeeReports,
 }: {
   events: CarcuxEvent[];
   reports: FieldReport[];
+  signals: Signal[];
   canSubmit: boolean;
   canSeeReports: boolean;
 }) {
+  const [showSignals, setShowSignals] = useState(true);
   const [family, setFamily] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showReports, setShowReports] = useState(true);
@@ -118,6 +128,7 @@ export function Situation({
         <MapView
           events={visible}
           reports={canSeeReports && showReports ? reports : []}
+          signals={showSignals ? signals : []}
           selectedId={selectedId}
           onSelect={setSelectedId}
           showReports={canSeeReports && showReports}
@@ -136,6 +147,15 @@ export function Situation({
               Field reports
             </button>
           )}
+          <button
+            type="button"
+            aria-pressed={showSignals}
+            onClick={() => setShowSignals((v) => !v)}
+            className={toggle(showSignals)}
+          >
+            <RadioTower size={16} strokeWidth={1.9} aria-hidden="true" />
+            Public signals
+          </button>
           <button
             type="button"
             aria-pressed={streetDetail}
@@ -185,6 +205,20 @@ export function Situation({
                   <span className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#3ddc84]" />
                     Report, 48 h
+                  </span>
+                )}
+                {showSignals && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="flex h-3.5 w-3.5 items-center justify-center rounded-full border-2"
+                      style={{ borderColor: SEVERITY_COLOR.unknown }}
+                    >
+                      <span
+                        className="h-1 w-1 rounded-full"
+                        style={{ background: SEVERITY_COLOR.unknown }}
+                      />
+                    </span>
+                    Signal, 72 h
                   </span>
                 )}
               </p>

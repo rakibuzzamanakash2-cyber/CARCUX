@@ -19,11 +19,17 @@ import {
 } from "react-leaflet";
 
 import { FAMILY_SHAPE, PRIORITY_COLOR } from "@/lib/events";
-import type { CarcuxEvent, FieldReport, Priority } from "@/lib/types";
+import { precisionText, SEVERITY_COLOR } from "@/lib/signals";
+import type { CarcuxEvent, FieldReport, Priority, Signal } from "@/lib/types";
 
 const BANGLADESH = L.latLngBounds([20.6, 88.0], [26.65, 92.7]);
 const BOUNDS = L.latLngBounds([19.6, 86.0], [27.8, 94.8]);
-const SIZE: Record<Priority, number> = { critical: 22, high: 18, medium: 15, low: 13 };
+const SIZE: Record<Priority, number> = {
+  critical: 22,
+  high: 18,
+  medium: 15,
+  low: 13,
+};
 
 type BasemapProps = { kind: string; name?: string; rank?: number };
 
@@ -53,7 +59,24 @@ function eventIcon(event: CarcuxEvent, selected: boolean): L.DivIcon {
     ? `<circle cx="${c}" cy="${c}" r="${s / 2 + 6}" fill="none" stroke="#ffffff" stroke-width="2.5"/>`
     : "";
   const html = `<svg width="${box}" height="${box}" viewBox="0 0 ${box} ${box}" aria-hidden="true">${pulse}${ring}<g transform="translate(${pad} ${pad})"><path d="${shapePath(shape, s)}" fill="${color}" stroke="#ffffff" stroke-width="2.5"/></g></svg>`;
-  return L.divIcon({ html, className: "marker-glow", iconSize: [box, box], iconAnchor: [c, c] });
+  return L.divIcon({
+    html,
+    className: "marker-glow",
+    iconSize: [box, box],
+    iconAnchor: [c, c],
+  });
+}
+
+/** Public signals: a ring with a dot (a broadcast), coloured by severity. */
+function signalIcon(signal: Signal): L.DivIcon {
+  const color = SEVERITY_COLOR[signal.severity ?? "unknown"];
+  const html = `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="#0a2117" fill-opacity="0.75" stroke="${color}" stroke-width="2.5"/><circle cx="11" cy="11" r="3" fill="${color}"/></svg>`;
+  return L.divIcon({
+    html,
+    className: "",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
 }
 
 function FlyTo({ target }: { target: [number, number] | null }) {
@@ -102,11 +125,27 @@ function Cities({ cities }: { cities: CityFeature[] }) {
 function basemapStyle(feature?: Feature<Geometry, BasemapProps>): L.PathOptions {
   switch (feature?.properties.kind) {
     case "country":
-      return { color: "#e9f5ec", weight: 1.6, fillColor: "#1d4a30", fillOpacity: 1 };
+      return {
+        color: "#e9f5ec",
+        weight: 1.6,
+        fillColor: "#1d4a30",
+        fillOpacity: 1,
+      };
     case "neighbour":
-      return { color: "#21402f", weight: 1, fillColor: "#11291d", fillOpacity: 1 };
+      return {
+        color: "#21402f",
+        weight: 1,
+        fillColor: "#11291d",
+        fillOpacity: 1,
+      };
     case "division":
-      return { color: "#d7eadd", weight: 0.9, opacity: 0.55, dashArray: "4 4", fill: false };
+      return {
+        color: "#d7eadd",
+        weight: 0.9,
+        opacity: 0.55,
+        dashArray: "4 4",
+        fill: false,
+      };
     case "river":
       return { color: "#58b9e0", weight: 2, opacity: 0.9 };
     default:
@@ -117,6 +156,7 @@ function basemapStyle(feature?: Feature<Geometry, BasemapProps>): L.PathOptions 
 export interface MapViewProps {
   events: CarcuxEvent[];
   reports: FieldReport[];
+  signals: Signal[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   showReports: boolean;
@@ -126,6 +166,7 @@ export interface MapViewProps {
 export default function MapView({
   events,
   reports,
+  signals,
   selectedId,
   onSelect,
   showReports,
@@ -202,7 +243,9 @@ export default function MapView({
               fillColor: r.integrity_flags.length ? "#ef3b42" : "#3ddc84",
               fillOpacity: 0.9,
             }}
-            eventHandlers={{ click: () => router.push(`/field-reports/${r.id}`) }}
+            eventHandlers={{
+              click: () => router.push(`/field-reports/${r.id}`),
+            }}
           >
             <Tooltip className="carcux-tip" direction="top" offset={[0, -4]}>
               <span className="block max-w-56 truncate">{r.text}</span>
@@ -210,6 +253,25 @@ export default function MapView({
             </Tooltip>
           </CircleMarker>
         ))}
+
+      {signals.map((s) => (
+        <Marker
+          key={s.id}
+          position={[s.latitude!, s.longitude!]}
+          icon={signalIcon(s)}
+          zIndexOffset={-100}
+          eventHandlers={{ click: () => router.push(`/signals/${s.id}`) }}
+          title={s.title}
+        >
+          <Tooltip className="carcux-tip" direction="top" offset={[0, -8]}>
+            <span className="block max-w-64 truncate">{s.title}</span>
+            <span className="text-xs text-muted">
+              {s.source.name}
+              {s.place_name ? `, ${s.place_name}` : ""} {precisionText(s.precision_m)}
+            </span>
+          </Tooltip>
+        </Marker>
+      ))}
 
       {events.map((e) => (
         <Marker
