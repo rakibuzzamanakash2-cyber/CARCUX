@@ -77,7 +77,22 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/` | everyone | **Public signals** layer: placed signals from the last 72 hours as rings coloured by severity (blue when not rated). |
 | `/events/{id}` | analyst, admin | The Evidence tab lists linked signals beside reports, plus **Possibly related signals**. |
 
+## Dataset work
 
+| Where | Who | What |
+|---|---|---|
+| Event overview, **Ground truth** | analyst, admin | Did it happen (not established, yes, no), sources published afterwards (link, date, kind) and a note. Says whether the event is ready for the dataset. |
+| Event Evidence tab | analyst, admin | Each link shows relation, **how sure** (unsure, fairly sure, certain) and **out of date when published**. Choosing **Partly supports**, when linking or changing, asks **what it gets wrong** (place, times, how bad, counts, cause, kind). |
+| `/dataset` | analyst, admin; download admin | Events ready out of all, observations, labelled links, and lists of what to fix, each linking to the event. Admins download the zip (or include unlinked items). Desktop only. |
+
+## Second opinions
+
+| Page | Who | What |
+|---|---|---|
+| `/annotation` | analyst, admin | **Judge:** links waiting for your independent label, showing the event (with its ground truth) and the item, but not the label already given, and with no links to pages that would show it. You answer the guideline's decision procedure (5.1) in order, with conflicts, how sure and out of date. **Agreement:** Cohen's κ against the 0.70 target, Krippendorff's α, the confusion table, and disagreements to decide into a final label. Sidebar badge: links waiting for you. Desktop only. |
+| `/events/{id}` Evidence tab | analyst, admin | Each link says whether it is waiting for a second opinion, agreed, disagreed (with a link to decide) or decided. **Not this event** is a new link label. |
+
+## Review queue, audit log and account
 
 | Page | Who | What |
 |---|---|---|
