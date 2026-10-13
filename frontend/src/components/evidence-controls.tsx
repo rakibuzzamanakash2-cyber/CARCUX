@@ -20,7 +20,7 @@ function Result({ state }: { state: ActionState }) {
 }
 
 /** "Partly supports" needs to say what the item gets wrong (the dataset's conflicts). */
-function ConflictPicker({
+export function ConflictPicker({
   value,
   onChange,
   legend,

@@ -24,6 +24,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const urgent = overview ? overview.open_by_priority.critical + overview.open_by_priority.high : 0;
   const toReview = overview?.unreviewed_reports ?? 0;
   const newSignals = overview?.unreviewed_signals ?? 0;
+  const opinions = overview?.second_opinions ?? 0;
 
   return (
     <div className="grid min-h-dvh grid-rows-[auto_1fr] md:h-dvh md:overflow-hidden">
@@ -81,6 +82,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
             "/events": urgent,
             "/review": toReview,
             "/signals": newSignals,
+            "/annotation": opinions,
           }}
         />
         <div className="min-h-0 min-w-0 pb-20 md:overflow-y-auto md:pb-0">

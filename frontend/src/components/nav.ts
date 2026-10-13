@@ -1,7 +1,16 @@
 import type { Role } from "@/lib/types";
 
 export type NavIcon =
-  "map" | "events" | "reports" | "signals" | "review" | "sources" | "dataset" | "users" | "audit";
+  | "map"
+  | "events"
+  | "reports"
+  | "signals"
+  | "review"
+  | "sources"
+  | "dataset"
+  | "annotation"
+  | "users"
+  | "audit";
 
 export interface NavItem {
   href: string;
@@ -29,6 +38,13 @@ export const NAV: { group: string; items: NavItem[] }[] = [
         label: "Review queue",
         icon: "review",
         roles: ["admin", "analyst"],
+      },
+      {
+        href: "/annotation",
+        label: "Second opinions",
+        icon: "annotation",
+        roles: ["admin", "analyst"],
+        desktopOnly: true,
       },
     ],
   },
@@ -70,6 +86,7 @@ export const SHORT_LABEL: Record<string, string> = {
   "/review": "Review",
   "/sources": "Sources",
   "/dataset": "Dataset",
+  "/annotation": "Opinions",
   "/users": "Users",
   "/audit": "Audit",
 };

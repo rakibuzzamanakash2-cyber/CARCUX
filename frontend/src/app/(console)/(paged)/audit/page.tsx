@@ -82,6 +82,12 @@ const ACTIONS: Record<string, { label: string; icon: LucideIcon; tone: string }>
     tone: "text-brand",
   },
   "source.backfilled": { label: "Filled in a past period", icon: Rss, tone: "text-medium" },
+  "event.evidence_judged": { label: "Gave a second opinion", icon: Radar, tone: "text-medium" },
+  "event.evidence_adjudicated": {
+    label: "Decided a disagreement",
+    icon: Radar,
+    tone: "text-alert",
+  },
   "dataset.exported": { label: "Exported the dataset", icon: ScrollText, tone: "text-brand" },
 };
 

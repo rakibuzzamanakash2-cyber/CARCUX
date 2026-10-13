@@ -10,6 +10,7 @@ import {
   Rss,
   ScrollText,
   Users,
+  Users2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,6 +26,7 @@ const ICONS: Record<NavIcon, typeof Map> = {
   review: Inbox,
   sources: Rss,
   dataset: Database,
+  annotation: Users2,
   users: Users,
   audit: ScrollText,
 };
@@ -41,6 +43,7 @@ export function Sidebar({ role, badges }: { role: Role; badges: Record<string, n
     "/events": "bg-critical text-white",
     "/review": "bg-alert-bright text-night",
     "/signals": "bg-[#7cc7f2] text-night",
+    "/annotation": "bg-alert-bright text-night",
   };
 
   return (

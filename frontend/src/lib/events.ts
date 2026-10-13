@@ -65,6 +65,36 @@ export const RELATIONS: { value: EvidenceRelation; label: string; short: string 
   { value: "partially_supports", label: "Partly supports", short: "partly supports" },
   { value: "contradicts", label: "Contradicts", short: "contradicts" },
   { value: "related", label: "Related only", short: "related" },
+  { value: "unrelated", label: "Not this event", short: "unrelated" },
+];
+
+/** The guideline's decision procedure (5.1), in its order: stop at the first yes. */
+export const DECISION_STEPS: { value: EvidenceRelation; question: string; answer: string }[] = [
+  {
+    value: "unrelated",
+    question: "Is it about a different event?",
+    answer: "Different event: wrong place, day or type",
+  },
+  {
+    value: "related",
+    question: "Does it make no checkable claim about this event?",
+    answer: "Related only: opinion, complaint, aftermath, no checkable claim",
+  },
+  {
+    value: "contradicts",
+    question: "Does it deny the event, or call it false or a rumour?",
+    answer: "Contradicts: denies it, or calls it false",
+  },
+  {
+    value: "partially_supports",
+    question: "Does it say it happened, but get something wrong?",
+    answer: "Partly supports: says it happened, gets an attribute wrong",
+  },
+  {
+    value: "supports",
+    question: "Otherwise",
+    answer: "Supports: says it happened, and agrees on everything it mentions",
+  },
 ];
 
 const find = <T extends { value: string; label: string }>(list: T[], value: string) =>
@@ -97,6 +127,7 @@ export const RELATION_STYLE: Record<EvidenceRelation, string> = {
   partially_supports: "border-l-ok/50",
   contradicts: "border-l-critical",
   related: "border-l-muted/40",
+  unrelated: "border-l-line",
 };
 
 export const FAMILIES = [

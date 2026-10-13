@@ -100,13 +100,15 @@ export type Assessment =
   | "unverified"
   | "refuted"
   | "insufficient_evidence";
-export type EvidenceRelation = "supports" | "partially_supports" | "contradicts" | "related";
+export type EvidenceRelation =
+  "supports" | "partially_supports" | "contradicts" | "related" | "unrelated";
 
 export interface EvidenceCounts {
   supports: number;
   partially_supports: number;
   contradicts: number;
   related: number;
+  unrelated: number;
   reporters: number;
   photos: number;
   signals: number;
@@ -178,6 +180,9 @@ export interface Evidence {
   conflicts: ClaimAttribute[];
   stale: boolean;
   confidence: 1 | 2 | 3;
+  judgement_count: number;
+  agreement: "single" | "agree" | "disagree" | "resolved";
+  gold_relation: EvidenceRelation | null;
   /** Exactly one of these is set. */
   field_report: FieldReport | null;
   signal: Signal | null;
@@ -220,6 +225,7 @@ export interface Overview {
   unreviewed_reports: number | null;
   signals_24h: number;
   unreviewed_signals: number | null;
+  second_opinions: number | null;
 }
 
 export interface AuditEntry {
@@ -368,4 +374,50 @@ export interface ImportResult {
   errors: number;
   new_publishers: string[];
   rows: ImportRow[];
+}
+
+/** Second opinions, agreement and adjudication. */
+export interface QueueItem {
+  evidence_id: string;
+  event: CarcuxEvent;
+  field_report: FieldReport | null;
+  signal: Signal | null;
+  judgements: number;
+}
+
+export interface Judgement {
+  id: string;
+  annotator: { id: string; full_name: string };
+  relation: EvidenceRelation;
+  conflicts: ClaimAttribute[];
+  stale: boolean;
+  confidence: 1 | 2 | 3;
+  note: string | null;
+  blind: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Disagreement {
+  evidence_id: string;
+  event: CarcuxEvent;
+  field_report: FieldReport | null;
+  signal: Signal | null;
+  working: EvidenceRelation;
+  judgements: Judgement[];
+  gold_relation: EvidenceRelation | null;
+  gold_by: { id: string; full_name: string } | null;
+  gold_at: string | null;
+}
+
+export interface AgreementStats {
+  items_with_two: number;
+  items_total: number;
+  percent: number | null;
+  kappa: number | null;
+  alpha: number | null;
+  target: number;
+  matrix: Record<string, Record<string, number>>;
+  by_label: Record<string, number>;
+  open_disagreements: number;
 }
