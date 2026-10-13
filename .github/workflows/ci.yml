@@ -78,6 +78,26 @@ jobs:
             python -m carcux_data.validate "$d"
           done
 
+  ai:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai/correlation
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            ai/correlation/pyproject.toml
+            data/tools/pyproject.toml
+      - run: pip install -e ../../data/tools -e ".[dev]"
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Test
+        run: pytest -q
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

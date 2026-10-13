@@ -1,0 +1,40 @@
+[project]
+name = "carcux-correlation"
+version = "0.1.0"
+description = "CARCUX module 4: which observations describe the same event (research core, RQ1)"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+    "scikit-learn>=1.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+carcux-correlation = "carcux_correlation.evaluate:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["carcux_correlation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"carcux_correlation/simulate.py" = ["S311"]  # simulation, not cryptography
+
+[tool.ruff.lint.isort]
+known-first-party = ["carcux_correlation", "carcux_data"]
