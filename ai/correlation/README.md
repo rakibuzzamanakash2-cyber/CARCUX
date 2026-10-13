@@ -203,13 +203,64 @@ What this shows, and what it does not:
   Significance testing over seeds is still to do.
 - **Place is not tested here:** no article has coordinates. That still needs CARCUX-BD.
 
+### Third run: significance, recency terms, three seeds
+
+13 October 2026, `--seeds 3`, paired story bootstrap with 2,000 resamples. `cjoint` now
+has the two recency terms; `cjoint-recency` is the second-run model with the finer
+threshold search.
+
+| B-cubed F1 | English | German | Spanish |
+|---|---|---|---|
+| B1 text | 0.830 | 0.867 | 0.912 |
+| B2 text + rules | 0.921 | **0.935** | 0.900 |
+| `ctext` | 0.802 | 0.804 | 0.867 |
+| `cjoint-recency` | 0.915 | 0.898 | **0.935** |
+| **`cjoint`** | **0.930** | 0.857 | 0.928 |
+
+`cjoint` pairwise F1: 0.955 English, 0.668 German, 0.964 Spanish. English clusters: 394
+(gold 222).
+
+Differences in B-cubed F1 (`cjoint` minus the other method), 95 % CI, p:
+
+| Comparison | English | German | Spanish |
+|---|---|---|---|
+| vs `ctext` (RQ1) | **+0.128** [+0.064, +0.190] p<0.001 | +0.054 [−0.001, +0.123] p=0.065 | **+0.062** [+0.022, +0.111] p<0.001 |
+| vs B1 text | **+0.100** [+0.042, +0.161] p<0.001 | −0.010 [−0.054, +0.042] p=0.82 | +0.016 [−0.001, +0.036] p=0.066 |
+| vs B2 text + rules | +0.009 [−0.016, +0.035] p=0.46 | −0.078 [−0.201, +0.028] p=0.52 | **+0.029** [+0.011, +0.048] p=0.001 |
+| vs `cjoint-recency` | **+0.015** [+0.001, +0.036] p=0.016 | −0.040 [−0.089, +0.003] p=0.17 | −0.007 [−0.019, +0.003] p=0.23 |
+
+Bold = the 95 % interval excludes zero.
+
+What this supports:
+
+- **RQ1 holds on real news:** adding time to the same model is significantly better
+  in English and Spanish, and positive but just short of significance in German.
+- **Against the hand-written rule (B2):** significantly better in Spanish, level in
+  English, behind in German but not significantly. The German interval is very wide:
+  only 118 test stories, a few of them very large.
+- **The recency terms are mixed:** they help significantly in English, make no
+  difference in Spanish, and hurt in German (not significantly). They stay in, because
+  they were declared part of the model before this run; choosing per language after
+  seeing test results would be tuning on the test set.
+- **Training seeds do not matter:** three seeds gave the same scores to three decimals
+  (sd ≤ 0.002). The uncertainty that matters is which stories are in the test set,
+  which the bootstrap covers.
+
+**A caveat for the paper:** the second and third designs were made after looking at
+test-set results (the first design's failure, then the German gap), so these numbers
+are somewhat optimistic. The model is now frozen for this benchmark. Any further
+change has to be chosen on the training data only, for example by splitting
+`dataset.dev.json` into training and validation stories, before the test set is used
+again.
+
 ## Still to do
 
 - Run on real annotated CARCUX-BD exports once the case studies are labelled.
 - Swap the TF-IDF encoder for a multilingual sentence encoder and compare.
 - Use `unrelated` hard negatives in training, not only in scoring.
 - Predict `parent_event_id` links (they are currently folded into the root event for scoring).
-- Significance testing across folds and seeds for the paper (and on the news benchmark).
-- Close the gap to B2 in German: more training pairs, a finer threshold grid, or a
-  learned recency term; and check why `ctext` trails pair-level text.
+- Significance testing on CARCUX-BD folds (done for the news benchmark).
+- Any further model change: select it on a validation split of `dataset.dev.json`,
+  not on the test set (the model is frozen for the benchmark as of 13 October 2026).
+- Check why `ctext` trails pair-level text, and why German lags (few, very large stories).
 - Serve the model in the backend once it beats B2 on real data.
