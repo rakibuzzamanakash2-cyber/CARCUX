@@ -127,7 +127,15 @@ def test_news_benchmark_end_to_end(tmp_path):
     out = tmp_path / "r.json"
     assert news_clustering.main([str(tmp_path), "--lang", "eng", "--json", str(out)]) == 0
     (result,) = json.loads(out.read_text())
-    assert set(result["methods"]) == {"text", "text+rules", "joint", "joint-time"}
+    assert set(result["methods"]) == {
+        "text",
+        "text+rules",
+        "joint",
+        "joint-time",
+        "ctext",
+        "cjoint",
+        "cjoint-time",
+    }
     assert result["test_articles"] == 25
     for m in result["methods"].values():
         assert all(0 <= m[k] <= 1 for k in ("pair_precision", "pair_recall", "bcubed_f1"))
