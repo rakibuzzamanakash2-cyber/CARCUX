@@ -5,7 +5,7 @@ import { useId, useState, useTransition } from "react";
 import { changeRelation, linkReport, unlinkEvidence } from "@/app/actions/events";
 import { linkSignal } from "@/app/actions/signals";
 import { CLAIM_ATTRIBUTES, claimLabel, CONFIDENCE, RELATIONS } from "@/lib/events";
-import type { ActionState, ClaimAttribute, EvidenceRelation } from "@/lib/types";
+import type { ActionState, ClaimAttribute, EvidenceRelation, SuggestionUsed } from "@/lib/types";
 
 const smallBtn =
   "h-9 rounded-md border px-3 text-sm font-semibold shadow-sm transition-colors disabled:cursor-wait disabled:opacity-60";
@@ -65,11 +65,14 @@ export function LinkButtons({
   reportId,
   signalId,
   label,
+  suggestion,
 }: {
   eventId: string;
   reportId?: string;
   signalId?: string;
   label: string;
+  /** Set when the buttons sit on a suggestion; recorded with the link. */
+  suggestion?: SuggestionUsed;
 }) {
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<ActionState>();
@@ -80,8 +83,8 @@ export function LinkButtons({
     startTransition(async () =>
       setState(
         signalId
-          ? await linkSignal(eventId, signalId, relation, chosen)
-          : await linkReport(eventId, reportId ?? "", relation, { conflicts: chosen }),
+          ? await linkSignal(eventId, signalId, relation, chosen, suggestion)
+          : await linkReport(eventId, reportId ?? "", relation, { conflicts: chosen }, suggestion),
       ),
     );
   }

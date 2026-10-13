@@ -61,7 +61,7 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/events/{id}` | everyone; reviewers see more | Overview (summary, details) for all. Reviewers also get **Analyst decision** on the overview, an **Evidence** tab (linked reports with relation and unlink; possibly related reports with one-click linking) and a **History** tab in plain words. |
 | `/field-reports/{id}` | analyst, admin | An **Events** tab: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
 
-- Suggestions come from place and time only (5 km, 48 h); the page says so. Analysts decide.
+- Suggested events come from the 5 km / 48 h rule until an admin trains the suggestion model, then from the model; the list says which. In model mode each suggestion shows a match percentage and why: how similar the wording is, how long before or after the event's latest evidence, how far, same type. Linking from a suggestion records which one it was (rank, score, model) in the audit log. Analysts decide.
 - Closing an event (resolved or dismissed) records its end time; reopening clears it.
 - Assessment labels and their meanings are the CARCUX-BD dataset's, shown under the selector.
 
@@ -84,6 +84,7 @@ docker compose -f deployment/docker-compose.yml up --build
 | Event overview, **Ground truth** | analyst, admin | Did it happen (not established, yes, no), sources published afterwards (link, date, kind) and a note. Says whether the event is ready for the dataset. |
 | Event Evidence tab | analyst, admin | Each link shows relation, **how sure** (unsure, fairly sure, certain) and **out of date when published**. Choosing **Partly supports**, when linking or changing, asks **what it gets wrong** (place, times, how bad, counts, cause, kind). |
 | `/dataset` | analyst, admin; download admin | Events ready out of all, observations, labelled links, and lists of what to fix, each linking to the event. Admins download the zip (or include unlinked items). Desktop only. |
+| `/dataset`, **Event suggestions** | analyst, admin; train admin | Whether suggestions use the rule or the model; the model's held-out results next to the rule's (first suggestion right, right one in the first three); how many links exist and how many were made from the first suggestion. Admins **Train and switch on**, **Retrain**, or go back to the rule. |
 
 ## Second opinions
 

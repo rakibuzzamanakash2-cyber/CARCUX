@@ -174,6 +174,32 @@ def backfill(source_key: str, start: str, end: str) -> int:
         engine.dispose()
 
 
+def train_suggestions() -> int:
+    from app.services import suggest
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            try:
+                model = suggest.train(db, actor=None)
+            except suggest.NotEnoughDataError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+            m = model.metrics
+            print(f"trained on {model.items} items across {model.events} events; now active")
+            if "model_top1" in m:
+                print(
+                    f"held out {m['held_out_items']} items: first suggestion right "
+                    f"{m['model_top1']:.0%} (rule {m['rule_top1']:.0%}), in first three "
+                    f"{m['model_top3']:.0%} (rule {m['rule_top3']:.0%})"
+                )
+            else:
+                print("too few held-out events to evaluate; train again with more links")
+            return 0
+    finally:
+        engine.dispose()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -192,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("export-dataset", help="write the CARCUX-BD dataset files")
     p.add_argument("directory")
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
+    sub.add_parser("train-suggestions", help="train the event suggestion model from links")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
@@ -202,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
         return export_dataset(args.directory, args.all)
     if args.command == "ingest":
         return ingest(args.once, args.source, args.loop)
+    if args.command == "train-suggestions":
+        return train_suggestions()
     return 2
 
 

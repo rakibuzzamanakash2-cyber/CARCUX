@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -217,6 +217,16 @@ class _EvidenceLabels(_NoteCheck):
         return list(dict.fromkeys(value)) if value is not None else None
 
 
+class SuggestionUsed(BaseModel):
+    """Which suggestion the analyst acted on, recorded in the audit log so the share of
+    links made from the first suggestion can be measured."""
+
+    rank: int = Field(ge=1, le=50)
+    method: Literal["rule", "model"]
+    score: float | None = Field(None, ge=0, le=1)
+    model_id: uuid.UUID | None = None
+
+
 class EvidenceCreate(_EvidenceLabels):
     """Link a field report or a signal (exactly one)."""
 
@@ -230,6 +240,9 @@ class EvidenceCreate(_EvidenceLabels):
     )
     stale: bool = Field(False, description="Already out of date when published")
     confidence: int = Field(2, ge=1, le=3, description="1 unsure, 2 fairly sure, 3 certain")
+    suggestion: SuggestionUsed | None = Field(
+        None, description="Set when linking from a suggestion list"
+    )
 
     @model_validator(mode="after")
     def _exactly_one(self) -> "EvidenceCreate":
@@ -306,13 +319,26 @@ class CandidateSignal(BaseModel):
 
 
 class CandidateEvent(BaseModel):
-    """An event a report may belong to."""
+    """An event a report or signal may belong to: a suggestion, ranked.
+
+    `method` says how the list was made: "rule" (within 5 km and 48 h, same type
+    first, then nearest) until a model has been trained, then "model" (ranked by the
+    trained model, with `score` and the reasons below)."""
 
     event: EventRead
-    distance_km: float
+    distance_km: float | None = Field(description="None when the item has no location")
     hours_apart: float
     same_type: bool
     same_family: bool
+    method: Literal["rule", "model"] = "rule"
+    score: float | None = Field(None, description="Model probability that it is this event")
+    text_similarity: float | None = Field(
+        None, description="Similarity of wording to the event's evidence, 0 to 1"
+    )
+    hours_from_latest: float | None = Field(
+        None, description="Hours after (positive) or before the event's newest evidence"
+    )
+    model_id: uuid.UUID | None = None
 
 
 class ReportLink(BaseModel):
@@ -328,3 +354,33 @@ class HistoryEntry(BaseModel):
     action: str
     actor: ReporterRead | None
     details: dict[str, Any]
+
+
+class SuggestionModelRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    created_at: datetime
+    created_by: ReporterRead | None
+    active: bool
+    items: int
+    events: int
+    positives: int
+    negatives: int
+    metrics: dict[str, Any]
+    weights: dict[str, Any]
+
+
+class SuggestionStatus(BaseModel):
+    """What suggestions run on now, and whether a model can be trained."""
+
+    method: Literal["rule", "model"]
+    active: SuggestionModelRead | None
+    previous: list[SuggestionModelRead]
+    labelled_items: int
+    labelled_events: int
+    min_items: int
+    min_events: int
+    from_suggestions: dict[str, int] = Field(
+        description="Links made from a suggestion list: total, first, top three"
+    )

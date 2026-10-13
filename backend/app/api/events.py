@@ -171,6 +171,7 @@ def link_evidence(
             "stale": body.stale,
             "confidence": body.confidence,
         },
+        "suggestion": body.suggestion.model_dump(mode="json") if body.suggestion else None,
     }
     kind = "report" if body.field_report_id else "signal"
     try:

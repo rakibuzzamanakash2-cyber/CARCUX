@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LinkButtons } from "@/components/evidence-controls";
+import { SuggestionMeta } from "@/components/suggestion-bits";
 import { buttonSecondary, PageBand, PageBody, Panel } from "@/components/page-header";
 import { ReviewControls } from "@/components/review-controls";
 import { SeverityPill, SignalStatusPill } from "@/components/signal-bits";
@@ -13,7 +14,14 @@ import { eventTypeLabel } from "@/lib/event-types";
 import { relationLabel } from "@/lib/events";
 import { formatCoords, formatDhaka, isUuid } from "@/lib/format";
 import { ADAPTER, LANGUAGE_LABEL, precisionText, SOURCE_TYPE_LABEL } from "@/lib/signals";
-import { REPORT_REVIEWERS, type CandidateEvent, type ReportLink, type Signal } from "@/lib/types";
+import {
+  REPORT_REVIEWERS,
+  type CandidateEvent,
+  type ReportLink,
+  type Signal,
+  suggestionUsed,
+} from "@/lib/types";
+import { suggestionIntro } from "@/lib/suggestions";
 
 export const metadata = { title: "Signal" };
 
@@ -227,22 +235,22 @@ export default async function SignalDetailPage({
                     ))}
                   </ul>
                 )}
-                {!located ? (
+                {candidates.length === 0 ? (
                   <p className="text-sm text-muted">
-                    This signal has no place, so no events are suggested. Link it from an
-                    event&apos;s Evidence tab instead.
-                  </p>
-                ) : candidates.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    {links.length
-                      ? "No other open events overlap its area and time."
-                      : "No open event overlaps its area and time."}
+                    {!located
+                      ? "This signal has no place, and no event looks like the same situation. Link it from an event's Evidence tab instead."
+                      : links.length
+                        ? "No other open events overlap its area and time."
+                        : "No open event overlaps its area and time."}
                   </p>
                 ) : (
                   <>
-                    <p className="mb-3 text-sm font-semibold">Possibly about</p>
+                    <p className="mb-1 text-sm font-semibold">Possibly about</p>
+                    <p className="mb-3 text-xs text-muted">
+                      {suggestionIntro(candidates[0].method, "signal")}
+                    </p>
                     <ul className="flex flex-col gap-3">
-                      {candidates.slice(0, 4).map((c) => (
+                      {candidates.slice(0, 4).map((c, i) => (
                         <li
                           key={c.event.id}
                           className="rounded-lg border border-line bg-panel-2/50 p-3"
@@ -253,16 +261,14 @@ export default async function SignalDetailPage({
                           >
                             {c.event.title}
                           </Link>
-                          <p className="mb-2 text-xs text-muted">
-                            {c.distance_km < 1
-                              ? `${Math.round(c.distance_km * 1000)} m away`
-                              : `${c.distance_km.toFixed(1)} km away`}
-                            {c.same_type ? ", same type" : ""}
-                          </p>
+                          <div className="mb-2">
+                            <SuggestionMeta c={c} small />
+                          </div>
                           <LinkButtons
                             eventId={c.event.id}
                             signalId={signal.id}
                             label="Link to this event as"
+                            suggestion={suggestionUsed(c, i)}
                           />
                         </li>
                       ))}

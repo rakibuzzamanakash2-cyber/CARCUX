@@ -84,7 +84,7 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 | `GET /api/v1/field-reports/{id}/candidate-events` | analyst, admin | Events a report may belong to |
 
 - **Status:** `active`, `monitoring`, `resolved`, `dismissed`. **Priority:** `low` to `critical`. **Assessment:** the dataset's six labels, from `verified` to `insufficient_evidence`; new events start `unverified`.
-- **Matching is a baseline, and only a suggestion:** within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now). Same type first, then nearest. The correlation engine in `ai/correlation/` will replace it and can be scored against analysts' links.
+- **Matching is only a suggestion.** Until a suggestion model is trained: within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now); same type first, then nearest. After training, see [Event suggestions](#event-suggestions).
 - Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
 
 ## Public signals
@@ -101,7 +101,7 @@ Signals are evidence from outside CARCUX: disaster alerts, official bulletins an
 - **Placing news.** `app/ingest/places.py` looks up names in `app/data/bd_gazetteer.json` (64 districts and 8 divisions with coordinates, upazilas, and city localities; English and Bangla; districts and upazilas from [nuhil/bangladesh-geocode](https://github.com/nuhil/bangladesh-geocode), MIT). The first place mentioned anchors the item, refined to the most specific place in its district; precision is the uncertainty radius (2.5 km for a locality, 30 km for a district) and widens when the text names other districts too.
 - **Fresh news only.** Feed items older than 7 days are left out (some feed addresses redirect to archives that stopped years ago).
 - **Classifying news.** `app/ingest/classify.py` uses English and Bangla keywords per event type; it needs a match in the headline, or two in the summary. Matched words are stored in `extraction`, so each decision can be explained. Both are baselines for the learned models.
-- **Matching signals to events:** the 5 km / 48 h rule, widened by the signal's precision (up to 300 km) and using its validity period.
+- **Matching signals to events:** the 5 km / 48 h rule, widened by the signal's precision (up to 300 km) and using its validity period; or the suggestion model once trained (see [Event suggestions](#event-suggestions)).
 - **Fetching safely:** http(s) only, no private or local addresses, at most 3 redirects (each checked), 5 MB and 20 s limits, XML parsed with `defusedxml`.
 
 | Endpoint | Who | What |
@@ -150,6 +150,17 @@ The annotation guideline (section 7) asks for every link to be labelled independ
 - **Adjudication.** `GET /api/v1/annotation/disagreements` lists links whose judgements differ (in label, or in conflicts for partly supports); `POST /api/v1/annotation/adjudicate` records the gold label, which the working label then follows.
 - **New label `unrelated`** ("not this event"): hard negatives for the model; not counted as evidence.
 - **Export:** one annotation per annotator per relation; `gold` comes from adjudication, or from agreement when annotators agree.
+
+## Event suggestions
+
+Which existing events a report or signal most likely belongs to (`app/services/suggest.py`). This is the correlation research (`ai/correlation/`) in the product.
+
+- **Two modes.** Without a trained model, the 5 km / 48 h rule above (baseline B2 of the research). With one, a wider search (50 km plus the item's location uncertainty, 14 days around the event; any distance for a signal with no place) ranked by a logistic model over the research's cluster-level features: wording similarity to the event's evidence (character n-grams, so Bangla, Banglish and English all work), time from the event's evidence span, distance to its nearest located evidence, type agreement, and the event's size. Suggestions under 5 % are not shown. Every candidate list says which mode made it (`method`), with `score`, `text_similarity` and `hours_from_latest` in model mode.
+- **Training** (admin): `POST /api/v1/suggestions/model/train`, or `python -m app.cli train-suggestions`. It learns from every link analysts have made (gold labels where adjudicated; "not this event" links are negatives), and needs at least 20 linked reports or signals across 5 events. One event in five is held out first: the model and the rule rank the same candidates for those events' items, and the share where the right event comes first (and in the first three) is stored with the model. The final model is then fitted on everything and becomes the only active one.
+- **Status:** `GET /api/v1/suggestions/model` (analyst, admin): mode, active model and its held-out results, previous models, how many links exist, and how often links were made from a suggestion. `POST /api/v1/suggestions/model/deactivate` (admin) returns to the rule.
+- **Measured in use.** When an analyst links from a suggestion list, `POST /events/{id}/evidence` carries `suggestion: {rank, method, score, model_id}`, written into the `event.evidence_linked` audit entry. The status counts how many links came from the first suggestion.
+- **Not in the blind queue.** Second-opinion annotators never see suggestions, so they cannot anchor on the model (and inflate agreement).
+- Migration 0009 adds `suggestion_models` (weights, held-out metrics; at most one active).
 
 ## Review, audit log and passwords
 

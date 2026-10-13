@@ -17,6 +17,7 @@ from app.api import (
     overview,
     signals,
     sources,
+    suggestions,
     users,
 )
 from app.core.config import Settings, get_settings
@@ -66,6 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         sources.router,
         dataset.router,
         annotation.router,
+        suggestions.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

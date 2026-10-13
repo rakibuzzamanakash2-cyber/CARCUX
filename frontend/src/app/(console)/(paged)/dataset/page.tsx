@@ -2,9 +2,20 @@ import { AlertTriangle, Database, Download, FileCheck2, Link2, ListChecks } from
 import Link from "next/link";
 
 import { PageBand, PageBody, Panel, StatTile, StatTiles } from "@/components/page-header";
+import { SuggestionModelControls } from "@/components/suggestion-model-controls";
 import { api } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
-import { REPORT_REVIEWERS, type DatasetProblem, type DatasetSummary } from "@/lib/types";
+import { formatDhaka } from "@/lib/format";
+import {
+  REPORT_REVIEWERS,
+  type DatasetProblem,
+  type DatasetSummary,
+  type SuggestionStatus,
+} from "@/lib/types";
+
+function pct(x?: number): string {
+  return x === undefined ? "–" : `${Math.round(x * 100)}%`;
+}
 
 export const metadata = { title: "Dataset" };
 
@@ -38,7 +49,14 @@ const FIX: Record<DatasetProblem["kind"], { title: string; how: string }> = {
 export default async function DatasetPage() {
   const user = await requireRole(...REPORT_REVIEWERS);
   const admin = user.role === "admin";
-  const data = await api<DatasetSummary>("/dataset/summary");
+  const [data, suggestions] = await Promise.all([
+    api<DatasetSummary>("/dataset/summary"),
+    api<SuggestionStatus>("/suggestions/model"),
+  ]);
+  const model = suggestions.active;
+  const canTrain =
+    suggestions.labelled_items >= suggestions.min_items &&
+    suggestions.labelled_events >= suggestions.min_events;
   const c = data.counts;
   const byKind = new Map<string, DatasetProblem[]>();
   for (const p of data.problems) byKind.set(p.kind, [...(byKind.get(p.kind) ?? []), p]);
@@ -152,6 +170,64 @@ export default async function DatasetPage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted">An admin can download the dataset.</p>
+              )}
+            </Panel>
+            <Panel
+              id="suggestions"
+              title="Event suggestions"
+              description="How reports and signals are matched to existing events on the report, signal and review pages."
+            >
+              <p className="mb-3 text-sm">
+                {model ? (
+                  <>
+                    Ranked by the <strong>suggestion model</strong>, trained{" "}
+                    {formatDhaka(model.created_at)} on {model.items} linked reports and signals
+                    across {model.events} events.
+                  </>
+                ) : (
+                  <>
+                    Ranked by the <strong>5 km / 48 hour rule</strong>, same type first. Train a
+                    model to rank by wording, timing, place and type together.
+                  </>
+                )}
+              </p>
+              {model && model.metrics.model_top1 !== undefined && (
+                <dl className="mb-3 grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1.5 text-sm">
+                  <dt className="text-muted">On held-out events</dt>
+                  <dd className="text-right font-semibold">Model</dd>
+                  <dd className="text-right font-semibold">Rule</dd>
+                  <dt className="text-muted">First suggestion right</dt>
+                  <dd className="text-right">{pct(model.metrics.model_top1)}</dd>
+                  <dd className="text-right">{pct(model.metrics.rule_top1)}</dd>
+                  <dt className="text-muted">Right one in the first three</dt>
+                  <dd className="text-right">{pct(model.metrics.model_top3)}</dd>
+                  <dd className="text-right">{pct(model.metrics.rule_top3)}</dd>
+                </dl>
+              )}
+              {model && model.metrics.model_top1 !== undefined && (
+                <p className="mb-3 text-xs text-muted">
+                  Measured on {model.metrics.held_out_items} items from{" "}
+                  {model.metrics.held_out_events} events the model did not learn from.
+                </p>
+              )}
+              {model && model.metrics.model_top1 === undefined && (
+                <p className="mb-3 text-sm text-muted">
+                  Too few held-out events to measure it yet. Retrain when there are more links.
+                </p>
+              )}
+              <p className="mb-3 text-sm text-muted">
+                {suggestions.labelled_items} linked reports and signals across{" "}
+                {suggestions.labelled_events} events
+                {canTrain
+                  ? "."
+                  : `; training needs at least ${suggestions.min_items} across ${suggestions.min_events}.`}
+                {suggestions.from_suggestions.total > 0 &&
+                  ` ${suggestions.from_suggestions.total} links were made from suggestions, ${suggestions.from_suggestions.first} of them from the first one.`}
+              </p>
+              {admin ? (
+                <SuggestionModelControls active={model !== null} canTrain={canTrain} />
+              ) : (
+                <p className="text-sm text-muted">An admin can train the model.</p>
               )}
             </Panel>
             <Panel title="Before publishing">

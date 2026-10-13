@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
 from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
+from app.api.suggestions import as_candidate
 from app.core.event_types import EVENT_TYPE_FAMILY, EVENT_TYPES
 from app.ingest import places
 from app.models.signal import Signal, SignalStatus, Source
@@ -25,6 +26,7 @@ from app.schemas.signal import (
 from app.services import events as event_service
 from app.services import signal_import
 from app.services import signals as service
+from app.services import suggest as suggest_service
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 places_router = APIRouter(prefix="/places", tags=["signals"])
@@ -171,18 +173,10 @@ def signal_events(signal_id: uuid.UUID, db: DbSession, _user: Reviewer):
 
 @router.get("/{signal_id}/candidate-events", response_model=list[CandidateEvent])
 def candidate_events(signal_id: uuid.UUID, db: DbSession, _user: Reviewer):
-    """Events whose area and time overlap the signal's: suggestions only."""
+    """Events this signal may be about, ranked: suggestions only. By area and time
+    overlap until a suggestion model is trained, then by the model (see /suggestions)."""
     signal = _signal_or_404(db, signal_id)
-    return [
-        CandidateEvent(
-            event=EventRead.model_validate(event),
-            distance_km=m.distance_km,
-            hours_apart=m.hours_apart,
-            same_type=event.event_type == signal.event_type,
-            same_family=signal.family is not None and event.family == signal.family,
-        )
-        for event, m in event_service.candidate_events_for_signal(db, signal)
-    ]
+    return [as_candidate(s) for s in suggest_service.for_signal(db, signal)]
 
 
 @places_router.get("/districts", response_model=list[District])
