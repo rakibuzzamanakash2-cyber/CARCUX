@@ -14,6 +14,12 @@ What it models:
 - **Copies.** Items get copied: verbatim, reworded, reposted, cited ("according to
   ..."), or the photo reused. Copies repeat their origin's stance, so they look like
   extra votes but are not new evidence. Gold dependences record every copy.
+- **Details.** Each event has a true magnitude, number affected, death toll and cause;
+  first-hand reports state some of them, right with a probability that rises with the
+  source's reliability (wrong numbers are mostly exaggerated). A report that gets a
+  detail wrong is `partially_supports` with that detail in `conflicts`. Copies repeat
+  their origin's details. (These use their own random stream, so everything else is
+  generated exactly as before they were added.)
 - **Time.** First reports within hours; the official office confirms or denies later
   (6 to 30 hours), so checkpoints T+1h, T+6h, T+24h and final see different evidence.
 - **Contamination** (0 to 0.6): the share of all items that are injected: rumours
@@ -46,8 +52,9 @@ from carcux_correlation.simulate import (
     _iso,
     _place_text,
 )
+from carcux_fusion.conflict import agrees  # the same rule the methods use
 
-GENERATOR_VERSION = "0.1"
+GENERATOR_VERSION = "0.2"  # 0.2: event details (magnitude, counts, cause)
 CHECKPOINTS = [("T+1h", 1), ("T+6h", 6), ("T+24h", 24), ("final", 24 * 7)]
 CREDIBLE = {"field", "news", "public_record"}
 
@@ -121,6 +128,44 @@ DETAILS = {
 }
 
 
+# Event details a report can get right or wrong (RQ3). Values are normalised strings or
+# numbers, as in the dataset's claims.
+MAGNITUDE = {
+    "natural_calamity": ["ankle-deep", "knee-deep", "waist-deep"],
+    "urban_emergency": ["small", "large", "very large"],
+    "road_infrastructure": ["minor", "major", "severe"],
+}
+CAUSE = {
+    "natural_calamity": ["heavy rain", "river overflow", "blocked drains"],
+    "urban_emergency": ["electrical short circuit", "gas leak", "unknown"],
+    "road_infrastructure": ["vehicle collision", "protest", "maintenance work"],
+}
+ATTRIBUTES = ["magnitude", "affected_count", "casualty_count", "cause"]
+CLAIM_TEXT = {
+    "en": {
+        "magnitude": "{v}",
+        "affected_count": "about {v} people affected",
+        "casualty_count": "{v} dead",
+        "no_casualties": "no casualties",
+        "cause": "cause: {v}",
+    },
+    "bn-Latn": {
+        "magnitude": "{v}",
+        "affected_count": "prai {v} jon khotigrosto",
+        "casualty_count": "{v} jon mara geche",
+        "no_casualties": "keu mara jay nai",
+        "cause": "karon: {v}",
+    },
+    "bn": {
+        "magnitude": "{v}",
+        "affected_count": "প্রায় {v} জন ক্ষতিগ্রস্ত",
+        "casualty_count": "{v} জন নিহত",
+        "no_casualties": "কেউ হতাহত হয়নি",
+        "cause": "কারণ: {v}",
+    },
+}
+
+
 def _beta(rng: random.Random, mean: float, strength: float = 20.0) -> float:
     return min(0.995, max(0.005, rng.betavariate(mean * strength, (1 - mean) * strength)))
 
@@ -141,6 +186,9 @@ class _Sim:
         if not 0 <= contamination <= 0.6:
             raise ValueError("contamination must be between 0 and 0.6")
         self.rng = random.Random(seed)
+        # Event details use their own stream, so adding them leaves everything else
+        # (sources, events, items, copies, contamination) exactly as in version 0.1.
+        self.drng = random.Random(seed * 7919 + 17)
         self.seed = seed
         self.c = contamination
         self.n_events = n_events
@@ -237,9 +285,56 @@ class _Sim:
             "_when": when,
             "_place": place,
             "_injected": injected,
+            "_facts": self.true_facts(FAMILY[etype]),
         }
         self.events.append(ev)
         return ev
+
+    def true_facts(self, family: str) -> dict:
+        d = self.drng
+        return {
+            "magnitude": d.choice(MAGNITUDE[family]),
+            "affected_count": int(round(10 ** d.uniform(1, 3))),
+            "casualty_count": 0 if d.random() < 0.6 else d.randint(1, 15),
+            "cause": d.choice(CAUSE[family]),
+        }
+
+    def claims_for(self, ev: dict, source: dict) -> dict:
+        """The details a first-hand report states: right with a probability that rises
+        with the source's reliability; wrong numbers are mostly exaggerated."""
+        d = self.drng
+        facts = ev["_facts"]
+        n = d.choices([1, 2, 3], weights=[3, 4, 3])[0]
+        out = {}
+        right = 0.4 + 0.55 * source["_rel"]
+        for attribute in d.sample(ATTRIBUTES, n):
+            truth = facts[attribute]
+            if not ev["_occurred"] or d.random() < right:
+                if attribute == "affected_count":
+                    value = max(1, int(round(truth * d.uniform(0.92, 1.08))))
+                else:
+                    value = truth
+            elif attribute == "affected_count":
+                factor = d.uniform(2, 4)
+                value = int(round(truth * factor if d.random() < 0.7 else truth / factor))
+            elif attribute == "casualty_count":
+                value = truth + d.randint(2, 10) if (truth == 0 or d.random() < 0.7) else 0
+            else:
+                options = MAGNITUDE if attribute == "magnitude" else CAUSE
+                value = d.choice([v for v in options[ev["family"]] if v != truth])
+            out[attribute] = max(0, value) if isinstance(value, int) else value
+        return out
+
+    @staticmethod
+    def claims_text(claims: dict, language: str) -> str:
+        words = CLAIM_TEXT[language]
+        parts = []
+        for attribute, value in claims.items():
+            if attribute == "casualty_count" and value == 0:
+                parts.append(words["no_casualties"])
+            else:
+                parts.append(words[attribute].format(v=value))
+        return ("; " + ", ".join(parts)) if parts else ""
 
     # --- items ------------------------------------------------------------------------
 
@@ -269,6 +364,7 @@ class _Sim:
             "_text": text if text is not None else self.text_for(ev, vote, language),
             "_phash": phash,
             "_role": role,
+            "_claims": {},
         }
         self.items.append(item)
         return item
@@ -302,6 +398,9 @@ class _Sim:
         photo = _phash(rng) if source["source_type"] == "field" and rng.random() < 0.5 else None
         item = self.add_item(ev, source, vote, when, kind=sim_kind, phash=photo)
         item["_hijacked"] = hijacked
+        if vote > 0:
+            item["_claims"] = self.claims_for(ev, source)
+            item["_text"] += self.claims_text(item["_claims"], item["_lang"])
         return item
 
     def copy(self, origin: dict, copier_pool: str) -> dict:
@@ -311,7 +410,8 @@ class _Sim:
         if how == "same_media" and not origin["_phash"]:
             how = "repost"
         lang = origin["_lang"]
-        text = origin["_text"]
+        tail = self.claims_text(origin["_claims"], lang)
+        text = origin["_text"][: len(origin["_text"]) - len(tail)] if tail else origin["_text"]
         phash = None
         evidence = ["timestamp_order"]
         if how == "repost":
@@ -333,6 +433,7 @@ class _Sim:
             evidence.append("media_hash")
         else:  # verbatim_copy
             evidence.append("text_overlap")
+        text += tail  # a copy repeats its origin's details
         when = origin["_when"] + timedelta(minutes=rng.expovariate(1 / 90) + 1)
         item = self.add_item(
             origin["_event"],
@@ -345,6 +446,7 @@ class _Sim:
             phash=phash,
             role="copy",
         )
+        item["_claims"] = dict(origin["_claims"])
         self.deps.append({"obs": item, "origin": origin, "type": how, "evidence": evidence})
         return item
 
@@ -444,7 +546,9 @@ class _Sim:
 
     def label_at(self, ev: dict, as_of: datetime) -> str:
         """What a careful analyst would conclude from the evidence published so far:
-        copies are ignored, only credible source types count, the official word wins."""
+        copies are ignored, only credible source types count, the official word wins, and
+        "verified" becomes "partially_verified" when credible first-hand reports disagree
+        on a detail (magnitude, counts, cause)."""
         seen = [i for i in self.items if i["_event"] is ev and i["_when"] <= as_of]
         roots = [i for i in seen if i["_role"] == "original"]
         official = [i for i in roots if i["_source"]["source_type"] == "public_record"]
@@ -463,9 +567,21 @@ class _Sim:
                 label = "unverified"
             else:
                 label = "insufficient_evidence"
-        if not ev["_occurred"] and label == "verified":
+        if label == "verified" and self.disputed(roots):
+            label = "partially_verified"
+        if not ev["_occurred"] and label in ("verified", "partially_verified"):
             label = "unverified"
         return label
+
+    def disputed(self, roots: list[dict]) -> list[str]:
+        """Details on which credible first-hand reports disagree with each other."""
+        out = []
+        credible = [i for i in roots if i["_vote"] > 0 and i["_source"]["_kind"] in CREDIBLE]
+        for attribute in ATTRIBUTES:
+            values = [i["_claims"][attribute] for i in credible if attribute in i["_claims"]]
+            if any(not agrees(attribute, a, b) for a in values for b in values):
+                out.append(attribute)
+        return out
 
     # --- output ---------------------------------------------------------------------------
 
@@ -504,7 +620,8 @@ class _Sim:
             out = {k: v for k, v in ev.items() if not k.startswith("_")}
             out["ground_truth"] = {
                 "occurred": ev["_occurred"],
-                "facts": [{"attribute": "occurrence", "value": ev["_occurred"]}],
+                "facts": [{"attribute": "occurrence", "value": ev["_occurred"]}]
+                + ([_claim(a, v) for a, v in ev["_facts"].items()] if ev["_occurred"] else []),
                 "sources": [
                     {
                         "reference": f"https://example.org/simulated/{ev['event_id']}",
@@ -519,10 +636,23 @@ class _Sim:
         observations, relations = [], []
         for i in items:
             ev = i["_event"]
-            label = "supports" if i["_vote"] > 0 else "contradicts"
             claims = [{"attribute": "occurrence", "value": i["_vote"] > 0}]
+            conflicts = []
             if i["_vote"] > 0:
                 claims.append({"attribute": "event_type", "value": ev["type"]})
+                claims += [_claim(a, v) for a, v in i["_claims"].items()]
+                if ev["_occurred"]:
+                    conflicts = [
+                        a for a, v in i["_claims"].items() if not agrees(a, v, ev["_facts"][a])
+                    ]
+            label = (
+                "contradicts"
+                if i["_vote"] < 0
+                else "partially_supports"
+                if conflicts
+                else "supports"
+            )
+            judgement = {"label": label, **({"conflicts": conflicts} if conflicts else {})}
             rec = {
                 "obs_id": i["obs_id"],
                 "source_id": i["_source"]["source_id"],
@@ -556,10 +686,10 @@ class _Sim:
                     "obs_id": i["obs_id"],
                     "event_id": ev["event_id"],
                     "annotations": [
-                        self._ann(at, label=label),
-                        self._ann(at, "ANN-002", label=label),
+                        self._ann(at, **judgement),
+                        self._ann(at, "ANN-002", **judgement),
                     ],
-                    "gold": {"label": label},
+                    "gold": judgement,
                 }
             )
 
@@ -580,6 +710,13 @@ class _Sim:
             "relations.jsonl": relations,
             "dependences.jsonl": dependences,
         }
+
+
+def _claim(attribute: str, value) -> dict:
+    claim = {"attribute": attribute, "value": value}
+    if attribute in ("affected_count", "casualty_count"):
+        claim["unit"] = "people"
+    return claim
 
 
 def generate(

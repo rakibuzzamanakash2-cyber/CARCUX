@@ -11,6 +11,10 @@ Stance is reduced to a vote on occurrence:
   details, not on occurrence)
 - contradicts: -1 (denied, or called a rumour)
 - related, unrelated: no vote
+
+For details (RQ3): each observation's claims on magnitude, counts and cause; each
+link's `conflicts` (the details it gets wrong, from annotators); each event's true
+values (`ground_truth.facts`) and gold assessment labels at its checkpoints.
 """
 
 import json
@@ -19,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 VOTE = {"supports": 1, "partially_supports": 1, "contradicts": -1}
+DETAILS = ("magnitude", "affected_count", "casualty_count", "cause")
 
 
 @dataclass
@@ -28,12 +33,14 @@ class Observation:
     published: datetime
     text: str
     phashes: tuple[str, ...] = ()
+    claims: dict = field(default_factory=dict)  # detail -> claimed value
 
 
 @dataclass
 class Evidence:
     obs_id: str
     vote: int  # +1 happened, -1 did not
+    conflicts: frozenset = frozenset()  # details it gets wrong (annotated)
 
 
 @dataclass
@@ -42,6 +49,8 @@ class Event:
     occurred: bool
     evidence: list[Evidence] = field(default_factory=list)
     injected: bool = False  # created by simulated contamination (simulator only)
+    facts: dict = field(default_factory=dict)  # detail -> true value
+    gold_labels: dict = field(default_factory=dict)  # checkpoint -> assessment label
 
 
 @dataclass
@@ -67,17 +76,38 @@ def _jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
-def _label(rel: dict) -> str | None:
+def _judgement(rel: dict) -> dict | None:
+    """Gold if adjudicated, else the most common annotation (first wins a tie)."""
     if rel.get("gold"):
-        return rel["gold"]["label"]
-    labels = [a["label"] for a in rel.get("annotations", [])]
-    return max(dict.fromkeys(labels), key=labels.count) if labels else None
+        return rel["gold"]
+    anns = rel.get("annotations", [])
+    if not anns:
+        return None
+    labels = [a["label"] for a in anns]
+    best = max(dict.fromkeys(labels), key=labels.count)
+    return next(a for a in anns if a["label"] == best)
+
+
+def _label(rel: dict) -> str | None:
+    j = _judgement(rel)
+    return j["label"] if j else None
+
+
+def _details(claims: list[dict]) -> dict:
+    return {c["attribute"]: c["value"] for c in claims if c["attribute"] in DETAILS}
 
 
 def load(directory: str | Path) -> Dataset:
     directory = Path(directory)
     events = {
-        e["event_id"]: Event(e["event_id"], bool(e["ground_truth"]["occurred"]))
+        e["event_id"]: Event(
+            e["event_id"],
+            bool(e["ground_truth"]["occurred"]),
+            facts=_details(e["ground_truth"].get("facts", [])),
+            gold_labels={
+                a["checkpoint"]: a["label"] for a in e.get("assessments", []) if "checkpoint" in a
+            },
+        )
         for e in _jsonl(directory / "events.jsonl")
     }
     raw_obs = _jsonl(directory / "observations.jsonl")
@@ -88,6 +118,7 @@ def load(directory: str | Path) -> Dataset:
             published=_dt(o["published_at"]),
             text=o.get("text") or "",
             phashes=tuple(m["phash"] for m in o.get("media", []) if m.get("phash")),
+            claims=_details(o.get("claims", [])),
         )
         for o in raw_obs
     }
@@ -97,9 +128,12 @@ def load(directory: str | Path) -> Dataset:
         if params.get("injected_event") and derived in events:
             events[derived].injected = True
     for rel in _jsonl(directory / "relations.jsonl"):
-        vote = VOTE.get(_label(rel) or "")
+        j = _judgement(rel) or {}
+        vote = VOTE.get(j.get("label", ""))
         if vote and rel["event_id"] in events and rel["obs_id"] in observations:
-            events[rel["event_id"]].evidence.append(Evidence(rel["obs_id"], vote))
+            events[rel["event_id"]].evidence.append(
+                Evidence(rel["obs_id"], vote, frozenset(j.get("conflicts", [])))
+            )
     for e in events.values():
         e.evidence.sort(key=lambda ev: (observations[ev.obs_id].published, ev.obs_id))
     return Dataset(

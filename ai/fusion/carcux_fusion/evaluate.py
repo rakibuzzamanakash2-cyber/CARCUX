@@ -50,7 +50,9 @@ def paired_bootstrap(loss_a, loss_b, *, resamples: int = 2000, seed: int = 0) ->
     }
 
 
-def run(data: Dataset, *, k: int = 5, seed: int = 0, method_list=None) -> dict:
+def run(
+    data: Dataset, *, k: int = 5, seed: int = 0, method_list=None, keep: dict | None = None
+) -> dict:
     events = [eid for eid, e in data.events.items() if e.evidence]
     if len(events) < k or len({data.events[e].occurred for e in events}) < 2:
         raise ValueError("need events that happened and events that did not, at least one per fold")
@@ -114,6 +116,8 @@ def run(data: Dataset, *, k: int = 5, seed: int = 0, method_list=None) -> dict:
             for other in preds
             if other != PROPOSED and PROPOSED in preds
         }
+        if keep is not None:
+            keep.setdefault("predictions", {})[name] = preds
         result["checkpoints"][name] = {
             "methods": table,
             "brier_vs_proposed": comparisons,
@@ -121,6 +125,8 @@ def run(data: Dataset, *, k: int = 5, seed: int = 0, method_list=None) -> dict:
             # same real-world situations can be compared across contamination levels.
             "clean_events": clean_table,
         }
+    if keep is not None:
+        keep.update(folds=parts, detected=detected_by_fold, events=events)
     return result
 
 
