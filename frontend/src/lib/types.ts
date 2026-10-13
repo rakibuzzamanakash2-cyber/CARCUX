@@ -130,6 +130,36 @@ export interface CarcuxEvent {
   created_at: string;
   updated_at: string;
   evidence_counts: EvidenceCounts;
+  occurred: boolean | null;
+  ground_truth_sources: GroundTruthSource[];
+  ground_truth_note: string | null;
+}
+
+export type GroundTruthKind = "official" | "news_followup" | "humanitarian_report" | "other";
+
+export interface GroundTruthSource {
+  reference: string;
+  published_at: string;
+  kind: GroundTruthKind;
+}
+
+export type ClaimAttribute =
+  | "occurrence"
+  | "event_type"
+  | "location"
+  | "start_time"
+  | "end_time"
+  | "status"
+  | "magnitude"
+  | "affected_count"
+  | "casualty_count"
+  | "cause";
+
+/** Dataset labels on a link. */
+export interface EvidenceLabels {
+  conflicts: ClaimAttribute[];
+  stale: boolean;
+  confidence: 1 | 2 | 3;
 }
 
 export interface EventPage {
@@ -145,6 +175,9 @@ export interface Evidence {
   note: string | null;
   linked_by: { id: string; full_name: string };
   linked_at: string;
+  conflicts: ClaimAttribute[];
+  stale: boolean;
+  confidence: 1 | 2 | 3;
   /** Exactly one of these is set. */
   field_report: FieldReport | null;
   signal: Signal | null;
@@ -296,4 +329,21 @@ export interface District {
   division: string;
   latitude: number;
   longitude: number;
+}
+
+export interface DatasetProblem {
+  kind: "needs_ground_truth" | "needs_conflicts" | "contradiction" | "outside_bangladesh";
+  message: string;
+  event_id: string | null;
+  event_title: string | null;
+  evidence_id: string | null;
+}
+
+export interface DatasetSummary {
+  schema_version: string;
+  guideline_version: string;
+  counts: Record<string, number>;
+  events_total: number;
+  problems_by_kind: Record<string, number>;
+  problems: DatasetProblem[];
 }

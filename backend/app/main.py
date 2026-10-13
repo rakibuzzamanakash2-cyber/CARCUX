@@ -9,6 +9,7 @@ from app import __version__
 from app.api import (
     audit,
     auth,
+    dataset,
     events,
     field_reports,
     health,
@@ -62,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         signals.router,
         signals.places_router,
         sources.router,
+        dataset.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

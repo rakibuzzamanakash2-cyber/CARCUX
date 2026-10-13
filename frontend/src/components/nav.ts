@@ -1,7 +1,7 @@
 import type { Role } from "@/lib/types";
 
 export type NavIcon =
-  "map" | "events" | "reports" | "signals" | "review" | "sources" | "users" | "audit";
+  "map" | "events" | "reports" | "signals" | "review" | "sources" | "dataset" | "users" | "audit";
 
 export interface NavItem {
   href: string;
@@ -42,6 +42,13 @@ export const NAV: { group: string; items: NavItem[] }[] = [
         roles: ["admin", "analyst"],
         desktopOnly: true,
       },
+      {
+        href: "/dataset",
+        label: "Dataset",
+        icon: "dataset",
+        roles: ["admin", "analyst"],
+        desktopOnly: true,
+      },
       { href: "/users", label: "Users", icon: "users", roles: ["admin"] },
       {
         href: "/audit",
@@ -62,6 +69,7 @@ export const SHORT_LABEL: Record<string, string> = {
   "/signals": "Signals",
   "/review": "Review",
   "/sources": "Sources",
+  "/dataset": "Dataset",
   "/users": "Users",
   "/audit": "Audit",
 };

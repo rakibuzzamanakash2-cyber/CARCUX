@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { api, apiFetch, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
-import { ASSESSMENTS, PRIORITIES, RELATIONS, STATUSES } from "@/lib/events";
+import { ASSESSMENTS, CLAIM_ATTRIBUTES, PRIORITIES, RELATIONS, STATUSES } from "@/lib/events";
 import { DHAKA_OFFSET, isUuid } from "@/lib/format";
 import {
   REPORT_REVIEWERS,
@@ -13,11 +13,14 @@ import {
   type Assessment,
   type CarcuxEvent,
   type EventStatus,
+  type EvidenceLabels,
   type EvidenceRelation,
+  type GroundTruthSource,
   type Priority,
 } from "@/lib/types";
 
 const RELATION_VALUES = new Set<string>(RELATIONS.map((r) => r.value));
+const CLAIM_VALUES = new Set<string>(CLAIM_ATTRIBUTES.map((a) => a.value));
 const STATUS_VALUES = new Set<string>(STATUSES.map((s) => s.value));
 const PRIORITY_VALUES = new Set<string>(PRIORITIES.map((p) => p.value));
 const ASSESSMENT_VALUES = new Set<string>(ASSESSMENTS.map((a) => a.value));
@@ -94,6 +97,9 @@ export interface EventChanges {
   status?: EventStatus;
   priority?: Priority;
   assessment?: Assessment;
+  occurred?: boolean | null;
+  ground_truth_sources?: GroundTruthSource[];
+  ground_truth_note?: string | null;
 }
 
 export async function updateEvent(eventId: string, changes: EventChanges): Promise<ActionState> {
@@ -123,10 +129,22 @@ export async function updateEvent(eventId: string, changes: EventChanges): Promi
   return { ok: true, message: "Saved." };
 }
 
+/** Only the dataset label fields, checked. */
+function cleanLabels(labels?: Partial<EvidenceLabels>): Partial<EvidenceLabels> {
+  if (!labels) return {};
+  const out: Partial<EvidenceLabels> = {};
+  if (labels.conflicts) out.conflicts = labels.conflicts.filter((c) => CLAIM_VALUES.has(c));
+  if (typeof labels.stale === "boolean") out.stale = labels.stale;
+  if (labels.confidence && [1, 2, 3].includes(labels.confidence))
+    out.confidence = labels.confidence;
+  return out;
+}
+
 export async function linkReport(
   eventId: string,
   reportId: string,
   relation: EvidenceRelation,
+  labels?: Partial<EvidenceLabels>,
 ): Promise<ActionState> {
   await requireRole(...REPORT_REVIEWERS);
   if (!isUuid(eventId) || !isUuid(reportId) || !RELATION_VALUES.has(relation)) {
@@ -135,7 +153,7 @@ export async function linkReport(
   try {
     await api(`/events/${eventId}/evidence`, {
       method: "POST",
-      body: JSON.stringify({ field_report_id: reportId, relation }),
+      body: JSON.stringify({ field_report_id: reportId, relation, ...cleanLabels(labels) }),
     });
   } catch (error) {
     return failure(error, "Could not link the report.");
@@ -144,20 +162,22 @@ export async function linkReport(
   return { ok: true, message: "Linked." };
 }
 
+/** Change how a link bears on the event: relation and the dataset labels. */
 export async function changeRelation(
   eventId: string,
   evidenceId: string,
   reportId: string,
-  relation: EvidenceRelation,
+  relation?: EvidenceRelation,
+  labels?: Partial<EvidenceLabels>,
 ): Promise<ActionState> {
   await requireRole(...REPORT_REVIEWERS);
-  if (!isUuid(eventId) || !isUuid(evidenceId) || !RELATION_VALUES.has(relation)) {
+  if (!isUuid(eventId) || !isUuid(evidenceId) || (relation && !RELATION_VALUES.has(relation))) {
     return { ok: false, message: "Unknown evidence or relation." };
   }
   try {
     await api(`/events/${eventId}/evidence/${evidenceId}`, {
       method: "PATCH",
-      body: JSON.stringify({ relation }),
+      body: JSON.stringify({ ...(relation ? { relation } : {}), ...cleanLabels(labels) }),
     });
   } catch (error) {
     return failure(error, "Could not change the relation.");

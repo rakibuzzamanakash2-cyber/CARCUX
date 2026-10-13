@@ -30,6 +30,7 @@ class AuditAction:
     SOURCE_CREATED = "source.created"
     SOURCE_UPDATED = "source.updated"
     SOURCE_FETCHED = "source.fetched"
+    DATASET_EXPORTED = "dataset.exported"
 
 
 def record(

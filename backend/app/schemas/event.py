@@ -5,7 +5,14 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPES
-from app.models.event import Assessment, EventStatus, EvidenceRelation, Priority
+from app.models.event import (
+    Assessment,
+    ClaimAttribute,
+    EventStatus,
+    EvidenceRelation,
+    GroundTruthKind,
+    Priority,
+)
 from app.schemas.field_report import FieldReportRead, ReporterRead
 from app.schemas.signal import SignalRead
 
@@ -65,6 +72,27 @@ class _NoteCheck(BaseModel):
         return _strip(value) if isinstance(value, str) else value
 
 
+class GroundTruthSource(BaseModel):
+    """A source published after the event that says what really happened."""
+
+    reference: str = Field(max_length=1000)
+    published_at: datetime
+    kind: GroundTruthKind
+
+    @field_validator("reference")
+    @classmethod
+    def _url(cls, value: str) -> str:
+        value = value.strip()
+        if not value.lower().startswith(("http://", "https://")) or " " in value:
+            raise ValueError("must be an http or https address")
+        return value
+
+    @field_validator("published_at")
+    @classmethod
+    def _aware(cls, value: datetime) -> datetime:
+        return _check_aware(value)
+
+
 class EventCreate(_EventChecks):
     title: str = Field(min_length=5, max_length=160)
     event_type: str
@@ -109,17 +137,32 @@ class EventUpdate(_EventChecks):
     status: EventStatus | None = None
     priority: Priority | None = None
     assessment: Assessment | None = None
+    occurred: bool | None = Field(
+        default=None, description="Ground truth: did it happen? null = not established yet"
+    )
+    ground_truth_sources: list[GroundTruthSource] | None = Field(default=None, max_length=20)
+    ground_truth_note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("ground_truth_note", mode="before")
+    @classmethod
+    def _note(cls, value: Any) -> Any:
+        return _strip(value) if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def _no_null_required(self) -> "EventUpdate":
-        clearable = {"summary", "place_name", "ended_at"}
+        clearable = {"summary", "place_name", "ended_at", "occurred", "ground_truth_note"}
         for name in self.model_fields_set - clearable:
             if getattr(self, name) is None:
                 raise ValueError(f"{name} cannot be empty")
         return self
 
     def changes(self) -> dict[str, Any]:
-        return self.model_dump(exclude_unset=True)
+        changes = self.model_dump(exclude_unset=True)
+        if "ground_truth_sources" in changes:  # stored as JSON
+            changes["ground_truth_sources"] = [
+                s.model_dump(mode="json") for s in self.ground_truth_sources or []
+            ]
+        return changes
 
 
 class EvidenceCounts(BaseModel):
@@ -152,6 +195,9 @@ class EventRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     evidence_counts: EvidenceCounts
+    occurred: bool | None
+    ground_truth_sources: list[GroundTruthSource]
+    ground_truth_note: str | None
 
 
 class EventPage(BaseModel):
@@ -161,29 +207,56 @@ class EventPage(BaseModel):
     offset: int
 
 
-class EvidenceCreate(_NoteCheck):
+class _EvidenceLabels(_NoteCheck):
+    """Dataset fields of a link, checked the way the dataset checks them."""
+
+    @field_validator("conflicts", check_fields=False)
+    @classmethod
+    def _unique(cls, value: list[ClaimAttribute] | None) -> list[ClaimAttribute] | None:
+        return list(dict.fromkeys(value)) if value is not None else None
+
+
+class EvidenceCreate(_EvidenceLabels):
     """Link a field report or a signal (exactly one)."""
 
     field_report_id: uuid.UUID | None = None
     signal_id: uuid.UUID | None = None
     relation: EvidenceRelation
     note: str | None = Field(default=None, max_length=2000)
+    conflicts: list[ClaimAttribute] = Field(
+        default_factory=list,
+        description="What the item gets wrong; required for partially_supports",
+    )
+    stale: bool = Field(False, description="Already out of date when published")
+    confidence: int = Field(2, ge=1, le=3, description="1 unsure, 2 fairly sure, 3 certain")
 
     @model_validator(mode="after")
     def _exactly_one(self) -> "EvidenceCreate":
         if (self.field_report_id is None) == (self.signal_id is None):
             raise ValueError("Give either field_report_id or signal_id")
+        check_conflicts(self.relation, self.conflicts)
         return self
 
 
-class EvidenceUpdate(_NoteCheck):
+def check_conflicts(relation: EvidenceRelation, conflicts: list) -> None:
+    if relation == EvidenceRelation.PARTIALLY_SUPPORTS and not conflicts:
+        raise ValueError("Say what it gets wrong: partly supports needs at least one conflict")
+    if relation == EvidenceRelation.RELATED and conflicts:
+        raise ValueError("A related-only item makes no checkable claim, so it has no conflicts")
+
+
+class EvidenceUpdate(_EvidenceLabels):
     relation: EvidenceRelation | None = None
     note: str | None = Field(default=None, max_length=2000)
+    conflicts: list[ClaimAttribute] | None = None
+    stale: bool | None = None
+    confidence: int | None = Field(default=None, ge=1, le=3)
 
     @model_validator(mode="after")
     def _relation_not_null(self) -> "EvidenceUpdate":
-        if "relation" in self.model_fields_set and self.relation is None:
-            raise ValueError("relation cannot be empty")
+        for name in ("relation", "conflicts", "stale", "confidence"):
+            if name in self.model_fields_set and getattr(self, name) is None:
+                raise ValueError(f"{name} cannot be empty")
         return self
 
 
@@ -195,6 +268,9 @@ class EvidenceRead(BaseModel):
     note: str | None
     linked_by: ReporterRead
     linked_at: datetime
+    conflicts: list[ClaimAttribute]
+    stale: bool
+    confidence: int
     field_report: FieldReportRead | None
     signal: SignalRead | None
 
