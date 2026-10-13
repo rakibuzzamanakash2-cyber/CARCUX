@@ -27,6 +27,8 @@ Groups a stream of observations into real-world events using **meaning, place an
 | Metrics | `metrics.py` | Pairwise precision/recall/F1 (a pair is positive if the two share any gold event), extended B-cubed for overlapping gold (Amigó et al., 2009), adjusted Rand index against one root event per observation. |
 | Evaluation | `evaluate.py` | k-fold cross-validation grouped by root event (no event is split between training and testing), seeded; mean ± sd over folds. |
 | Simulation | `simulate.py` | A seeded, clearly labelled simulated CARCUX-BD set for development (below). |
+| Streaming | `stream.py` | The same features, methods and clustering for large datasets: each item is compared only with earlier items, and many thresholds are clustered in one pass. Train/test protocol. |
+| Benchmarks | `benchmarks/news_clustering.py` | Loader and runner for the public news stream clustering benchmark (below). |
 
 ## Run it
 
@@ -76,9 +78,53 @@ Pairwise F1 for the joint model is 0.86–0.91, against 0.15–0.19 for text alo
 
 **Read this carefully.** The simulator was written by the same people as the model, and its reports are short template sentences, so the absolute numbers are optimistic. All the comparison shows is that the pipeline can measure the effect RQ1 asks about, and that the effect goes the expected way when place and time carry real signal. The paper's claims have to come from real CARCUX-BD annotations (and CrisisFACTS), using the same command.
 
+## Public benchmark: multilingual news stream clustering
+
+No public dataset has what CARCUX needs all together: reports labelled with the incident
+they describe, plus time, place and Bangla. We checked CrisisFACTS (labels are facts and
+whole disasters, with no locations), the Twitter event corpora (tweet IDs only; the text
+now needs the paid X API), SemEval-2022 Task 8 (rated article pairs) and a Bangladesh
+flood news corpus (flood / not flood labels; the data is not confirmed public). The
+closest fit is the stream clustering benchmark of **Miranda et al. (EMNLP 2018)**:
+
+- English, German and Spanish news, labelled with fine-grained story clusters, with times;
+- the same task as ours: articles arrive in order and are clustered online;
+- **no coordinates**, so it tests meaning and time, and it cannot test place. Place is
+  tested only on CARCUX-BD; that gap is part of what CARCUX-BD contributes.
+
+The files are not in this repository (about 100 MB, and their licence is not stated).
+Download them to a folder outside the repo. On Windows PowerShell:
+
+```powershell
+mkdir D:\benchmarks\news-clustering -Force
+cd D:\benchmarks\news-clustering
+$base = "ftp://ftp.priberam.pt/SUMMAPublic/Corpora/Clustering/2018.0"
+curl.exe -u "ftp.priberam.pt|anonymous:" -O "$base/dataset/dataset.dev.json"
+curl.exe -u "ftp.priberam.pt|anonymous:" -O "$base/dataset/dataset.test.json"
+```
+
+Then, from `ai/correlation`:
+
+```bash
+python -m carcux_correlation.benchmarks.news_clustering D:\benchmarks\news-clustering --json news.json
+```
+
+The protocol follows the authors' scorer: one language at a time, articles in date order,
+every article counted, pairwise precision/recall/F1 against `cluster`. Methods are
+trained and tuned on `dataset.dev.json` and reported on `dataset.test.json`. The table
+also shows the paper's best pairwise F1 for reference (0.941 en, 0.971 de, 0.942 es);
+that system used lemmas, named entities and learned ranking, so it is a ceiling to
+compare against rather than a like-for-like baseline. `joint-space` is left out because
+no article has a location. `--text char` switches to the character n-grams used on
+CARCUX-BD (the default for news is word TF-IDF). English takes about 4 minutes and
+under 0.5 GB of memory.
+
+This runs through `stream.py`, which compares each item only with earlier items and
+gives the same features, clusters and scores as the all-pairs code (checked by tests).
+
 ## Still to do
 
-- Run on real annotated CARCUX-BD exports once the case studies are labelled, and on CrisisFACTS.
+- Run on real annotated CARCUX-BD exports once the case studies are labelled.
 - Swap the TF-IDF encoder for a multilingual sentence encoder and compare.
 - Use `unrelated` hard negatives in training, not only in scoring.
 - Predict `parent_event_id` links (they are currently folded into the root event for scoring).

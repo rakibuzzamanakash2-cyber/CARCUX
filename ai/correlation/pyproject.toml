@@ -5,6 +5,7 @@ description = "CARCUX module 4: which observations describe the same event (rese
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.26",
+    "scipy>=1.11",
     "scikit-learn>=1.5",
 ]
 
