@@ -54,10 +54,11 @@ Field workers submit what they saw; analysts and admins review.
 | Endpoint | Who | What |
 |---|---|---|
 | `POST /api/v1/field-reports` | field worker, admin | Submit (multipart form, up to 4 JPEG/PNG/WebP photos, 8 MB each) |
-| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags; `?since=` (with UTC offset) for recent ones; `?q=` words in the text or place |
+| `GET /api/v1/field-reports` | field worker (own), analyst, admin | List, newest first; `?flagged=true` for reports with integrity flags; `?since=` (with UTC offset) for recent ones; `?q=` words in the text or place; `?status=submitted&order=oldest` for a review queue |
 | `GET /api/v1/field-reports/{id}` | same | One report |
 | `GET /api/v1/field-reports/{id}/media/{media_id}` | same | A photo |
 | `GET /api/v1/field-reports/{id}/verify` | analyst, admin | Check the report has not been changed since submission |
+| `POST /api/v1/field-reports/{id}/review` | analyst, admin | Triage: `reviewed`, `dismissed` (a reason is required) or back to `submitted`; records who and when |
 
 - **Offline-safe:** the device sends a `client_report_id` it generated. Sending the same report again returns the original (200) instead of a duplicate; reusing the id for different content is refused (409).
 - **Tamper-evident:** at submission the server stores a SHA-256 hash over the report's content and every photo. `verify` recomputes it and reports any edited text, moved location, or changed or missing photo. This detects changes; it cannot prevent someone with full server access from changing data *and* the hash, which is why verifications are audit-logged and the hash can later be anchored externally.
@@ -85,6 +86,12 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 - **Status:** `active`, `monitoring`, `resolved`, `dismissed`. **Priority:** `low` to `critical`. **Assessment:** the dataset's six labels, from `verified` to `insufficient_evidence`; new events start `unverified`.
 - **Matching is a baseline, and only a suggestion:** within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now). Same type first, then nearest. The correlation engine in `ai/correlation/` will replace it and can be scored against analysts' links.
 - Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
+
+## Review, audit log and passwords
+
+- **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.
+- **Audit log.** `GET /api/v1/audit` (admin): newest first, filter by `action` (exact, or a prefix ending in `.` such as `event.`), `actor_id`, `target_type`, `target_id`, `since`/`until`. The response also lists every action name seen, for filter menus.
+- **Passwords.** `POST /api/v1/auth/password` changes your own (current password required); it signs out your other sessions and returns a fresh token. `POST /api/v1/users/{id}/password` (admin) sets a temporary password and signs that person out everywhere. Both are audit-logged; passwords never are.
 
 ## Overview
 

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AssessmentText, PriorityBadge, StatusText } from "@/components/event-badges";
 import { LinkButtons } from "@/components/evidence-controls";
+import { ReviewControls } from "@/components/review-controls";
 import { buttonSecondary, PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
@@ -180,36 +181,65 @@ export default async function FieldReportPage({
                 )}
               </Panel>
             </div>
-            <Panel id="details" title="Details">
-              <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2.5 text-sm">
-                <dt className="text-muted">Seen at</dt>
-                <dd>{formatDhaka(report.observed_at)}</dd>
-                <dt className="text-muted">Received</dt>
-                <dd>{formatDhaka(report.received_at)}</dd>
-                <dt className="text-muted">Reported by</dt>
-                <dd>{report.reporter.full_name}</dd>
-                <dt className="text-muted">Location</dt>
-                <dd>
-                  {formatCoords(report.latitude, report.longitude)}
-                  {report.location_accuracy_m !== null && (
-                    <span className="text-muted">
-                      {" "}
-                      (±{Math.round(report.location_accuracy_m)} m)
-                    </span>
-                  )}
-                  <a
-                    href={mapUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block font-semibold text-brand hover:underline"
-                  >
-                    Open map
-                  </a>
-                </dd>
-                <dt className="text-muted">Status</dt>
-                <dd className="capitalize">{report.status}</dd>
-              </dl>
-            </Panel>
+            <div className="flex flex-col gap-6">
+              <Panel id="details" title="Details">
+                <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2.5 text-sm">
+                  <dt className="text-muted">Seen at</dt>
+                  <dd>{formatDhaka(report.observed_at)}</dd>
+                  <dt className="text-muted">Received</dt>
+                  <dd>{formatDhaka(report.received_at)}</dd>
+                  <dt className="text-muted">Reported by</dt>
+                  <dd>{report.reporter.full_name}</dd>
+                  <dt className="text-muted">Location</dt>
+                  <dd>
+                    {formatCoords(report.latitude, report.longitude)}
+                    {report.location_accuracy_m !== null && (
+                      <span className="text-muted">
+                        {" "}
+                        (±{Math.round(report.location_accuracy_m)} m)
+                      </span>
+                    )}
+                    <a
+                      href={mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block font-semibold text-brand hover:underline"
+                    >
+                      Open map
+                    </a>
+                  </dd>
+                  <dt className="text-muted">Status</dt>
+                  <dd>
+                    {
+                      {
+                        submitted: "New, waiting for review",
+                        reviewed: "Reviewed",
+                        dismissed: "Dismissed",
+                      }[report.status]
+                    }
+                    {report.reviewed_by && report.reviewed_at && (
+                      <span className="block text-muted">
+                        by {report.reviewed_by.full_name}, {formatDhaka(report.reviewed_at)}
+                      </span>
+                    )}
+                    {report.review_note && (
+                      <span className="mt-1 block rounded-md bg-panel-2 px-2 py-1">
+                        {report.review_note}
+                      </span>
+                    )}
+                  </dd>
+                </dl>
+              </Panel>
+              {reviewer && (
+                <Panel
+                  id="triage"
+                  title="Triage"
+                  description="Linking it to an event also marks it reviewed."
+                >
+                  <ReviewControls reportId={report.id} status={report.status} compact />
+                </Panel>
+              )}
+            </div>
           </div>
         )}
 

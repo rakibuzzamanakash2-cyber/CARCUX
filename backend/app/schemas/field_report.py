@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.field_report import ReportStatus
 
@@ -48,6 +48,9 @@ class FieldReportRead(BaseModel):
     content_hash: str
     integrity_flags: list[IntegrityFlag]
     media: list[MediaRead]
+    reviewed_by: ReporterRead | None = None
+    reviewed_at: datetime | None = None
+    review_note: str | None = None
 
 
 class FieldReportPage(BaseModel):
@@ -62,3 +65,18 @@ class VerifyResult(BaseModel):
     intact: bool
     problems: list[str]
     content_hash: str
+
+
+class ReviewDecision(BaseModel):
+    """Triage a report: reviewed (looked at), dismissed (not usable; say why) or back to new."""
+
+    status: ReportStatus
+    note: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def _dismissal_needs_reason(self) -> "ReviewDecision":
+        if self.note is not None:
+            self.note = self.note.strip() or None
+        if self.status == ReportStatus.DISMISSED and not self.note:
+            raise ValueError("Say why the report is dismissed")
+        return self

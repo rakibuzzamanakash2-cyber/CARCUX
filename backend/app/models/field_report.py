@@ -73,10 +73,17 @@ class FieldReport(Base):
     hash_version: Mapped[int] = mapped_column(Integer, default=1)
     integrity_flags: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
 
+    # Triage by an analyst: who last set the status, when, and why (required to dismiss).
+    # Not part of the content hash: reviewing a report does not change what was reported.
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_note: Mapped[str | None] = mapped_column(Text)
+
     media: Mapped[list["FieldReportMedia"]] = relationship(
         back_populates="report", order_by="FieldReportMedia.position", lazy="selectin"
     )
-    reporter = relationship("User", lazy="joined")
+    reporter = relationship("User", lazy="joined", foreign_keys=[reporter_id])
+    reviewed_by = relationship("User", lazy="joined", foreign_keys=[reviewed_by_id])
 
 
 class FieldReportMedia(Base):

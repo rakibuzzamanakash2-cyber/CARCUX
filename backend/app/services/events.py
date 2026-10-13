@@ -213,6 +213,8 @@ def _attach(
     # A report someone has placed against an event has been looked at.
     if report.status == ReportStatus.SUBMITTED:
         report.status = ReportStatus.REVIEWED
+        report.reviewed_by_id = actor.id
+        report.reviewed_at = datetime.now(UTC)
     audit.record(
         db,
         audit.AuditAction.EVIDENCE_LINKED,

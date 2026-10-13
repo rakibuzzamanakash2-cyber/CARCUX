@@ -1,4 +1,5 @@
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, KeyRound, LogOut } from "lucide-react";
+import Link from "next/link";
 
 import { logout } from "@/app/actions/auth";
 
@@ -34,7 +35,14 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
           <p className="font-semibold">{name}</p>
           <p className="text-sm text-muted">{role}</p>
         </div>
-        <form action={logout}>
+        <Link
+          href="/account"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-semibold hover:bg-panel-2"
+        >
+          <KeyRound size={16} aria-hidden="true" />
+          Account and password
+        </Link>
+        <form action={logout} className="border-t border-line">
           <button
             type="submit"
             className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-red hover:bg-red-soft"

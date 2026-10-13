@@ -39,7 +39,8 @@ function dhakaTime(value: string): string | null {
 function refresh(eventId: string, reportIds: string[] = []) {
   revalidatePath("/events");
   revalidatePath(`/events/${eventId}`);
-  revalidatePath("/");
+  revalidatePath("/", "layout"); // status bar and sidebar counts
+  revalidatePath("/review");
   for (const id of reportIds) revalidatePath(`/field-reports/${id}`);
 }
 

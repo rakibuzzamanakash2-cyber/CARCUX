@@ -1,8 +1,8 @@
 """Field reports: submit (field workers), read (field workers: own; analysts, admins: all)."""
 
 import uuid
-from datetime import datetime
-from typing import Annotated
+from datetime import UTC, datetime
+from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
@@ -20,10 +20,15 @@ from sqlalchemy import func, or_, select
 
 from app.api.deps import AppSettings, DbSession, client_ip, require_roles
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPE_FAMILY, EVENT_TYPES
-from app.models.field_report import FieldReport, FieldReportMedia
+from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
 from app.models.user import Role, User
 from app.schemas.event import CandidateEvent, EventRead, ReportLink
-from app.schemas.field_report import FieldReportPage, FieldReportRead, VerifyResult
+from app.schemas.field_report import (
+    FieldReportPage,
+    FieldReportRead,
+    ReviewDecision,
+    VerifyResult,
+)
 from app.services import audit
 from app.services import events as event_service
 from app.services import field_reports as service
@@ -129,6 +134,13 @@ def list_reports(
     q: Annotated[
         str | None, Query(max_length=100, description="Words in the text or place")
     ] = None,
+    status_: Annotated[
+        list[ReportStatus] | None,
+        Query(alias="status", description="Repeat to include several; default all"),
+    ] = None,
+    order: Annotated[
+        Literal["newest", "oldest"], Query(description="By arrival; oldest first for a queue")
+    ] = "newest",
 ):
     query = service.visible_reports(user)
     if since is not None:
@@ -148,10 +160,12 @@ def list_reports(
     elif flagged is False:
         query = query.where(func.jsonb_array_length(FieldReport.integrity_flags) == 0)
 
+    if status_:
+        query = query.where(FieldReport.status.in_(status_))
+
     total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(FieldReport.received_at.desc(), FieldReport.id).limit(limit).offset(offset)
-    ).all()
+    arrival = FieldReport.received_at.asc() if order == "oldest" else FieldReport.received_at.desc()
+    items = db.scalars(query.order_by(arrival, FieldReport.id).limit(limit).offset(offset)).all()
     return FieldReportPage(
         items=[FieldReportRead.model_validate(r) for r in items],
         total=total,
@@ -247,3 +261,34 @@ def candidate_events(report_id: uuid.UUID, db: DbSession, _user: Reviewer):
         )
         for event, m in event_service.candidate_events(db, report)
     ]
+
+
+@router.post("/{report_id}/review", response_model=FieldReportRead)
+def review_report(
+    report_id: uuid.UUID, body: ReviewDecision, request: Request, db: DbSession, user: Reviewer
+):
+    """Triage: mark a report reviewed, dismiss it with a reason, or put it back as new."""
+    report = db.get(FieldReport, report_id)
+    if report is None:
+        raise _NOT_FOUND
+    before = report.status
+    report.status = body.status
+    report.review_note = body.note
+    if body.status == ReportStatus.SUBMITTED:
+        report.reviewed_by_id = None
+        report.reviewed_at = None
+    else:
+        report.reviewed_by_id = user.id
+        report.reviewed_at = datetime.now(UTC)
+    audit.record(
+        db,
+        audit.AuditAction.FIELD_REPORT_REVIEWED,
+        actor_id=user.id,
+        target_type="field_report",
+        target_id=report.id,
+        ip_address=client_ip(request),
+        details={"from": before.value, "to": body.status.value, "note": body.note},
+    )
+    db.commit()
+    db.refresh(report)
+    return report

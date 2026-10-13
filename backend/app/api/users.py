@@ -3,11 +3,13 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, client_ip, require_roles
+from app.core.security import hash_password
 from app.models.user import Role, User
+from app.schemas.auth import PasswordReset
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.services import audit
 from app.services.users import EmailAlreadyRegisteredError, count_admins, create_user
@@ -78,3 +80,25 @@ def update(user_id: uuid.UUID, body: UserUpdate, request: Request, db: DbSession
 
 def _plain(value):
     return value.value if isinstance(value, Role) else value
+
+
+@router.post("/{user_id}/password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(
+    user_id: uuid.UUID, body: PasswordReset, request: Request, db: DbSession, admin: AdminUser
+):
+    """Set a temporary password for someone who forgot theirs. Signs them out everywhere."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    user.password_hash = hash_password(body.new_password)
+    user.token_version += 1
+    audit.record(
+        db,
+        audit.AuditAction.PASSWORD_RESET,
+        actor_id=admin.id,
+        target_type="user",
+        target_id=user.id,
+        ip_address=client_ip(request),
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

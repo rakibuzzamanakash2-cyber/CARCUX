@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { resetPassword } from "@/app/actions/review";
 import { updateUser } from "@/app/actions/users";
 import { ROLES, type ActionState, type Role, type User } from "@/lib/types";
 
@@ -14,6 +15,8 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
 export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionState>();
+  const [resetting, setResetting] = useState(false);
+  const [temp, setTemp] = useState("");
 
   function save(changes: { role?: Role; is_active?: boolean }, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return;
@@ -79,8 +82,58 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
               Reactivate
             </button>
           )}
-          {result && !result.ok && (
-            <span role="alert" className="text-xs text-signal">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => setResetting((v) => !v)}
+            aria-expanded={resetting}
+            className="rounded-md border border-line px-2.5 py-1 text-steel transition-colors hover:border-alert hover:text-bone disabled:opacity-60"
+          >
+            Reset password
+          </button>
+          {resetting && (
+            <form
+              className="flex w-full flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                startTransition(async () => {
+                  const r = await resetPassword(user.id, temp);
+                  setResult(r);
+                  if (r?.ok) {
+                    setResetting(false);
+                    setTemp("");
+                  }
+                });
+              }}
+            >
+              <label className="sr-only" htmlFor={`temp-${user.id}`}>
+                Temporary password for {user.full_name}
+              </label>
+              <input
+                id={`temp-${user.id}`}
+                type="text"
+                autoComplete="off"
+                minLength={12}
+                required
+                value={temp}
+                onChange={(e) => setTemp(e.target.value)}
+                placeholder="Temporary password, 12+ characters"
+                className="h-8 min-w-56 flex-1 rounded-md border border-line bg-panel px-2 text-sm focus:border-brand focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={pending || temp.length < 12}
+                className="h-8 rounded-md bg-brand px-3 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Set
+              </button>
+            </form>
+          )}
+          {result && (
+            <span
+              role={result.ok ? "status" : "alert"}
+              className={`text-xs ${result.ok ? "text-brand" : "text-signal"}`}
+            >
               {result.message}
             </span>
           )}
