@@ -20,6 +20,7 @@ from app.models.signal import (
     Source,
     SourceType,
 )
+from app.models.suggestion import SuggestionModel
 from app.models.user import Role, User
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "SignalStatus",
     "Source",
     "SourceType",
+    "SuggestionModel",
     "Role",
     "User",
 ]

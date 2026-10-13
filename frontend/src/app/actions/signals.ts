@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
 import { CLAIM_ATTRIBUTES, RELATIONS } from "@/lib/events";
 import { DHAKA_OFFSET, isUuid } from "@/lib/format";
+import { cleanSuggestion } from "@/lib/suggestions";
 import {
   REPORT_REVIEWERS,
   type ActionState,
@@ -15,6 +16,7 @@ import {
   type IngestRun,
   type Signal,
   type SignalStatus,
+  type SuggestionUsed,
 } from "@/lib/types";
 
 const RELATION_VALUES = new Set<string>(RELATIONS.map((r) => r.value));
@@ -46,6 +48,7 @@ export async function linkSignal(
   signalId: string,
   relation: EvidenceRelation,
   conflicts: string[] = [],
+  suggestion?: SuggestionUsed,
 ): Promise<ActionState> {
   await requireRole(...REPORT_REVIEWERS);
   if (!isUuid(eventId) || !isUuid(signalId) || !RELATION_VALUES.has(relation)) {
@@ -58,6 +61,7 @@ export async function linkSignal(
         signal_id: signalId,
         relation,
         conflicts: conflicts.filter((c) => CLAIMS.has(c)),
+        ...cleanSuggestion(suggestion),
       }),
     });
   } catch (error) {

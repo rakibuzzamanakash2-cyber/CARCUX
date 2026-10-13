@@ -19,7 +19,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func, or_, select
 
 from app.api.deps import AppSettings, DbSession, client_ip, require_roles
-from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPE_FAMILY, EVENT_TYPES
+from app.api.suggestions import as_candidate
+from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPES
 from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
 from app.models.user import Role, User
 from app.schemas.event import CandidateEvent, EventRead, ReportLink
@@ -32,6 +33,7 @@ from app.schemas.field_report import (
 from app.services import audit
 from app.services import events as event_service
 from app.services import field_reports as service
+from app.services import suggest as suggest_service
 from app.services.media import InvalidMediaError, check_photo, resolve
 
 router = APIRouter(prefix="/field-reports", tags=["field reports"])
@@ -246,21 +248,12 @@ def report_events(report_id: uuid.UUID, db: DbSession, _user: Reviewer):
 
 @router.get("/{report_id}/candidate-events", response_model=list[CandidateEvent])
 def candidate_events(report_id: uuid.UUID, db: DbSession, _user: Reviewer):
-    """Events within 5 km and 48 h that this report may belong to: suggestions only."""
+    """Events this report may belong to, ranked: suggestions only. By the 5 km / 48 h
+    rule until a suggestion model is trained, then by the model (see /suggestions)."""
     report = db.get(FieldReport, report_id)
     if report is None:
         raise _NOT_FOUND
-    family = EVENT_TYPE_FAMILY.get(report.event_type or "")
-    return [
-        CandidateEvent(
-            event=EventRead.model_validate(event),
-            distance_km=m.distance_km,
-            hours_apart=m.hours_apart,
-            same_type=event.event_type == report.event_type,
-            same_family=family is not None and event.family == family,
-        )
-        for event, m in event_service.candidate_events(db, report)
-    ]
+    return [as_candidate(s) for s in suggest_service.for_report(db, report)]
 
 
 @router.post("/{report_id}/review", response_model=FieldReportRead)

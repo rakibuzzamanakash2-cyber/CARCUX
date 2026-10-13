@@ -195,12 +195,62 @@ export interface CandidateReport {
   same_type: boolean;
 }
 
+/** A suggested event. `method` says how the list was ranked: the 5 km / 48 h rule, or
+ * the suggestion model once an admin has trained one. */
 export interface CandidateEvent {
   event: CarcuxEvent;
-  distance_km: number;
+  distance_km: number | null;
   hours_apart: number;
   same_type: boolean;
   same_family: boolean;
+  method: "rule" | "model";
+  score: number | null;
+  text_similarity: number | null;
+  hours_from_latest: number | null;
+  model_id: string | null;
+}
+
+/** Which suggestion an analyst linked from, recorded in the audit log. */
+export interface SuggestionUsed {
+  rank: number;
+  method: "rule" | "model";
+  score: number | null;
+  model_id: string | null;
+}
+
+export interface SuggestionModel {
+  id: string;
+  created_at: string;
+  created_by: { id: string; full_name: string } | null;
+  active: boolean;
+  items: number;
+  events: number;
+  positives: number;
+  negatives: number;
+  metrics: {
+    held_out_items: number;
+    held_out_events?: number;
+    model_top1?: number;
+    model_top3?: number;
+    rule_top1?: number;
+    rule_top3?: number;
+    retrieved?: number;
+  };
+}
+
+export interface SuggestionStatus {
+  method: "rule" | "model";
+  active: SuggestionModel | null;
+  previous: SuggestionModel[];
+  labelled_items: number;
+  labelled_events: number;
+  min_items: number;
+  min_events: number;
+  from_suggestions: { total: number; first: number; top3: number };
+}
+
+export function suggestionUsed(c: CandidateEvent, index: number): SuggestionUsed {
+  return { rank: index + 1, method: c.method, score: c.score, model_id: c.model_id };
 }
 
 export interface ReportLink {

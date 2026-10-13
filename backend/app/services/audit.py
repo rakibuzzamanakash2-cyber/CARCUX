@@ -35,6 +35,7 @@ class AuditAction:
     EVIDENCE_JUDGED = "event.evidence_judged"
     EVIDENCE_ADJUDICATED = "event.evidence_adjudicated"
     SOURCE_BACKFILLED = "source.backfilled"
+    SUGGESTIONS_TRAINED = "suggestions.trained"
 
 
 def record(

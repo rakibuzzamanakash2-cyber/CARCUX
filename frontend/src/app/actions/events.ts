@@ -7,6 +7,7 @@ import { api, apiFetch, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
 import { ASSESSMENTS, CLAIM_ATTRIBUTES, PRIORITIES, RELATIONS, STATUSES } from "@/lib/events";
 import { DHAKA_OFFSET, isUuid } from "@/lib/format";
+import { cleanSuggestion } from "@/lib/suggestions";
 import {
   REPORT_REVIEWERS,
   type ActionState,
@@ -17,6 +18,7 @@ import {
   type EvidenceRelation,
   type GroundTruthSource,
   type Priority,
+  type SuggestionUsed,
 } from "@/lib/types";
 
 const RELATION_VALUES = new Set<string>(RELATIONS.map((r) => r.value));
@@ -145,6 +147,7 @@ export async function linkReport(
   reportId: string,
   relation: EvidenceRelation,
   labels?: Partial<EvidenceLabels>,
+  suggestion?: SuggestionUsed,
 ): Promise<ActionState> {
   await requireRole(...REPORT_REVIEWERS);
   if (!isUuid(eventId) || !isUuid(reportId) || !RELATION_VALUES.has(relation)) {
@@ -153,7 +156,12 @@ export async function linkReport(
   try {
     await api(`/events/${eventId}/evidence`, {
       method: "POST",
-      body: JSON.stringify({ field_report_id: reportId, relation, ...cleanLabels(labels) }),
+      body: JSON.stringify({
+        field_report_id: reportId,
+        relation,
+        ...cleanLabels(labels),
+        ...cleanSuggestion(suggestion),
+      }),
     });
   } catch (error) {
     return failure(error, "Could not link the report.");

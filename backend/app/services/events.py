@@ -250,6 +250,7 @@ def _attach(
     report: FieldReport | None = None,
     signal: Signal | None = None,
     labels: dict[str, Any] | None = None,
+    suggestion: dict[str, Any] | None = None,
 ) -> EventEvidence:
     item = EventEvidence(
         id=uuid.uuid4(),
@@ -295,6 +296,7 @@ def _attach(
             **evidence_ref(item),
             "relation": relation.value,
             **({"conflicts": list(item.conflicts)} if item.conflicts else {}),
+            **({"suggestion": suggestion} if suggestion else {}),
         },
     )
     return item
@@ -310,11 +312,15 @@ def link_report(
     note: str | None,
     ip_address: str | None,
     labels: dict[str, Any] | None = None,
+    suggestion: dict[str, Any] | None = None,
 ) -> EventEvidence:
     (report,) = _load_reports(db, [report_id])
     if any(e.field_report_id == report_id for e in event.evidence):
         raise AlreadyLinkedError
-    item = _attach(db, actor, event, relation, note, ip_address, report=report, labels=labels)
+    item = _attach(
+        db, actor, event, relation, note, ip_address, report=report, labels=labels,
+        suggestion=suggestion,
+    )  # fmt: skip
     return _commit_link(db, event, item)
 
 
@@ -328,11 +334,15 @@ def link_signal(
     note: str | None,
     ip_address: str | None,
     labels: dict[str, Any] | None = None,
+    suggestion: dict[str, Any] | None = None,
 ) -> EventEvidence:
     (signal,) = _load_signals(db, [signal_id])
     if any(e.signal_id == signal_id for e in event.evidence):
         raise AlreadyLinkedError
-    item = _attach(db, actor, event, relation, note, ip_address, signal=signal, labels=labels)
+    item = _attach(
+        db, actor, event, relation, note, ip_address, signal=signal, labels=labels,
+        suggestion=suggestion,
+    )  # fmt: skip
     return _commit_link(db, event, item)
 
 

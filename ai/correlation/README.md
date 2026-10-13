@@ -263,4 +263,4 @@ again.
 - Any further model change: select it on a validation split of `dataset.dev.json`,
   not on the test set (the model is frozen for the benchmark as of 13 October 2026).
 - Check why `ctext` trails pair-level text, and why German lags (few, very large stories).
-- Serve the model in the backend once it beats B2 on real data.
+- Serving: done as a first version. The backend ranks event suggestions with the same cluster-level features (`backend/app/services/suggest.py`), trained on each instance's own links and measured against the rule on held-out events at every training run. Links made from suggestions are logged with their rank, which gives a second, in-use measure for the paper.

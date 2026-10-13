@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Initials, Pill } from "@/components/data-table";
 import { LinkButtons } from "@/components/evidence-controls";
+import { SuggestionMeta } from "@/components/suggestion-bits";
 import { FilterBar } from "@/components/filter-bar";
 import {
   buttonSecondary,
@@ -19,7 +20,12 @@ import { requireRole } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FLAG_INFO, flagLabel, formatDhaka } from "@/lib/format";
-import { REPORT_REVIEWERS, type CandidateEvent, type FieldReportPage } from "@/lib/types";
+import {
+  REPORT_REVIEWERS,
+  type CandidateEvent,
+  type FieldReportPage,
+  suggestionUsed,
+} from "@/lib/types";
 
 export const metadata = { title: "Review queue" };
 
@@ -227,11 +233,11 @@ export default async function ReviewPage({
                       <p className="text-sm font-semibold">Possibly the same situation</p>
                       {candidates.length === 0 ? (
                         <p className="text-sm text-muted">
-                          No open event within 5 km and 48 hours.
+                          No open event looks like the same situation.
                         </p>
                       ) : (
                         <ul className="flex flex-col gap-3">
-                          {candidates.slice(0, 3).map((c) => (
+                          {candidates.slice(0, 3).map((c, k) => (
                             <li
                               key={c.event.id}
                               className="rounded-lg border border-line bg-panel p-3"
@@ -242,16 +248,14 @@ export default async function ReviewPage({
                               >
                                 {c.event.title}
                               </Link>
-                              <p className="mb-2 text-xs text-muted">
-                                {c.distance_km < 1
-                                  ? `${Math.round(c.distance_km * 1000)} m away`
-                                  : `${c.distance_km.toFixed(1)} km away`}
-                                {c.same_type ? ", same type" : ""}
-                              </p>
+                              <div className="mb-2">
+                                <SuggestionMeta c={c} small />
+                              </div>
                               <LinkButtons
                                 eventId={c.event.id}
                                 reportId={r.id}
                                 label="Link to this event as"
+                                suggestion={suggestionUsed(c, k)}
                               />
                             </li>
                           ))}

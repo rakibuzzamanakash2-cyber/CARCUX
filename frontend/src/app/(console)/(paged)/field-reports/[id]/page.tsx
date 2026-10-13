@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AssessmentText, PriorityBadge, StatusText } from "@/components/event-badges";
 import { LinkButtons } from "@/components/evidence-controls";
+import { SuggestionMeta } from "@/components/suggestion-bits";
 import { ReviewControls } from "@/components/review-controls";
 import { buttonSecondary, PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
@@ -19,7 +20,9 @@ import {
   type CandidateEvent,
   type FieldReport,
   type ReportLink,
+  suggestionUsed,
 } from "@/lib/types";
+import { suggestionIntro } from "@/lib/suggestions";
 
 import { VerifyPanel } from "./verify-panel";
 
@@ -308,30 +311,13 @@ export default async function FieldReportPage({
               <>
                 <h3 className="mb-1 font-semibold">Possibly the same situation</h3>
                 <p className="mb-3 text-sm text-muted">
-                  Open events within 5 km and 48 hours of this report, same type first. Read the
-                  event before linking.
+                  {suggestionIntro(candidates[0].method, "report")}
                 </p>
                 <ul className="mb-5 flex flex-col divide-y divide-line">
-                  {candidates.map((c) => (
+                  {candidates.map((c, i) => (
                     <li key={c.event.id} className="flex flex-col gap-3 py-3">
                       <div>
-                        <p className="flex flex-wrap gap-x-3 text-sm text-muted">
-                          <span>
-                            {c.distance_km < 1
-                              ? `${Math.round(c.distance_km * 1000)} m away`
-                              : `${c.distance_km.toFixed(1)} km away`}
-                          </span>
-                          <span>
-                            {c.hours_apart === 0
-                              ? "during the event"
-                              : `${c.hours_apart} h outside it`}
-                          </span>
-                          {c.same_type ? (
-                            <span className="font-semibold text-brand">same type</span>
-                          ) : (
-                            <span>{eventTypeLabel(c.event.event_type)}</span>
-                          )}
-                        </p>
+                        <SuggestionMeta c={c} />
                         <Link
                           href={`/events/${c.event.id}`}
                           className="font-semibold hover:text-brand hover:underline"
@@ -343,6 +329,7 @@ export default async function FieldReportPage({
                         eventId={c.event.id}
                         reportId={report.id}
                         label="Link to this event as"
+                        suggestion={suggestionUsed(c, i)}
                       />
                     </li>
                   ))}
@@ -351,7 +338,7 @@ export default async function FieldReportPage({
             ) : (
               links.length === 0 && (
                 <p className="mb-4 text-sm text-muted">
-                  Not linked to any event, and no open event is nearby.
+                  Not linked to any event, and no open event looks like the same situation.
                 </p>
               )
             )}
