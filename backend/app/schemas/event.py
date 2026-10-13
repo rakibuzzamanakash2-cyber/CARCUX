@@ -170,6 +170,7 @@ class EvidenceCounts(BaseModel):
     partially_supports: int = 0
     contradicts: int = 0
     related: int = 0
+    unrelated: int = Field(0, description="Items judged to be about a different event")
     reporters: int = Field(0, description="Distinct field workers among the evidence")
     photos: int = 0
     signals: int = Field(0, description="Public signals among the evidence")
@@ -241,8 +242,14 @@ class EvidenceCreate(_EvidenceLabels):
 def check_conflicts(relation: EvidenceRelation, conflicts: list) -> None:
     if relation == EvidenceRelation.PARTIALLY_SUPPORTS and not conflicts:
         raise ValueError("Say what it gets wrong: partly supports needs at least one conflict")
-    if relation == EvidenceRelation.RELATED and conflicts:
-        raise ValueError("A related-only item makes no checkable claim, so it has no conflicts")
+    if relation in NO_CLAIM and conflicts:
+        raise ValueError(
+            "Related-only and unrelated items make no checkable claim, so they have no conflicts"
+        )
+
+
+# Labels under which an item makes no claim about the event, so it cannot conflict with it.
+NO_CLAIM = frozenset({EvidenceRelation.RELATED, EvidenceRelation.UNRELATED})
 
 
 class EvidenceUpdate(_EvidenceLabels):
@@ -271,6 +278,11 @@ class EvidenceRead(BaseModel):
     conflicts: list[ClaimAttribute]
     stale: bool
     confidence: int
+    judgement_count: int = Field(0, description="Annotators who have judged this link")
+    agreement: str = Field(
+        "single", description="single, agree, disagree, or resolved (gold label set)"
+    )
+    gold_relation: EvidenceRelation | None = None
     field_report: FieldReportRead | None
     signal: SignalRead | None
 

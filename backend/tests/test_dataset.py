@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.ingest import runner
 from app.models.audit import AuditLog
@@ -152,10 +152,12 @@ def scenario(client, analyst, worker, db, settings):
                      latitude=24.0023, longitude=90.4264).json()  # fmt: skip
     broken = link(client, analyst, pending["id"], field_report_id=first["id"],
                   relation="partially_supports", conflicts=["location"]).json()  # fmt: skip
-    db.execute(
-        __import__("sqlalchemy").text("UPDATE event_evidence SET conflicts='[]' WHERE id=:i"),
-        {"i": broken["id"]},
-    )
+    # Links from before conflicts were required: partly supports, nothing said.
+    for table, column in (("event_evidence", "id"), ("evidence_judgements", "evidence_id")):
+        db.execute(
+            text(f"UPDATE {table} SET conflicts='[]' WHERE {column}=:i"),  # noqa: S608
+            {"i": broken["id"]},
+        )
     db.commit()
     return {"event": eid, "pending": pending["id"], "first": first["id"], "copy": copy["id"]}
 

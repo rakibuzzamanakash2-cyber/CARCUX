@@ -140,6 +140,17 @@ Everything analysts do in CARCUX can be exported as the research dataset in `dat
 - Reused photos flagged at submission become `same_media` dependences. News stays an excerpt (300 characters at most).
 - Validate an export: `cd data/tools && python -m carcux_data.validate <dir>`.
 
+## Second opinions and agreement
+
+The annotation guideline (section 7) asks for every link to be labelled independently by two annotators, agreement measured, and disagreements resolved into a gold label.
+
+- **Judgements.** Each annotator's own label of a link is kept in `evidence_judgements`. Linking or relabelling records the linker's judgement; existing links became their linker's first judgement (migration 0008). The link's `relation` is the working label the console uses.
+- **Blind queue.** `GET /api/v1/annotation/queue` lists links the current analyst has not judged and that have fewer than two judgements, oldest first, without anyone's label. `POST /api/v1/annotation/judgements` records (or replaces) theirs.
+- **Agreement.** `GET /api/v1/annotation/agreement`: Cohen's κ on the first two judgements per link, Krippendorff's α (nominal, any number of annotators), percent agreement and the confusion table. Target κ ≥ 0.70 before scaling up.
+- **Adjudication.** `GET /api/v1/annotation/disagreements` lists links whose judgements differ (in label, or in conflicts for partly supports); `POST /api/v1/annotation/adjudicate` records the gold label, which the working label then follows.
+- **New label `unrelated`** ("not this event"): hard negatives for the model; not counted as evidence.
+- **Export:** one annotation per annotator per relation; `gold` comes from adjudication, or from agreement when annotators agree.
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

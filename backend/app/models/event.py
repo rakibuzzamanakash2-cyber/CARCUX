@@ -67,6 +67,19 @@ class EvidenceRelation(enum.StrEnum):
     PARTIALLY_SUPPORTS = "partially_supports"
     CONTRADICTS = "contradicts"
     RELATED = "related"
+    # About a different event (wrong place, day or type): a hard negative for the model.
+    UNRELATED = "unrelated"
+
+
+# Relations that are evidence about the event (unrelated items are kept as negatives).
+ABOUT_THE_EVENT = frozenset(
+    {
+        EvidenceRelation.SUPPORTS,
+        EvidenceRelation.PARTIALLY_SUPPORTS,
+        EvidenceRelation.CONTRADICTS,
+        EvidenceRelation.RELATED,
+    }
+)
 
 
 class ClaimAttribute(enum.StrEnum):
@@ -154,6 +167,8 @@ class Event(Base):
         photos = signals = 0
         for item in self.evidence:
             counts[item.relation.value] += 1
+            if item.relation not in ABOUT_THE_EVENT:
+                continue
             if item.field_report is not None:
                 reporters.add(item.field_report.reporter_id)
                 photos += len(item.field_report.media)
@@ -194,7 +209,77 @@ class EventEvidence(Base):
     linked_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # Adjudicated (gold) judgement, once annotators' disagreement has been resolved.
+    gold_relation: Mapped[EvidenceRelation | None] = mapped_column(
+        Enum(
+            EvidenceRelation, name="evidence_relation", values_callable=_values, create_type=False
+        )  # fmt: skip
+    )
+    gold_conflicts: Mapped[list[str] | None] = mapped_column(JSONB)
+    gold_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    gold_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     event: Mapped[Event] = relationship(back_populates="evidence")
     field_report = relationship("FieldReport", lazy="joined")
     signal = relationship("Signal", lazy="joined")
-    linked_by = relationship("User", lazy="joined")
+    linked_by = relationship("User", lazy="joined", foreign_keys=[linked_by_id])
+    gold_by = relationship("User", lazy="joined", foreign_keys=[gold_by_id])
+    judgements: Mapped[list["EvidenceJudgement"]] = relationship(
+        back_populates="evidence",
+        order_by="EvidenceJudgement.created_at",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def judgement_count(self) -> int:
+        return len(self.judgements)
+
+    @property
+    def agreement(self) -> str:
+        """single (one annotator), agree, disagree, or resolved (gold label set)."""
+        if self.gold_relation is not None:
+            return "resolved"
+        if len(self.judgements) < 2:
+            return "single"
+        labels = {(j.relation, tuple(sorted(j.conflicts or []))) for j in self.judgements}
+        return "agree" if len(labels) == 1 else "disagree"
+
+
+class EvidenceJudgement(Base):
+    """One annotator's own judgement of one link, made independently (guideline 7).
+
+    The link's relation is the working label; judgements are what agreement is measured
+    on and what the dataset exports as annotations."""
+
+    __tablename__ = "evidence_judgements"
+    __table_args__ = (
+        UniqueConstraint("evidence_id", "annotator_id", name="one_judgement_each"),
+        CheckConstraint("confidence BETWEEN 1 AND 3", name="confidence_1_to_3"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    evidence_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("event_evidence.id", ondelete="CASCADE"), index=True
+    )
+    annotator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    relation: Mapped[EvidenceRelation] = mapped_column(
+        Enum(
+            EvidenceRelation, name="evidence_relation", values_callable=_values, create_type=False
+        )  # fmt: skip
+    )
+    conflicts: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    stale: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    confidence: Mapped[int] = mapped_column(SmallInteger, default=2, server_default="2")
+    note: Mapped[str | None] = mapped_column(Text)
+    blind: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false",
+        doc="Made from the second-opinion queue, without seeing other labels",
+    )  # fmt: skip
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    evidence: Mapped[EventEvidence] = relationship(back_populates="judgements")
+    annotator = relationship("User", lazy="joined")

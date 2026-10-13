@@ -32,6 +32,8 @@ class AuditAction:
     SOURCE_FETCHED = "source.fetched"
     DATASET_EXPORTED = "dataset.exported"
     SIGNALS_IMPORTED = "signal.imported"
+    EVIDENCE_JUDGED = "event.evidence_judged"
+    EVIDENCE_ADJUDICATED = "event.evidence_adjudicated"
     SOURCE_BACKFILLED = "source.backfilled"
 
 

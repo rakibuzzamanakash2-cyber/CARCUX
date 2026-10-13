@@ -285,7 +285,9 @@ export default async function FieldReportPage({
                     className={`rounded-md border border-line border-l-4 p-3 ${RELATION_STYLE[l.relation]}`}
                   >
                     <p className="text-sm text-muted">
-                      This report {relationLabel(l.relation).toLowerCase()}
+                      {l.relation === "unrelated"
+                        ? "This report is about a different event"
+                        : `This report ${relationLabel(l.relation).toLowerCase()}`}
                     </p>
                     <Link
                       href={`/events/${l.event.id}`}

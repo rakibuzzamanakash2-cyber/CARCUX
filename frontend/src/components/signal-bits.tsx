@@ -57,17 +57,22 @@ export function SourceLine({ signal }: { signal: Signal }) {
 }
 
 /** A signal as evidence or a suggestion: source line, headline, excerpt, link out. */
-export function SignalSummary({ signal }: { signal: Signal }) {
+export function SignalSummary({ signal, blind = false }: { signal: Signal; blind?: boolean }) {
   return (
     <div className="flex flex-col gap-1">
       <SourceLine signal={signal} />
       <p className="flex flex-wrap items-center gap-2">
-        <Link
-          href={`/signals/${signal.id}`}
-          className="font-semibold hover:text-brand hover:underline"
-        >
-          {signal.title}
-        </Link>
+        {blind ? (
+          // The signal's own page lists the events it is linked to, and how.
+          <span className="font-semibold">{signal.title}</span>
+        ) : (
+          <Link
+            href={`/signals/${signal.id}`}
+            className="font-semibold hover:text-brand hover:underline"
+          >
+            {signal.title}
+          </Link>
+        )}
         {signal.severity && <SeverityPill severity={signal.severity} />}
       </p>
       {signal.text && <p className="line-clamp-2 text-sm text-muted">{signal.text}</p>}

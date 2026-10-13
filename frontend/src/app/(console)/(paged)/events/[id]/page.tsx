@@ -143,6 +143,27 @@ function describe(entry: HistoryEntry): React.ReactNode {
   }
 }
 
+const AGREEMENT: Record<Evidence["agreement"], (n: number) => React.ReactNode> = {
+  single: () => " · waiting for a second opinion",
+  agree: (n) => ` · ${n} annotators agree`,
+  disagree: () => (
+    <>
+      {" · "}
+      <Link
+        href="/annotation?tab=agreement"
+        className="font-semibold text-critical hover:underline"
+      >
+        annotators disagree: decide
+      </Link>
+    </>
+  ),
+  resolved: () => " · final label decided",
+};
+
+function AgreementNote({ agreement, count }: { agreement: Evidence["agreement"]; count: number }) {
+  return <>{AGREEMENT[agreement](count)}</>;
+}
+
 export default async function EventPage({
   params,
   searchParams,
@@ -344,6 +365,10 @@ export default async function EventPage({
                           />
                           <p className="mt-1 text-xs text-muted">
                             Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                            <AgreementNote
+                              agreement={item.agreement}
+                              count={item.judgement_count}
+                            />
                           </p>
                         </li>
                       ) : null;
@@ -397,6 +422,7 @@ export default async function EventPage({
                         />
                         <p className="mt-1 text-xs text-muted">
                           Linked by {item.linked_by.full_name}, {formatDhaka(item.linked_at)}
+                          <AgreementNote agreement={item.agreement} count={item.judgement_count} />
                         </p>
                       </li>
                     );

@@ -201,3 +201,58 @@ export async function unlinkEvidence(
   refresh(eventId, isUuid(reportId) ? [reportId] : []);
   return { ok: true, message: "Unlinked." };
 }
+
+/** Give your own (blind) judgement of a link: the second opinion. */
+export async function judgeLink(
+  evidenceId: string,
+  relation: EvidenceRelation,
+  labels: Partial<EvidenceLabels> & { note?: string },
+): Promise<ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(evidenceId) || !RELATION_VALUES.has(relation))
+    return { ok: false, message: "Unknown link or label." };
+  try {
+    await api("/annotation/judgements", {
+      method: "POST",
+      body: JSON.stringify({
+        evidence_id: evidenceId,
+        relation,
+        ...cleanLabels(labels),
+        note: labels.note?.trim() || null,
+      }),
+    });
+  } catch (error) {
+    return failure(error, "Could not save the judgement.");
+  }
+  revalidatePath("/annotation");
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Saved." };
+}
+
+/** Resolve a disagreement into the gold label. */
+export async function adjudicateLink(
+  evidenceId: string,
+  relation: EvidenceRelation,
+  conflicts: string[],
+  note: string,
+): Promise<ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(evidenceId) || !RELATION_VALUES.has(relation))
+    return { ok: false, message: "Unknown link or label." };
+  try {
+    await api("/annotation/adjudicate", {
+      method: "POST",
+      body: JSON.stringify({
+        evidence_id: evidenceId,
+        relation,
+        conflicts: conflicts.filter((c) => CLAIM_VALUES.has(c)),
+        note: note.trim() || null,
+      }),
+    });
+  } catch (error) {
+    return failure(error, "Could not save the decision.");
+  }
+  revalidatePath("/annotation");
+  revalidatePath("/events", "layout");
+  return { ok: true, message: "Decided." };
+}
