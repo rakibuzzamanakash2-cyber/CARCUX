@@ -6,6 +6,11 @@ Folds are grouped by root event, so no event is split between training and testi
 within a fold, scorers and thresholds are fitted on the training events only, then the
 test observations are clustered as a stream (in time order) and scored. Results are
 mean and standard deviation over folds.
+
+Pair-level methods (`models.methods`) score every pair; cluster-level methods
+(`cluster_model.methods`: ctext, cjoint and ablations) decide join-or-new against whole
+clusters, using streams built per fold with a character TF-IDF fitted on the training
+events only.
 """
 
 import argparse
@@ -15,10 +20,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from carcux_correlation import cluster_model, models, stream
 from carcux_correlation import features as F
-from carcux_correlation import models
 from carcux_correlation.data import Dataset, load
-from carcux_correlation.metrics import score
+from carcux_correlation.metrics import bcubed, score
 
 REPORTED = ["pair_precision", "pair_recall", "pair_f1", "bcubed_f1", "ari"]
 
@@ -62,6 +67,7 @@ def run(
     seed: int = 0,
     linkage: str = "average",
     method_list: list[models.Scorer] | None = None,
+    cluster_methods: list[cluster_model.ClusterJoint] | None = None,
 ) -> dict:
     obs = data.observations
     groups = [o.primary for o in obs]
@@ -70,8 +76,9 @@ def run(
         raise ValueError("Need at least two events to cross-validate")
     k = min(folds, n_groups)
     feats = F.matrix(obs)
-    method_list = method_list or models.methods()
-    results = {m.name: MethodResult(m.name) for m in method_list}
+    method_list = method_list if method_list is not None else models.methods()
+    cluster_methods = cluster_methods if cluster_methods is not None else cluster_model.methods()
+    results = {m.name: MethodResult(m.name) for m in [*method_list, *cluster_methods]}
 
     for fold, (train, test) in enumerate(grouped_folds(obs, groups, k, seed)):
         gold_train = [obs[i].events for i in train]
@@ -88,6 +95,8 @@ def run(
             s = score(pred, gold_test, primary_test).as_dict()
             s["threshold"] = threshold
             results[method.name].folds.append(s)
+        if cluster_methods:
+            _cluster_fold(obs, train, test, cluster_methods, results, fold, seed)
 
     return {
         "dataset": data.name,
@@ -99,6 +108,31 @@ def run(
         "linkage": linkage,
         "methods": {name: r.summary() for name, r in results.items()},
     }
+
+
+def _cluster_fold(obs, train, test, cluster_methods, results, fold, seed) -> None:
+    vec = stream.make_vectorizer("char")
+    vec.set_params(min_df=1)
+    vec.fit([obs[i].text.lower() for i in train])
+    train_s = stream.build([obs[i] for i in train], vec)
+    test_s = stream.build([obs[i] for i in test], vec)
+    # stream.build orders by (time, obs_id), the same order as the fold's test list.
+    gold_train = [obs[i].events for i in sorted(train, key=lambda i: (obs[i].time, obs[i].obs_id))]
+    gold_test = [obs[i].events for i in test]
+    primary_test = [obs[i].primary for i in test]
+    for m in cluster_methods:
+        try:
+            m.fit(train_s, seed=seed)
+        except ValueError as exc:
+            results[m.name].skipped.append(f"fold {fold}: {exc}")
+            continue
+        labels = m.cluster(train_s, stream.THRESHOLDS_CLUSTER)
+        f1s = [bcubed(lab.tolist(), gold_train)[2] for lab in labels]
+        threshold = float(stream.THRESHOLDS_CLUSTER[int(np.argmax(f1s))])
+        pred = m.cluster(test_s, [threshold])[0].tolist()
+        s = score(pred, gold_test, primary_test).as_dict()
+        s["threshold"] = threshold
+        results[m.name].folds.append(s)
 
 
 def table(result: dict) -> str:

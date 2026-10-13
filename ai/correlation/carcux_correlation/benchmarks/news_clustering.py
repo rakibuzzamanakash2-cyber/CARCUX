@@ -21,7 +21,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from carcux_correlation import stream
+from carcux_correlation import cluster_model, stream
 from carcux_correlation.data import Obs
 from carcux_correlation.stream import Outcome
 
@@ -76,7 +76,9 @@ def run_language(
     train = stream.build(train_obs, vectorizer, max_chars)
     test = stream.build(test_obs, vectorizer, max_chars)
     # No article has a location, so "joint without place" is the same model as "joint".
+    # Pair-level methods (B1, B2, the first joint model), then the cluster-level ones.
     methods = [m for m in stream.methods() if m.name != "joint-space"]
+    methods += cluster_model.methods(with_space=False)
     outcomes = stream.run(train, test, methods, seed=seed, log=log)
     return {
         "language": lang,

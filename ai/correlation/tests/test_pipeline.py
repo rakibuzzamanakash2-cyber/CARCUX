@@ -59,7 +59,17 @@ def test_evaluate_runs_end_to_end(sim, tmp_path):
     out = tmp_path / "result.json"
     assert evaluate.main([str(sim), "--folds", "3", "--json", str(out)]) == 0
     result = json.loads(out.read_text())
-    assert set(result["methods"]) == {"text", "text+rules", "joint", "joint-space", "joint-time"}
+    assert set(result["methods"]) == {
+        "text",
+        "text+rules",
+        "joint",
+        "joint-space",
+        "joint-time",
+        "ctext",
+        "cjoint",
+        "cjoint-space",
+        "cjoint-time",
+    }
     for summary in result["methods"].values():
         assert summary["folds"] == 3
         assert 0 <= summary["bcubed_f1"]["mean"] <= 1

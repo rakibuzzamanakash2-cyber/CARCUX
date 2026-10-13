@@ -29,6 +29,7 @@ from carcux_correlation.data import FAMILY, Obs
 from carcux_correlation.metrics import Scores, bcubed, score
 
 BLOCK = 512
+THRESHOLDS_CLUSTER = np.round(np.linspace(0.05, 0.95, 19), 3)
 COL = {name: k for k, name in enumerate(F.NAMES)}
 
 
@@ -283,26 +284,35 @@ class Outcome:
 def run(
     train: Stream,
     test: Stream,
-    method_list: list[Method] | None = None,
+    method_list: list | None = None,
     *,
     seed: int = 0,
     log: Callable[[str], None] = lambda m: None,
 ) -> list[Outcome]:
     """Fit on `train`, tune each method's threshold on `train` by B-cubed F1, then
-    cluster `test` once and score it."""
+    cluster `test` once and score it. Methods are pair-level (`Method`) or cluster-level
+    (`cluster_model.ClusterJoint`, recognised by its `prob` method)."""
     method_list = method_list if method_list is not None else methods()
     gold_train = [{g} for g in train.gold]
     x, y = sample_pairs(train, seed=seed)
     log(f"  training pairs: {len(y)} ({int(y.sum())} same-event)")
     outcomes = []
     for m in method_list:
-        m.fit(x, y)
-        cands = candidate_thresholds(m(x) if len(x) else np.zeros(0))
-        labels = cluster(train, m, cands)
+        if hasattr(m, "prob"):  # cluster-level model: trained on join/new decisions
+            m.fit(train, seed=seed)
+            cands = THRESHOLDS_CLUSTER
+            labels = m.cluster(train, cands)
+        else:
+            m.fit(x, y)
+            cands = candidate_thresholds(m(x) if len(x) else np.zeros(0))
+            labels = cluster(train, m, cands)
         f1s = [bcubed(labels[t].tolist(), gold_train)[2] for t in range(len(cands))]
         best = int(np.argmax(f1s))
         threshold = float(cands[best])
-        pred = cluster(test, m, [threshold])[0].tolist()
+        if hasattr(m, "prob"):
+            pred = m.cluster(test, [threshold])[0].tolist()
+        else:
+            pred = cluster(test, m, [threshold])[0].tolist()
         result = score(pred, [{g} for g in test.gold], test.gold)
         log(f"  {m.name:<12} threshold {threshold:.3f}  test B-cubed F1 {result.bcubed_f1:.3f}")
         outcomes.append(
@@ -311,7 +321,7 @@ def run(
                 threshold=threshold,
                 train_bcubed_f1=float(f1s[best]),
                 test=result,
-                weights=m.weights() if isinstance(m, Joint) else None,
+                weights=m.weights() if hasattr(m, "weights") else None,
             )
         )
     return outcomes
