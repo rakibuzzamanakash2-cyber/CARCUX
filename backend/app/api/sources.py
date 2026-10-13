@@ -12,7 +12,13 @@ from app.api.deps import AppSettings, DbSession, client_ip, require_roles
 from app.ingest import runner
 from app.models.signal import Adapter, IngestRun, Source
 from app.models.user import Role, User
-from app.schemas.signal import IngestRunRead, SourceCreate, SourceRead, SourceUpdate
+from app.schemas.signal import (
+    BackfillRequest,
+    IngestRunRead,
+    SourceCreate,
+    SourceRead,
+    SourceUpdate,
+)
 from app.services import audit
 from app.services import signals as service
 
@@ -94,6 +100,45 @@ def fetch_now(
         db.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, "This source is being read already") from None
     return run
+
+
+@router.post("/{source_id}/backfill", response_model=IngestRunRead)
+def backfill(
+    source_id: uuid.UUID,
+    body: BackfillRequest,
+    request: Request,
+    db: DbSession,
+    settings: AppSettings,
+    user: Admin,
+):
+    """Read a past period from the source's archive (GDACS, ReliefWeb)."""
+    source = _source_or_404(db, source_id)
+    audit.record(
+        db,
+        audit.AuditAction.SOURCE_BACKFILLED,
+        actor_id=user.id,
+        target_type="source",
+        target_id=source.id,
+        ip_address=client_ip(request),
+        details={"key": source.key, "start": body.start.isoformat(), "end": body.end.isoformat()},
+    )
+    try:
+        return runner.backfill(db, source, settings, body.start, body.end, actor=user)
+    except runner.NoArchiveError:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"{source.name} has no archive to search; import a list of items instead",
+        ) from None
+    except runner.BadWindowError:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Choose a period of at most a year that has started, with the end after the start",
+        ) from None
+    except runner.AlreadyRunningError:
+        db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "This source is being read already") from None
 
 
 @router.get("/{source_id}/runs", response_model=list[IngestRunRead])
