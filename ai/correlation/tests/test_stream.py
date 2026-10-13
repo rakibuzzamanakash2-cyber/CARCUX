@@ -125,20 +125,39 @@ def test_news_benchmark_end_to_end(tmp_path):
     _write_fake_news(tmp_path / "dataset.dev.json", 6, 6, seed=1)
     _write_fake_news(tmp_path / "dataset.test.json", 5, 5, seed=2)
     out = tmp_path / "r.json"
-    assert news_clustering.main([str(tmp_path), "--lang", "eng", "--json", str(out)]) == 0
+    args = [str(tmp_path), "--lang", "eng", "--seeds", "2", "--resamples", "200"]
+    assert news_clustering.main([*args, "--json", str(out)]) == 0
     (result,) = json.loads(out.read_text())
     assert set(result["methods"]) == {
         "text",
         "text+rules",
-        "joint",
-        "joint-time",
         "ctext",
         "cjoint",
         "cjoint-time",
+        "cjoint-recency",
     }
     assert result["test_articles"] == 25
     for m in result["methods"].values():
         assert all(0 <= m[k] <= 1 for k in ("pair_precision", "pair_recall", "bcubed_f1"))
+    # Only trained methods are repeated across seeds.
+    assert set(result["across_seeds"]) == {"ctext", "cjoint", "cjoint-time", "cjoint-recency"}
+    pairs = {(c["a"], c["b"]) for c in result["comparisons"]}
+    assert ("ctext", "cjoint") in pairs and ("text+rules", "cjoint") in pairs
+
+
+def test_news_benchmark_can_include_the_first_design(tmp_path):
+    _write_fake_news(tmp_path / "dataset.dev.json", 4, 5, seed=1)
+    _write_fake_news(tmp_path / "dataset.test.json", 3, 4, seed=2)
+    out = tmp_path / "r.json"
+    args = [str(tmp_path), "--lang", "eng", "--with-pair-joint", "--resamples", "50"]
+    assert news_clustering.main([*args, "--json", str(out)]) == 0
+    assert {"joint", "joint-time"} <= set(json.loads(out.read_text())[0]["methods"])
+
+
+def test_refined_grid_stays_inside_zero_one():
+    assert stream.refine(0.05).min() > 0
+    assert stream.refine(0.95).max() < 1
+    assert len(stream.refine(0.5)) == 9
 
 
 def test_news_benchmark_reports_missing_files(tmp_path, capsys):

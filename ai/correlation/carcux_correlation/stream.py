@@ -279,6 +279,13 @@ class Outcome:
     train_bcubed_f1: float
     test: Scores
     weights: dict | None = None
+    pred: list[int] | None = None  # test cluster labels, in stream order
+
+
+def refine(best: float, step: float = 0.01, width: float = 0.04) -> np.ndarray:
+    """A finer grid around a coarse optimum."""
+    grid = np.arange(best - width, best + width + step / 2, step)
+    return np.round(grid[(grid > 0) & (grid < 1)], 4)
 
 
 def run(
@@ -291,30 +298,48 @@ def run(
 ) -> list[Outcome]:
     """Fit on `train`, tune each method's threshold on `train` by B-cubed F1, then
     cluster `test` once and score it. Methods are pair-level (`Method`) or cluster-level
-    (`cluster_model.ClusterJoint`, recognised by its `prob` method)."""
+    (`cluster_model.ClusterJoint`, recognised by its `prob` method). Cluster-level
+    thresholds are searched in two stages: steps of 0.05, then 0.01 around the best."""
     method_list = method_list if method_list is not None else methods()
     gold_train = [{g} for g in train.gold]
-    x, y = sample_pairs(train, seed=seed)
-    log(f"  training pairs: {len(y)} ({int(y.sum())} same-event)")
+    needs_pairs = any(not hasattr(m, "prob") for m in method_list)
+    x, y = (
+        sample_pairs(train, seed=seed)
+        if needs_pairs
+        else (np.zeros((0, len(F.NAMES))), np.zeros(0))
+    )
+    if needs_pairs:
+        log(f"  training pairs: {len(y)} ({int(y.sum())} same-event)")
     outcomes = []
     for m in method_list:
-        if hasattr(m, "prob"):  # cluster-level model: trained on join/new decisions
+        cluster_level = hasattr(m, "prob")
+        if cluster_level:  # trained on join/new decisions
             m.fit(train, seed=seed)
+
+            def run_on(stream_, thresholds, m=m):
+                return m.cluster(stream_, thresholds)
+
             cands = THRESHOLDS_CLUSTER
-            labels = m.cluster(train, cands)
         else:
             m.fit(x, y)
+
+            def run_on(stream_, thresholds, m=m):
+                return cluster(stream_, m, thresholds)
+
             cands = candidate_thresholds(m(x) if len(x) else np.zeros(0))
-            labels = cluster(train, m, cands)
-        f1s = [bcubed(labels[t].tolist(), gold_train)[2] for t in range(len(cands))]
+        labels = run_on(train, cands)
+        f1s = [bcubed(lab.tolist(), gold_train)[2] for lab in labels]
+        if cluster_level:
+            fine = np.setdiff1d(refine(float(cands[int(np.argmax(f1s))])), cands)
+            if len(fine):
+                labels = run_on(train, fine)
+                cands = np.r_[cands, fine]
+                f1s += [bcubed(lab.tolist(), gold_train)[2] for lab in labels]
         best = int(np.argmax(f1s))
         threshold = float(cands[best])
-        if hasattr(m, "prob"):
-            pred = m.cluster(test, [threshold])[0].tolist()
-        else:
-            pred = cluster(test, m, [threshold])[0].tolist()
+        pred = run_on(test, [threshold])[0].tolist()
         result = score(pred, [{g} for g in test.gold], test.gold)
-        log(f"  {m.name:<12} threshold {threshold:.3f}  test B-cubed F1 {result.bcubed_f1:.3f}")
+        log(f"  {m.name:<14} threshold {threshold:.3f}  test B-cubed F1 {result.bcubed_f1:.3f}")
         outcomes.append(
             Outcome(
                 method=m.name,
@@ -322,6 +347,7 @@ def run(
                 train_bcubed_f1=float(f1s[best]),
                 test=result,
                 weights=m.weights() if hasattr(m, "weights") else None,
+                pred=pred,
             )
         )
     return outcomes

@@ -42,9 +42,15 @@ NAMES = [
     "log_min_scaled_km",
     "same_type_share",
     "type_unknown",
+    "cos_x_recency",
+    "log_gap_ratio",
 ]
 TEXT = {"centroid_cos", "max_cos"}
-TIME = {"log_hours_newest", "log_hours_oldest"}
+# Recency terms: a strong text match should tolerate a longer silence (cos_x_recency),
+# and a silence means more for a story that usually updates hourly than for one that
+# updates weekly (log_gap_ratio: hours since newest / the cluster's mean gap).
+RECENCY = {"cos_x_recency", "log_gap_ratio"}
+TIME = {"log_hours_newest", "log_hours_oldest"} | RECENCY
 SPACE = {"any_located", "log_min_km", "log_min_scaled_km"}
 TYPE = {"same_type_share", "type_unknown"}
 STRUCTURE = {"log_size"}
@@ -130,6 +136,11 @@ def features(
     out[:, NC["log_hours_newest"]] = np.log1p(np.maximum(s.hours[i] - st.newest[clusters], 0))
     out[:, NC["log_hours_oldest"]] = np.log1p(np.maximum(s.hours[i] - st.oldest[clusters], 0))
     out[:, NC["log_size"]] = np.log(st.size[clusters])
+    since = np.maximum(s.hours[i] - st.newest[clusters], 0)
+    span = st.newest[clusters] - st.oldest[clusters]
+    mean_gap = span / np.maximum(st.size[clusters] - 1, 1)
+    out[:, NC["cos_x_recency"]] = out[:, NC["centroid_cos"]] * out[:, NC["log_hours_newest"]]
+    out[:, NC["log_gap_ratio"]] = np.log1p(since / (mean_gap + 1.0))
     if r.any_loc:
         located = r.located[sel]
         if located.any():
@@ -233,9 +244,10 @@ class ClusterJoint:
         return np.array([st.labels for st in states])
 
 
-def methods(with_space: bool = True) -> list[ClusterJoint]:
+def methods(with_space: bool = True, with_recency_ablation: bool = False) -> list[ClusterJoint]:
     """`ctext`: the same cluster-level model with meaning only (the fair text baseline).
-    `cjoint`: meaning, place, time, type and size. Ablations drop place or time."""
+    `cjoint`: meaning, place, time, type and size. Ablations drop place or time, and
+    optionally only the recency terms (`cjoint-recency`, the October 2026 first version)."""
     no_text = TIME | SPACE | TYPE
     out = [
         ClusterJoint(drop=frozenset(no_text), label="ctext"),
@@ -244,4 +256,6 @@ def methods(with_space: bool = True) -> list[ClusterJoint]:
     if with_space:
         out.append(ClusterJoint(drop=frozenset(SPACE), label="cjoint-space"))
     out.append(ClusterJoint(drop=frozenset(TIME), label="cjoint-time"))
+    if with_recency_ablation:
+        out.append(ClusterJoint(drop=frozenset(RECENCY), label="cjoint-recency"))
     return out

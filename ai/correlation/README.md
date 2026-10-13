@@ -23,7 +23,8 @@ Groups a stream of observations into real-world events using **meaning, place an
 | Loading | `carcux_correlation/data.py` | Reads a CARCUX-BD export. An observation belongs to every event it supports, partially supports, contradicts or is related to; `unrelated` is a hard negative. Child events are folded into their root for partition measures. Unannotated observations are left out of scoring. |
 | Pair features | `features.py` | Meaning: character n-gram TF-IDF cosine (works across Bangla, Banglish and English without a tokenizer; a multilingual sentence encoder can replace it). Place: great-circle km, and km scaled by both locations' `precision_m`; a missing location is flagged, never guessed. Time: hours apart. Type: same type, same family, or unknown. |
 | Scorers | `models.py` | **B1 `text`**: text similarity only. **B2 `text+rules`**: text similarity, set to zero where the current CARCUX rule says no (beyond 48 h, or beyond 5 km plus both locations' uncertainty, capped at 300 km). **`joint`** (proposed): logistic regression over all features. **`joint-space`**, **`joint-time`**: the joint model without place or without time features (ablations). |
-| Cluster-level model | `cluster_model.py` | **`cjoint`** (proposed, second design): decides join-or-new against each candidate cluster as a whole: centroid and best-member text similarity, hours since the cluster's newest member and its age, its size, distance to its nearest located member, and type agreement. Trained on the same decision, walking the training stream with gold clusters. Candidates are the 20 clusters most similar in text. **`ctext`**: the same model with meaning (and size) only, the fair text baseline. **`cjoint-space`**, **`cjoint-time`**: ablations. |
+| Cluster-level model | `cluster_model.py` | **`cjoint`** (proposed, second design): decides join-or-new against each candidate cluster as a whole: centroid and best-member text similarity, hours since the cluster's newest member and its age, its size, distance to its nearest located member, and type agreement. Trained on the same decision, walking the training stream with gold clusters. Candidates are the 20 clusters most similar in text. **`ctext`**: the same model with meaning (and size) only, the fair text baseline. **`cjoint-space`**, **`cjoint-time`**: ablations. Two recency terms (text similarity × time since newest member; time since newest member relative to the cluster's usual gap) let a strong text match tolerate a longer silence; **`cjoint-recency`** drops just those. Thresholds are searched in steps of 0.05, then 0.01 around the best. |
+| Significance | `significance.py` | Paired bootstrap over test stories: both methods' B-cubed F1 on the same resamples of whole gold stories, giving a 95 % confidence interval and p-value for the difference. |
 | Clustering | `models.py` | The same for every pair-level scorer. Observations arrive in time order; each joins the most similar existing cluster (average over its members) if the similarity reaches a threshold, else starts a new one. The threshold is tuned on training folds only, by B-cubed F1. |
 | Metrics | `metrics.py` | Pairwise precision/recall/F1 (a pair is positive if the two share any gold event), extended B-cubed for overlapping gold (Amigó et al., 2009), adjusted Rand index against one root event per observation. |
 | Evaluation | `evaluate.py` | k-fold cross-validation grouped by root event (no event is split between training and testing), seeded; mean ± sd over folds. |
@@ -75,11 +76,11 @@ B-cubed F1, mean over folds:
 | joint without place | 0.892 | 0.872 | 0.875 |
 | joint without time | 0.767 | 0.754 | 0.765 |
 | ctext, cluster level (text baseline) | 0.594 | 0.517 | 0.623 |
-| **cjoint, cluster level (second design)** | **0.950** | **0.950** | **0.924** |
-| cjoint without place | 0.904 | 0.889 | 0.882 |
+| **cjoint, cluster level (with recency terms)** | **0.951** | **0.949** | **0.935** |
+| cjoint without place | 0.911 | 0.886 | 0.853 |
 | cjoint without time | 0.685 | 0.706 | 0.767 |
 
-Pairwise F1 for `cjoint` is 0.86–0.93, against 0.11–0.18 for `ctext` and 0.47–0.63 for text + rules.
+Pairwise F1 for `cjoint` is 0.88–0.93, against 0.11–0.18 for `ctext` and 0.47–0.63 for text + rules.
 
 **Read this carefully.** The simulator was written by the same people as the model, and its reports are short template sentences, so the absolute numbers are optimistic. All the comparison shows is that the pipeline can measure the effect RQ1 asks about, and that the effect goes the expected way when place and time carry real signal. The paper's claims have to come from real CARCUX-BD annotations (and CrisisFACTS), using the same command.
 
@@ -112,7 +113,17 @@ Then, from `ai/correlation`:
 
 ```bash
 python -m carcux_correlation.benchmarks.news_clustering D:\benchmarks\news-clustering --json news.json
+# for the paper: three training seeds (about three times longer)
+python -m carcux_correlation.benchmarks.news_clustering D:\benchmarks\news-clustering --seeds 3 --json news-3seeds.json
 ```
+
+It runs B1, B2, `ctext`, `cjoint`, `cjoint-time` and `cjoint-recency` (add
+`--with-pair-joint` for the failed first design), then tests four differences with the
+paired story bootstrap: `cjoint` against `ctext` (RQ1, like for like), against B1,
+against B2, and against itself without the recency terms. The bootstrap measures
+uncertainty from which stories are in the test set; `--seeds` measures training
+randomness. Per-item scores come from the full clustering, which is not re-run per
+resample.
 
 The protocol follows the authors' scorer: one language at a time, articles in date order,
 every article counted, pairwise precision/recall/F1 against `cluster`. Methods are
