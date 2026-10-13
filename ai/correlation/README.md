@@ -154,7 +154,43 @@ CARCUX also last days, so this matters beyond the benchmark.
 
 The second design (`cluster_model.py`) makes the decision against the cluster as a
 whole, using time since the cluster's newest member rather than the time to every
-member. Its benchmark results go here once run.
+member.
+
+### Second run: the cluster-level model
+
+B-cubed F1 on the test sets (13 October 2026, one run, seed 0):
+
+| Method | English | German | Spanish |
+|---|---|---|---|
+| B1 text, pair level | 0.830 | 0.867 | 0.912 |
+| B2 text + rules | **0.921** | **0.935** | 0.900 |
+| joint, pair level (first design) | 0.539 | 0.744 | 0.799 |
+| `ctext`, cluster level, meaning only | 0.799 | 0.803 | 0.866 |
+| **`cjoint`, cluster level, meaning + time** | 0.914 | 0.885 | **0.935** |
+
+| `cjoint` | English | German | Spanish |
+|---|---|---|---|
+| Pairwise P / R / F1 | 0.973 / 0.862 / 0.914 | 0.997 / 0.630 / 0.772 | 0.987 / 0.975 / 0.981 |
+| Clusters (gold) | 429 (222) | 185 (118) | 202 (149) |
+
+What this shows, and what it does not:
+
+- **RQ1, like for like:** with the same model and only the time features added,
+  `cjoint` beats `ctext` in all three languages (+0.115, +0.082, +0.069 B-cubed F1).
+  `cjoint-time` scored exactly the same as `ctext` (no article has a place or type, so
+  removing time leaves the same model), which is a useful sanity check.
+- **The fix worked:** English went from 1,159 clusters to 429, and B-cubed F1 from
+  0.539 to 0.914.
+- **The learned model does not yet beat the simple rule everywhere.** B2 (text + a
+  48-hour cut-off) is still slightly ahead in English and clearly ahead in German, where
+  there is the least training data (4,043 articles). `cjoint` is best in Spanish.
+- **Text alone is weaker at cluster level** than pair level (`ctext` 0.799 vs B1 0.830
+  in English), so part of `cjoint`'s gain over `ctext` restores what the cluster-level
+  set-up loses. The fair statement is the like-for-like one above.
+- **Not claims of beating the paper:** pairwise F1 is dominated by a few huge stories,
+  this is one run with one seed, and the threshold grid is coarse (steps of 0.05).
+  Significance testing over seeds is still to do.
+- **Place is not tested here:** no article has coordinates. That still needs CARCUX-BD.
 
 ## Still to do
 
@@ -162,5 +198,7 @@ member. Its benchmark results go here once run.
 - Swap the TF-IDF encoder for a multilingual sentence encoder and compare.
 - Use `unrelated` hard negatives in training, not only in scoring.
 - Predict `parent_event_id` links (they are currently folded into the root event for scoring).
-- Significance testing across folds and seeds for the paper.
+- Significance testing across folds and seeds for the paper (and on the news benchmark).
+- Close the gap to B2 in German: more training pairs, a finer threshold grid, or a
+  learned recency term; and check why `ctext` trails pair-level text.
 - Serve the model in the backend once it beats B2 on real data.
