@@ -6,6 +6,7 @@ from app.models.event import (
     Event,
     EventEvidence,
     EventStatus,
+    EvidenceJudgement,
     EvidenceRelation,
     Priority,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "Event",
     "EventEvidence",
     "EventStatus",
+    "EvidenceJudgement",
     "EvidenceRelation",
     "FieldReport",
     "FieldReportMedia",

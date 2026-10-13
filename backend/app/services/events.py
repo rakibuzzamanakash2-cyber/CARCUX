@@ -21,10 +21,18 @@ from sqlalchemy.orm import Session
 
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.audit import AuditLog
-from app.models.event import Event, EventEvidence, EventStatus, EvidenceRelation, Priority
+from app.models.event import (
+    Event,
+    EventEvidence,
+    EventStatus,
+    EvidenceJudgement,
+    EvidenceRelation,
+    Priority,
+)
 from app.models.field_report import FieldReport, ReportStatus
 from app.models.signal import Signal, SignalStatus
 from app.models.user import User
+from app.schemas.event import NO_CLAIM
 from app.services import audit
 from app.services.integrity import haversine_km
 
@@ -254,6 +262,17 @@ def _attach(
         **(labels or {}),
     )
     db.add(item)
+    # The person who links it gives the first judgement (guideline 7).
+    item.judgements.append(
+        EvidenceJudgement(
+            annotator_id=actor.id,
+            relation=relation,
+            conflicts=list(item.conflicts or []),
+            stale=bool(item.stale),
+            confidence=item.confidence or 2,
+            note=note,
+        )
+    )
     # Evidence someone has placed against an event has been looked at.
     now = datetime.now(UTC)
     if report is not None and report.status == ReportStatus.SUBMITTED:
@@ -336,15 +355,15 @@ def update_evidence(
     changes: dict[str, Any],
     ip_address: str | None,
 ) -> EventEvidence:
-    # A related-only item makes no checkable claim: leaving conflicts behind would be wrong.
-    if changes.get("relation") == EvidenceRelation.RELATED and "conflicts" not in changes:
+    # Related-only and unrelated items make no checkable claim: no conflicts can remain.
+    if changes.get("relation") in NO_CLAIM and "conflicts" not in changes:
         changes = {**changes, "conflicts": []}
     relation = changes.get("relation", item.relation)
     conflicts = changes.get("conflicts", item.conflicts)
     if relation == EvidenceRelation.PARTIALLY_SUPPORTS and not conflicts:
         raise InvalidLabelsError("Say what it gets wrong: partly supports needs a conflict")
-    if relation == EvidenceRelation.RELATED and conflicts:
-        raise InvalidLabelsError("A related-only item has no conflicts")
+    if relation in NO_CLAIM and conflicts:
+        raise InvalidLabelsError("Related-only and unrelated items have no conflicts")
     diff = {}
     for field, new in changes.items():
         if field == "conflicts":
@@ -363,6 +382,16 @@ def update_evidence(
             ip_address=ip_address,
             details={"evidence_id": str(item.id), **evidence_ref(item), "changes": diff},
         )
+        # Changing the working label is also the actor's own judgement of the item.
+        mine = next((j for j in item.judgements if j.annotator_id == actor.id), None)
+        if mine is None:
+            mine = EvidenceJudgement(annotator_id=actor.id)
+            item.judgements.append(mine)
+        mine.relation = item.relation
+        mine.conflicts = list(item.conflicts or [])
+        mine.stale = bool(item.stale)
+        mine.confidence = item.confidence
+        mine.note = item.note
         db.commit()
         db.refresh(item)
     return item

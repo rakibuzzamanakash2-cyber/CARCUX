@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api import (
+    annotation,
     audit,
     auth,
     dataset,
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         signals.places_router,
         sources.router,
         dataset.router,
+        annotation.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

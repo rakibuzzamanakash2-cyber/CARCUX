@@ -26,7 +26,6 @@ Records that cannot be exported yet are listed as problems, so analysts can fix 
 import json
 import math
 import re
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta, timezone
@@ -43,6 +42,7 @@ from app.models.event import Event, EventEvidence, EvidenceRelation
 from app.models.field_report import FieldReport
 from app.models.signal import EXCERPT_MAX, Signal, Source
 from app.models.user import User
+from app.services import annotation
 
 SCHEMA_VERSION = "1.1"
 GUIDELINE_VERSION = "0.2"
@@ -246,34 +246,41 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
         else:
             observations.append(_signal_observation(oid, obj, source_ids))
 
-    # --- Relations -----------------------------------------------------------------------
-    last_change = _last_evidence_change(db)
+    # --- Relations: every annotator's own judgement, and the gold label -----------------
     relations = []
     for item in links:
         key = f"r:{item.field_report_id}" if item.field_report_id else f"s:{item.signal_id}"
-        if item.relation == EvidenceRelation.PARTIALLY_SUPPORTS and not item.conflicts:
-            problems.append(
-                Problem(
-                    "needs_conflicts",
-                    "Partly supports: say which attributes it gets wrong.",
-                    event_id=str(item.event_id),
-                    evidence_id=str(item.id),
+        annotations = []
+        for j in item.judgements:
+            if j.relation == EvidenceRelation.PARTIALLY_SUPPORTS and not j.conflicts:
+                problems.append(
+                    Problem(
+                        "needs_conflicts",
+                        "Partly supports: say which attributes it gets wrong.",
+                        event_id=str(item.event_id),
+                        evidence_id=str(item.id),
+                    )
                 )
+                continue
+            annotations.append(
+                ann(
+                    j.annotator_id,
+                    j.updated_at or j.created_at,
+                    j.confidence,
+                    **_judgement(j.relation, j.conflicts, j.stale),
+                )  # fmt: skip
             )
+        if not annotations:
             continue
-        judgement: dict[str, Any] = {"label": item.relation.value}
-        if item.conflicts and item.relation != EvidenceRelation.RELATED:
-            judgement["conflicts"] = list(item.conflicts)
-        if item.stale:
-            judgement["stale"] = True
-        changed_by, changed_at = last_change.get(item.id, (item.linked_by_id, item.linked_at))
-        relations.append(
-            {
-                "obs_id": obs_ids(key),
-                "event_id": event_ids(str(item.event_id)),
-                "annotations": [ann(changed_by, changed_at, item.confidence, **judgement)],
-            }
-        )
+        relation = {
+            "obs_id": obs_ids(key),
+            "event_id": event_ids(str(item.event_id)),
+            "annotations": annotations,
+        }
+        gold = _gold(item)
+        if gold is not None:
+            relation["gold"] = gold
+        relations.append(relation)
 
     # --- Dependences: photos reused from an earlier report -----------------------------
     dependences = []
@@ -334,6 +341,8 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
             "ANN-000": "CARCUX automatic checks",
             "others": "Pseudonymous CARCUX accounts, numbered in order of account creation",
         },
+        "relations": "One annotation per annotator, made independently; gold is the "
+        "adjudicated label, or the label all annotators agreed on (two or more).",
         "assessments": "Reconstructed from the audit log: the label set in CARCUX at each "
         "checkpoint after the first linked item (T+1h, T+6h, T+24h) and at export (final).",
         "privacy": "Phone numbers and email addresses were removed from field report text. "
@@ -424,20 +433,29 @@ def _signal_observation(oid: str, s: Signal, source_ids: _Ids) -> dict:
     return ob
 
 
-def _last_evidence_change(db: Session) -> dict[uuid.UUID, tuple[uuid.UUID | None, datetime]]:
-    """Who last changed each link's labels, and when (from the audit log)."""
-    out = {}
-    rows = db.execute(
-        select(AuditLog.details, AuditLog.actor_id, AuditLog.occurred_at)
-        .where(AuditLog.action == "event.evidence_updated")
-        .order_by(AuditLog.occurred_at)
-    ).all()
-    for details, actor, at in rows:
-        try:
-            out[uuid.UUID(details["evidence_id"])] = (actor, at)
-        except (KeyError, ValueError):
-            continue
+def _judgement(relation: EvidenceRelation, conflicts, stale: bool) -> dict[str, Any]:
+    """A relation judgement as the dataset writes it (relation.schema.json)."""
+    out: dict[str, Any] = {"label": relation.value}
+    if conflicts and relation.value not in ("related", "unrelated"):
+        out["conflicts"] = sorted(str(c) for c in conflicts)
+    if stale:
+        out["stale"] = True
     return out
+
+
+def _gold(item: EventEvidence) -> dict[str, Any] | None:
+    """Adjudicated label; or, when two or more annotators gave the same label, that label."""
+    if item.gold_relation is not None:
+        if item.gold_relation == EvidenceRelation.PARTIALLY_SUPPORTS and not item.gold_conflicts:
+            return None
+        return _judgement(item.gold_relation, item.gold_conflicts, False)
+    agreed = annotation.agreed_label(item)
+    if agreed is None:
+        return None
+    relation, conflicts = agreed
+    if relation == EvidenceRelation.PARTIALLY_SUPPORTS and not conflicts:
+        return None
+    return _judgement(relation, conflicts, False)
 
 
 def _assessment_history(db: Session) -> dict[str, list[tuple[datetime, str, str, Any]]]:

@@ -11,6 +11,7 @@ from app.models.event import Event, EventStatus, Priority
 from app.models.field_report import FieldReport, ReportStatus
 from app.models.signal import Signal, SignalStatus
 from app.models.user import Role
+from app.services.annotation import queue
 from app.services.field_reports import visible_reports
 
 router = APIRouter(tags=["overview"])
@@ -30,6 +31,8 @@ class Overview(BaseModel):
     # Public signals published in the last 24 hours; reviewers also get the backlog.
     signals_24h: int
     unreviewed_signals: int | None
+    # Reviewers only: links waiting for this analyst's second opinion.
+    second_opinions: int | None = None
 
 
 @router.get("/overview", response_model=Overview)
@@ -91,4 +94,5 @@ def overview(db: DbSession, user: CurrentUser):
         unreviewed_reports=unreviewed,
         signals_24h=signals_24h,
         unreviewed_signals=unreviewed_signals,
+        second_opinions=queue(db, user, limit=1, offset=0)[1] if user.role in REVIEWERS else None,
     )

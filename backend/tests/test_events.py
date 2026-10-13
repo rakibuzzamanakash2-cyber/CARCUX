@@ -82,6 +82,7 @@ def test_analyst_creates_event_with_defaults(client, analyst, db):
         "partially_supports": 0,
         "contradicts": 0,
         "related": 0,
+        "unrelated": 0,
         "reporters": 0,
         "photos": 0,
         "signals": 0,
