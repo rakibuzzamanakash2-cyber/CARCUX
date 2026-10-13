@@ -60,6 +60,11 @@ def test_cluster_features_match_brute_force(sim_stream):
                     "log_hours_oldest": np.log1p(s.hours[i] - s.hours[members].min()),
                     "log_size": np.log(len(members)),
                 }
+                since = s.hours[i] - s.hours[members].max()
+                span = s.hours[members].max() - s.hours[members].min()
+                gap = span / max(len(members) - 1, 1)
+                want["cos_x_recency"] = want["centroid_cos"] * np.log1p(since)
+                want["log_gap_ratio"] = np.log1p(since / (gap + 1))
                 located = [j for j in members if s.located[j]] if s.located[i] else []
                 want["any_located"] = float(bool(located))
                 if located:
