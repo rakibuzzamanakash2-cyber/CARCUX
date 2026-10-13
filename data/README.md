@@ -29,6 +29,7 @@ Source ──< Observation >──── Relation ────< Event
 
 | Version | Change |
 |---|---|
+| v1.2 | Added simulation kind `source_report` (an original simulated item from a non-field source), used by the fusion simulator |
 | v1.1 | Added event types `earthquake` and `rail_accident` |
 | v1.0 | First release |
 

@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ai/correlation
+        working-directory: ai
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -91,11 +91,18 @@ jobs:
           cache: pip
           cache-dependency-path: |
             ai/correlation/pyproject.toml
+            ai/fusion/pyproject.toml
             data/tools/pyproject.toml
-      - run: pip install -e ../../data/tools -e ".[dev]"
+      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]"
       - name: Lint
-        run: ruff check . && ruff format --check .
-      - name: Test
+        run: |
+          (cd correlation && ruff check . && ruff format --check .)
+          (cd fusion && ruff check . && ruff format --check .)
+      - name: Test correlation
+        working-directory: ai/correlation
+        run: pytest -q
+      - name: Test fusion
+        working-directory: ai/fusion
         run: pytest -q
 
   frontend:

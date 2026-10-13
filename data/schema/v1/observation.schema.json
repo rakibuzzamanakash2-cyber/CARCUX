@@ -88,7 +88,15 @@
       "required": ["kind", "generator_version", "seed"],
       "properties": {
         "kind": {
-          "enum": ["field_report", "duplicate", "contradiction", "stale", "false_event"]
+          "description": "field_report: from a simulated field worker. source_report: an original item from another simulated source (news outlet, social account, official body). duplicate: a copy of another item. contradiction: denies an event. stale: outdated when published. false_event: claims an event that did not happen.",
+          "enum": [
+            "field_report",
+            "source_report",
+            "duplicate",
+            "contradiction",
+            "stale",
+            "false_event"
+          ]
         },
         "generator_version": { "type": "string" },
         "seed": { "type": "integer" },

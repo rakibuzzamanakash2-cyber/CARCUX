@@ -42,7 +42,7 @@ def errors_of(directory: Path) -> str:
 
 def test_worked_example_is_valid(capsys):
     assert main([str(EXAMPLE)]) == 0
-    assert "valid CARCUX-BD v1.1" in capsys.readouterr().out
+    assert "valid CARCUX-BD v1.2" in capsys.readouterr().out
 
 
 # --- Schema-level mistakes -------------------------------------------------------------

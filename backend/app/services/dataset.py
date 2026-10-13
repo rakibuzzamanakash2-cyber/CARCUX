@@ -44,7 +44,7 @@ from app.models.signal import EXCERPT_MAX, Signal, Source
 from app.models.user import User
 from app.services import annotation
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 GUIDELINE_VERSION = "0.2"
 DHAKA = timezone(timedelta(hours=6))
 CHECKPOINTS = [("T+1h", timedelta(hours=1)), ("T+6h", timedelta(hours=6)),

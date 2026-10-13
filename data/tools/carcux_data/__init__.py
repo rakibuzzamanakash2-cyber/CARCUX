@@ -1,6 +1,6 @@
 """Tools for the CARCUX-BD dataset."""
 
 # Schema files live in data/schema/v1/: minor versions only add values, so every
-# v1.0 dataset is still valid under v1.1.
-SCHEMA_VERSION = "1.1"
+# earlier v1 dataset is still valid under the current minor version.
+SCHEMA_VERSION = "1.2"
 GUIDELINE_VERSION = "0.2"
