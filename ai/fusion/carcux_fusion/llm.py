@@ -284,7 +284,7 @@ def run(
     events = keep["events"]
     first = {e: data.first_seen(data.events[e]) for e in events}
     truth = [int(data.events[e].occurred) for e in events]
-    labels_by_cp = {}
+    labels_by_cp, groups_by_cp = {}, {}
     for cp, hours in chosen:
         cut = {e: first[e] + timedelta(hours=hours) for e in events}
         answers = {e: llm.answer(data, e, cut[e]) for e in events}
@@ -301,6 +301,7 @@ def run(
         labels_by_cp[cp] = assess._label_scores(
             [answers[e]["label"] for e in scored], [data.events[e].gold_labels[cp] for e in scored]
         )
+        groups_by_cp[cp] = groups(data, events, cut, answers)
     result["llm"] = {
         "model": ask.model,
         "stance_given": stance,
@@ -308,8 +309,39 @@ def run(
         "seconds_per_call": ask.seconds / ask.calls if ask.calls else None,
         "unparsed_answers": ask.failures,
         "labels": labels_by_cp,
+        "by_group": groups_by_cp,
     }
     return result
+
+
+def group_of(event: Event) -> str:
+    if event.occurred:
+        return "real"
+    return "false, injected" if event.injected else "false"
+
+
+def groups(data: Dataset, events: list[str], cut: dict, answers: dict) -> dict:
+    """Where the model goes wrong: per kind of event, its mean probability, how often it
+    says "verified", and the evidence it saw (supporting and denying reports, and the
+    share of supporting reports from social accounts)."""
+    out: dict[str, dict] = {}
+    for g in ("real", "false", "false, injected"):
+        es = [e for e in events if group_of(data.events[e]) == g]
+        if not es:
+            continue
+        vs = {e: M.votes(data, data.events[e], cut[e], None) for e in es}
+        support = [v for e in es for v in vs[e] if v.vote > 0]
+        out[g] = {
+            "n": len(es),
+            "mean_p": sum(answers[e]["probability"] for e in es) / len(es),
+            "called_verified": sum(answers[e]["label"] == "verified" for e in es) / len(es),
+            "supporting": len(support) / len(es),
+            "denying": sum(v.vote < 0 for e in es for v in vs[e]) / len(es),
+            "support_from_social": (
+                sum(v.source_type == "social" for v in support) / len(support) if support else None
+            ),
+        }
+    return out
 
 
 def table(result: dict) -> str:
@@ -329,6 +361,21 @@ def table(result: dict) -> str:
         lines.append(
             f"{cp:<20}{s['accuracy']:>10.3f}{s['macro_f1']:>10.3f}{s['wrongly_verified']:>18.3f}"
         )
+    last = list(info["by_group"])[-1] if info.get("by_group") else None
+    if last:
+        lines += [
+            "",
+            f"{'at ' + last + ', by event':<20}{'n':>5}{'mean p':>8}{'verified':>10}"
+            f"{'supports':>10}{'denials':>9}{'social':>8}",
+        ]
+        for g, s in info["by_group"][last].items():
+            social = s["support_from_social"]
+            lines.append(
+                f"{g:<20}{s['n']:>5}{s['mean_p']:>8.2f}{s['called_verified']:>10.2f}"
+                f"{s['supporting']:>10.1f}{s['denying']:>9.1f}"
+                + (f"{social:>8.2f}" if social is not None else f"{'-':>8}")
+            )
+        lines.append("(supports, denials: reports per event; social: share of supports)")
     return "\n".join(lines)
 
 

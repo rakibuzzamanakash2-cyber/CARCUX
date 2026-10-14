@@ -224,3 +224,34 @@ def test_simulate_flag(tmp_path, capsys):
 def test_needs_a_dataset_or_simulate():
     with pytest.raises(SystemExit):
         llm.main([])
+
+
+def test_breakdown_by_kind_of_event(sim, tmp_path):
+    out = tmp_path / "r.json"
+    args = [str(sim), "--backend", "fake", "--cache", "", "--folds", "3", "--json", str(out)]
+    assert llm.main([*args, "--checkpoints", "final"]) == 0
+    groups = json.loads(out.read_text())["llm"]["by_group"]["final"]
+    assert "real" in groups and sum(g["n"] for g in groups.values()) > 0
+    for g in groups.values():
+        assert 0 <= g["called_verified"] <= 1 and g["supporting"] >= 0
+
+
+def test_committed_qwen_answers_replay_the_readme_tables(tmp_path):
+    """The B6 results in the README come from these answers; a change to the prompt
+    or the simulator would need new model calls, and this test would notice."""
+    from pathlib import Path
+
+    cache = Path(__file__).parents[1] / "results" / "b6-qwen2.5-7b"
+    work = tmp_path / "cache"
+    work.mkdir()
+    (work / "llm-cache.jsonl").write_bytes((cache / "llm-cache.jsonl").read_bytes())
+    out = tmp_path / "r.json"
+    args = ["--simulate", "--events", "60", "--contamination", "0.3", "--model", "qwen2.5:7b"]
+    args += ["--base-url", "http://127.0.0.1:9", "--cache", str(work), "--json", str(out)]
+    assert llm.main(args) == 0  # no model reachable: every answer must come from the file
+    r = json.loads(out.read_text())
+    assert r["llm"]["calls"] == 0
+    final = r["checkpoints"]["final"]["methods"]
+    assert final["llm"]["brier"] == pytest.approx(0.257, abs=5e-4)
+    injected = r["llm"]["by_group"]["final"]["false, injected"]
+    assert injected["n"] == 25 and injected["called_verified"] == pytest.approx(0.60)
