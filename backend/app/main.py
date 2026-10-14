@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api import (
     annotation,
+    assessment,
     audit,
     auth,
     dataset,
@@ -68,6 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dataset.router,
         annotation.router,
         suggestions.router,
+        assessment.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

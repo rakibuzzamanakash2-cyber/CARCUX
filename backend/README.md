@@ -162,6 +162,18 @@ Which existing events a report or signal most likely belongs to (`app/services/s
 - **Not in the blind queue.** Second-opinion annotators never see suggestions, so they cannot anchor on the model (and inflate agreement).
 - Migration 0009 adds `suggestion_models` (weights, held-out metrics; at most one active).
 
+## Assessment suggestions
+
+How likely each event really happened, and which of the six assessment labels fits (`app/services/assess.py`). This is the fusion research (`ai/fusion/`, the proposed `reliability-dep` model and the six-label assessment) in the product.
+
+- **Votes.** Each linked report or signal that supports or partly supports an event says it happened; one that contradicts it says it did not. Adjudicated relations are used where they exist. A source counts once per event, with its latest item, so a field worker's three reports or a feed's repeated bulletins are one voice. (The research also detects copies between different sources from wording and photos; the product does not yet.)
+- **Two modes.** Until a model is trained, **starting assumptions** about each kind of source (field workers right 80 % of the time, public records 90 %, news 75 %, other 60 %), with each vote weighted by the log-odds of its source being right and the sum read as log-odds. Once trained, a **model**: each source's own record on events with ground truth, shrunk towards its kind's record, with a calibration fitted on out-of-fold scores so that "80 %" means about 80 %.
+- **Labels.** At least 80 %: verified, or partially verified when a credible source (reliability at least 0.5) partly supports it with a detail marked wrong. At most 20 %: refuted. In between: conflicting when credible sources say both, otherwise unverified. No votes: insufficient evidence.
+- **Endpoint:** `GET /api/v1/events/{id}/assessment-suggestion` (analyst, admin): label, probability, mode, the sources weighed most with their reliability and whether it was learned, and details in dispute.
+- **Training** (admin): `POST /api/v1/assessment/model/train`, or `python -m app.cli train-assessment`. It needs at least 10 events with ground truth and linked evidence, at least 3 that happened and 3 that did not. One event in five is held out first; the model, the starting assumptions and majority vote are scored on them (Brier score, accuracy) and stored with the model. The final model is then fitted on everything and becomes the only active one. `GET /api/v1/assessment/model` gives the status; `POST /api/v1/assessment/model/deactivate` goes back to the starting assumptions.
+- **Analysts decide, and it is measured.** When an analyst changes an event's assessment, the suggestion at that moment (label, probability, mode, model, and whether it was followed) is written into the `event.updated` audit entry. The status counts how many assessments were set with a suggestion in view and how many followed it. The dataset export notes on each assessment label whether a suggestion was shown and followed, since a label made with a suggestion in view is not independent of it; the research scores suggestions against ground truth (`occurred`), not against analysts' labels.
+- Migration 0010 adds `assessment_models` (reliabilities, calibration, held-out metrics; at most one active).
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

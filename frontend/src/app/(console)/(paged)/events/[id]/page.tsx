@@ -22,6 +22,7 @@ import { flagLabel, formatCoords, formatDhaka, isUuid } from "@/lib/format";
 import {
   REPORT_REVIEWERS,
   type Assessment,
+  type AssessmentSuggestion,
   type CandidateReport,
   type CandidateSignal,
   type CarcuxEvent,
@@ -32,6 +33,7 @@ import {
   type Priority,
 } from "@/lib/types";
 
+import { AssessmentSuggestionPanel } from "./assessment-suggestion";
 import { GroundTruthPanel } from "./ground-truth-panel";
 import { ManagePanel } from "./manage-panel";
 
@@ -97,12 +99,19 @@ function describe(entry: HistoryEntry): React.ReactNode {
     }
     case "event.updated": {
       const changes = (d.changes ?? {}) as Record<string, [unknown, unknown]>;
+      const shown = d.suggestion as { label: Assessment; followed: boolean } | undefined;
       return `changed ${Object.entries(changes)
         .map(
           ([f, [from, to]]) =>
             `${FIELD_NAMES[f] ?? f} from ${showValue(f, from)} to ${showValue(f, to)}`,
         )
-        .join("; ")}`;
+        .join("; ")}${
+        shown
+          ? shown.followed
+            ? " (as suggested)"
+            : ` (suggested: ${assessmentLabel(shown.label).toLowerCase()})`
+          : ""
+      }`;
     }
     case "event.evidence_linked":
       return (
@@ -187,7 +196,7 @@ export default async function EventPage({
   const tab =
     reviewer && (tabParam === "evidence" || tabParam === "history") ? tabParam : "overview";
   const open = event.status !== "dismissed";
-  const [evidence, candidates, candidateSignals, history] = reviewer
+  const [evidence, candidates, candidateSignals, history, suggestion] = reviewer
     ? await Promise.all([
         api<Evidence[]>(`/events/${id}/evidence`),
         open
@@ -197,8 +206,15 @@ export default async function EventPage({
           ? api<CandidateSignal[]>(`/events/${id}/candidate-signals`)
           : Promise.resolve([] as CandidateSignal[]),
         api<HistoryEntry[]>(`/events/${id}/history`),
+        api<AssessmentSuggestion>(`/events/${id}/assessment-suggestion`),
       ])
-    : [[] as Evidence[], [] as CandidateReport[], [] as CandidateSignal[], [] as HistoryEntry[]];
+    : [
+        [] as Evidence[],
+        [] as CandidateReport[],
+        [] as CandidateSignal[],
+        [] as HistoryEntry[],
+        null,
+      ];
 
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
   const base = `/events/${event.id}`;
@@ -314,6 +330,15 @@ export default async function EventPage({
             </div>
             {reviewer && (
               <div className="flex flex-col gap-6">
+                {suggestion && (
+                  <Panel
+                    id="assessment-suggestion"
+                    title="Suggested assessment"
+                    description="From the evidence linked so far."
+                  >
+                    <AssessmentSuggestionPanel event={event} suggestion={suggestion} />
+                  </Panel>
+                )}
                 <Panel id="manage" title="Analyst decision">
                   <ManagePanel event={event} />
                 </Panel>

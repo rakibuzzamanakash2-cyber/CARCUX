@@ -200,6 +200,35 @@ def train_suggestions() -> int:
         engine.dispose()
 
 
+def train_assessment() -> int:
+    from app.services import assess
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            try:
+                model = assess.train(db, actor=None)
+            except assess.NotEnoughDataError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+            m = model.metrics
+            print(
+                f"trained on {model.events} events with ground truth ({model.happened} "
+                f"happened), {model.sources} sources; now active"
+            )
+            if "model_brier" in m:
+                print(
+                    f"held out {m['held_out_events']} events, Brier (lower is better): model "
+                    f"{m['model_brier']:.3f}, starting assumptions {m['start_brier']:.3f}, "
+                    f"majority vote {m['majority_brier']:.3f}"
+                )
+            else:
+                print("too few held-out events to evaluate; train again with more events")
+            return 0
+    finally:
+        engine.dispose()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -219,6 +248,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("directory")
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
     sub.add_parser("train-suggestions", help="train the event suggestion model from links")
+    sub.add_parser("train-assessment", help="train the assessment model on resolved events")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
@@ -231,6 +261,8 @@ def main(argv: list[str] | None = None) -> int:
         return ingest(args.once, args.source, args.loop)
     if args.command == "train-suggestions":
         return train_suggestions()
+    if args.command == "train-assessment":
+        return train_assessment()
     return 2
 
 

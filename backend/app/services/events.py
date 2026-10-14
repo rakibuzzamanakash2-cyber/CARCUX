@@ -33,7 +33,7 @@ from app.models.field_report import FieldReport, ReportStatus
 from app.models.signal import Signal, SignalStatus
 from app.models.user import User
 from app.schemas.event import NO_CLAIM
-from app.services import audit
+from app.services import assess, audit
 from app.services.integrity import haversine_km
 
 MATCH_RADIUS_KM = 5.0
@@ -141,6 +141,12 @@ def update_event(
     if ended is not None and ended < started:
         raise InvalidTimesError
 
+    # The assessment the system would suggest before this change: logged with an
+    # analyst's own assessment, so how often suggestions are followed can be measured.
+    suggestion = None
+    if "assessment" in changes and changes["assessment"] != event.assessment:
+        suggestion = assess.suggest(db, event)
+
     diff: dict[str, list[Any]] = {}
     for field, new in changes.items():
         old = getattr(event, field)
@@ -151,6 +157,9 @@ def update_event(
         event.family = EVENT_TYPE_FAMILY[event.event_type]
 
     if diff:
+        details: dict[str, Any] = {"changes": diff}
+        if suggestion is not None and "assessment" in diff:
+            details["suggestion"] = assess.for_audit(suggestion, diff["assessment"][1])
         audit.record(
             db,
             audit.AuditAction.EVENT_UPDATED,
@@ -158,7 +167,7 @@ def update_event(
             target_type="event",
             target_id=event.id,
             ip_address=ip_address,
-            details={"changes": diff},
+            details=details,
         )
         db.commit()
         db.refresh(event)
