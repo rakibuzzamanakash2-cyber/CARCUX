@@ -1,6 +1,6 @@
 # 3 · Fusion: evidence under conflict
 
-**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), and detail-level conflict detection with the six-label assessment (RQ3); checked on simulated data only. The calibration study (RQ5), the LLM baseline (B6) and real-data runs are next.
+**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), and the calibration study (RQ5); checked on simulated data only. The LLM baseline (B6) and real-data runs are next.
 
 Given an event and its observations, decides **which sources are really independent, where they conflict, and how certain the assessment is**, and keeps those answers calibrated as the information gets noisier.
 
@@ -25,11 +25,12 @@ Given an event and its observations, decides **which sources are really independ
 |---|---|---|
 | Loading | `carcux_fusion/data.py` | Reads a CARCUX-BD export: for each event, whether it happened (`ground_truth.occurred`) and every linked observation as a vote (supports and partly supports +1, contradicts −1); sources and their types; gold dependences. |
 | Task | `evaluate.py` | For each event, at T+1h, T+6h, T+24h and final (7 days) after its first observation, the probability it really happened from the evidence published by then. Events in 5 seeded folds; everything learned (source reliability, copy threshold, calibration) comes from the other folds. |
-| Metrics | `metrics.py` | Brier score, log loss, expected calibration error (10 bins), accuracy, AUC, reliability-diagram bins. Brier differences between methods get a paired bootstrap over events (95 % interval, p). |
+| Metrics | `metrics.py` | Brier score, log loss, expected calibration error (10 equal-width bins, and adaptive: 10 equal-count bins), accuracy, AUC, reliability-diagram bins. Brier differences between methods get a paired bootstrap over events (95 % interval, p). |
 | Copy detection | `dependence.py` | Each item against earlier items about the same event: character n-gram text overlap, attribution phrases ("according to", "er moto", "এর মতে", "RT", …), perceptual-hash distance of photos, publication order. Text threshold tuned on training events. Scored against gold dependences (precision, recall, F1, and whether the predicted origin is in the right copy cascade). |
 | Methods | `methods.py` | **B3 `majority`**, **B4 `equal`** (one vote per item), **B5 `truthfinder`** (unsupervised iterative source trust), `truthfinder-dep` (the same, each copy cascade once). Supervised source reliability (how often a source's reports turned out right on training events, shrunk to its source type): `reliability` (every item counts), `reliability-dedup` (copies dropped), **`reliability-dep` (proposed)**: originals count with their sources' first-hand reliability, copies form a second channel with each copier's own record as a copier, and the calibration learns how much each channel weighs; `reliability-oracle` is the same with gold dependences. Every method's score goes through the same Platt calibration fitted on training events. |
 | Details in dispute | `conflict.py` | Per detail (magnitude, number affected, deaths, cause): the claims of one report per copy cascade, each weighted by its source's learned reliability; **disputed** when two credible claims disagree (affected counts within 25 % agree, deaths must match); the best estimate by weighted mode or median. |
 | Assessment | `assess.py` | The dataset's six labels at each checkpoint, from the probability it happened, whether a detail is disputed, and credible reports on each side; thresholds tuned on training folds. Compared with and without conflict detection (RQ3), and against annotated conflicts as an upper bound. |
+| Calibration | `calibrate.py` | RQ5. Six ways to turn each method's score into a probability (none, temperature, Platt, isotonic, one Platt fitted at the final checkpoint for all times, Platt fitted before contamination), scored per checkpoint; reliability diagrams. Per assigned label: how often those events really happened; and whether the signals behind the labels predict occurrence beyond the probability. |
 | Simulator | `simulate.py` | Valid CARCUX-BD with a contamination dial (below). |
 | RQ4 sweep | `sweep.py` | Contamination 0–60 %, several seeds, all methods. |
 
@@ -46,6 +47,9 @@ python -m carcux_fusion.evaluate /tmp/fus --json fusion.json     # any CARCUX-BD
 python -m carcux_fusion.sweep --seeds 3 --json sweep.json         # RQ4, about 10 minutes
 python -m carcux_fusion.assess /tmp/fus                           # RQ3 on one dataset
 python -m carcux_fusion.assess --simulate --seeds 3               # RQ3 at 0, 30, 60 %
+python -m carcux_fusion.calibrate /tmp/fus                        # RQ5 on one dataset
+pip install -e ".[figures]"                                        # matplotlib, for the diagrams
+python -m carcux_fusion.calibrate --simulate --seeds 3 --figures figures   # RQ5, about 4 minutes
 
 pytest -q && ruff check . && ruff format --check .
 ```
@@ -129,6 +133,51 @@ What this supports, on simulated data:
 
 **Caveats for the paper.** The simulator and the methods were written together, and simulated copies follow the simulator's own phrasing, so copy detection (F1 ≈ 0.98) and every absolute number are optimistic. The supervised methods learn from events drawn from the same simulated world they are tested on. The design was corrected once after seeing results (above), on simulated data only. The gold checkpoint labels come from a rule the simulator applies (a careful analyst's rule), and the assessment is tuned against them, so agreement with that rule is partly built in; real labels come from annotators. The claims must come from real CARCUX-BD dependences and stances, run with the same commands.
 
+### RQ5: are the probabilities calibrated, and do six labels beat one number?
+
+Proposed model (`reliability-dep`), 3 seeds, 120 seed events, 5-fold CV, all events (injected rumours included: they are easy to refute, so columns are not comparable with each other; compare down a column). Adaptive ECE (lower is better), and bias (mean probability minus how often events happened; positive is too sure):
+
+| Calibrator | ECE final 0 % | 30 % | 60 % | ECE T+6h 0 % | 30 % | 60 % | Bias final 30 % |
+|---|---|---|---|---|---|---|---|
+| none (score read as log-odds) | 0.078 | 0.064 | 0.029 | 0.140 | 0.092 | 0.041 | +0.048 |
+| temperature | 0.053 | 0.065 | 0.028 | 0.105 | 0.090 | 0.041 | +0.049 |
+| **Platt (used everywhere)** | 0.054 | **0.045** | **0.023** | 0.119 | 0.105 | 0.042 | **−0.007** |
+| isotonic | 0.060 | 0.064 | 0.029 | 0.111 | 0.124 | 0.066 | −0.008 |
+| Platt fitted at final, used at all times | 0.054 | 0.045 | 0.023 | 0.119 | 0.100 | 0.070 | −0.007 |
+| **Platt fitted before contamination** | 0.054 | **0.118** | **0.060** | 0.119 | **0.178** | **0.123** | **+0.087** |
+
+Log loss at T+6h, 0 %: Platt 0.406, temperature 0.462, one calibrator for all times 0.502, isotonic 0.885. Platt's ECE by method at final, 0 / 30 / 60 %: majority 0.087 / 0.121 / 0.080, truthfinder-dep 0.038 / 0.099 / 0.219, reliability 0.050 / 0.034 / 0.018, reliability-dep 0.054 / 0.045 / 0.023.
+
+What each assigned label meant (final checkpoint, proposed model with conflict detection; events / mean probability / share that happened):
+
+| Label | 0 % | 30 % | 60 % |
+|---|---|---|---|
+| verified | 139 / 0.99 / 0.97 | 145 / 0.98 / 0.95 | 172 / 0.99 / 0.95 |
+| partially verified | 108 / 1.00 / 1.00 | 87 / 1.00 / 1.00 | 73 / 0.99 / 1.00 |
+| conflicting | 38 / 0.55 / 0.61 | 47 / 0.49 / 0.70 | 26 / 0.41 / 0.69 |
+| unverified | 26 / 0.72 / 0.62 | 98 / 0.37 / 0.27 | 66 / 0.39 / 0.41 |
+| refuted | 49 / 0.04 / 0.22 | 153 / 0.01 / 0.06 | 587 / 0.00 / 0.02 |
+
+Predicting whether the event happened, held-out Brier at final, 0 / 30 / 60 %: the probability alone 0.076 / 0.081 / 0.042; plus "credible reports on both sides" 0.078 / 0.077 / 0.041; plus also the number of independent reports 0.073 / **0.056** / **0.032**.
+
+![Reliability diagrams at the final checkpoint](figures/reliability-final.png)
+
+(`figures/reliability-T6h.png` has the same at T+6h.)
+
+What this supports, on simulated data:
+
+- **The probabilities are reasonably honest** once calibrated: adaptive ECE 0.02–0.05 at the final checkpoint, 0.04–0.12 at T+6h, and almost no overall bias. The learned-reliability models stay calibrated as contamination rises; truth discovery without labels does not (ECE 0.22 at 60 %), and calibration cannot repair it.
+- **Platt is the right default.** Temperature is close; isotonic matches it on ECE but its steps give 0 % or 100 % on small training sets, so its log loss is two to three times worse.
+- **The real danger is drift.** A calibrator fitted before a contamination wave becomes overconfident when the wave arrives (bias up to +0.14, ECE doubled or worse). In operation, calibration has to be refitted on recent labelled events, and the bias watched.
+- **Calibrate per checkpoint.** One calibrator fitted on final evidence is underconfident early (bias about −0.05 at T+6h) and loses on log loss.
+- **The labels mostly mean what they say.** "Verified" happened 95–97 % of the time. There are two weak spots. "Conflicting" events happened more often than their probability says (61–70 % against 41–55 %). And at low contamination, "refuted" events still happened 22 % of the time, because there are few false events to learn refutation from.
+- **Six labels vs one number: the label logic adds little to predicting occurrence.** "Credible reports on both sides" barely moves the Brier score. The gain comes from the number of independent reports, which the reliability score under-uses. This suggests a feature for the fusion model, not an argument for labels. The case for the labels rests on RQ3, the costly "verified" mistakes they prevent, not on better occurrence probabilities.
+
+**Caveats.** All of RQ3's caveats apply. In addition:
+- In this simulator only events that happened have disputed details, because a false event's reports repeat one invented story. So "partially verified" events always happened by construction, and the dispute signal is kept out of the occurrence test.
+- How report volume relates to occurrence is a property of the simulator; real data must confirm it.
+- ECE on 120 events per run is noisy, which is why the adaptive version is reported and the diagrams pool seeds and hide bins with fewer than 5 events.
+
 ## Baselines
 
 Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), LLM-given-all-observations (B6, not yet built).
@@ -136,7 +185,7 @@ Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), 
 ## Still to do
 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
-- **RQ5:** calibration study: raw vs calibrated, temperature scaling or evidential outputs, reliability diagrams; whether the six labels serve analysts better than a single probability.
+- **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
 - **B6:** an LLM given all observations.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: an assessment suggestion on each event, measured against analysts the way event suggestions are.

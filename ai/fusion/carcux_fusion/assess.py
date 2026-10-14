@@ -81,8 +81,9 @@ def _tune(rows: list[dict], key: str) -> tuple[float, float]:
     return best
 
 
-def run(data: Dataset, *, k: int = 5, seed: int = 0) -> dict:
-    keep: dict = {}
+def run(data: Dataset, *, k: int = 5, seed: int = 0, keep: dict | None = None) -> dict:
+    """`keep`, if given, receives per checkpoint the rows and each variant's labels."""
+    keep = {} if keep is None else keep
     proposed = M.Reliability("detected")
     majority = M.Majority()
     evaluate.run(data, k=k, seed=seed, method_list=[majority, proposed], keep=keep)
@@ -139,7 +140,7 @@ def run(data: Dataset, *, k: int = 5, seed: int = 0) -> dict:
                 "majority, probability only": "none",
             }[variant]
             p_key = "p_majority" if variant.startswith("majority") else "p"
-            pred, gold = [], []
+            pred, gold, labelled = [], [], {}
             for f, test in enumerate(parts):
                 train_rows = [{**rows[e], "p": rows[e][p_key]} for e in scored if fold_of[e] != f]
                 hi, lo = _tune(train_rows, key)
@@ -147,9 +148,14 @@ def run(data: Dataset, *, k: int = 5, seed: int = 0) -> dict:
                     if not rows[e]["gold"]:
                         continue
                     r = rows[e]
-                    pred.append(label(r[p_key], r["seen"], r["support"], r["deny"], r[key], hi, lo))
+                    labelled[e] = label(
+                        r[p_key], r["seen"], r["support"], r["deny"], r[key], hi, lo
+                    )
+                    pred.append(labelled[e])
                     gold.append(r["gold"])
             table[variant] = _label_scores(pred, gold)
+            keep.setdefault("labels", {}).setdefault(cp, {})[variant] = labelled
+        keep.setdefault("rows", {})[cp] = rows
         result["checkpoints"][cp] = {
             "assessment": table,
             "details": {s: (float(np.mean(v)) if v else None) for s, v in value_hits.items()},

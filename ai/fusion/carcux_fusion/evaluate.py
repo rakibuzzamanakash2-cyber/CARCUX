@@ -85,6 +85,7 @@ def run(
     for name, hours in CHECKPOINTS:
         cutoffs = {eid: first[eid] + timedelta(hours=hours) for eid in events}
         preds = {m.name: {} for m in method_list}
+        raws: dict[str, list[dict]] = {m.name: [] for m in method_list}
         for f, test in enumerate(parts):
             train = [e for p, part in enumerate(parts) if p != f for e in part]
             for m in method_list:
@@ -93,6 +94,7 @@ def run(
                 )
                 m.fit(data, train, cutoffs, deps)
                 raw = m.raw(data, events, cutoffs, deps)
+                raws[m.name].append(raw)
                 cal = M.Platt().fit([raw[e] for e in train], [truth[e] for e in train])
                 for e, p in zip(test, cal.predict([raw[e] for e in test]), strict=True):
                     preds[m.name][e] = float(p)
@@ -118,6 +120,7 @@ def run(
         }
         if keep is not None:
             keep.setdefault("predictions", {})[name] = preds
+            keep.setdefault("raw", {})[name] = raws  # method -> per fold -> event -> score
         result["checkpoints"][name] = {
             "methods": table,
             "brier_vs_proposed": comparisons,

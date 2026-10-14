@@ -5,6 +5,10 @@
 - Expected calibration error (ECE): in bins of predicted probability, the average gap
   between what was predicted and how often events really happened (10 equal-width
   bins, weighted by bin size).
+- Adaptive ECE: the same with equal-count bins (steadier on small sets, where
+  equal-width bins can be almost empty).
+- Bias: mean prediction minus how often events happened (positive: too sure that
+  things happened overall).
 - Accuracy at 0.5, and AUC (ranking: are real events given higher probabilities?).
 """
 
@@ -37,6 +41,17 @@ def ece(p: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
         inside = which == b
         if inside.any():
             total += inside.mean() * abs(p[inside].mean() - y[inside].mean())
+    return float(total)
+
+
+def ece_adaptive(p: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
+    p, y = np.asarray(p, dtype=float), np.asarray(y, dtype=float)
+    if len(p) == 0:
+        return 0.0
+    order = np.argsort(p, kind="stable")
+    total = 0.0
+    for part in np.array_split(order, min(bins, len(p))):
+        total += len(part) / len(p) * abs(p[part].mean() - y[part].mean())
     return float(total)
 
 
