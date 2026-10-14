@@ -63,6 +63,8 @@ pytest -q && ruff check . && ruff format --check .
 
 B6 calls the model once per event and checkpoint with new evidence; answers are cached in `.llm-cache/`, so a rerun is instant. `--no-stance` gives the model the text only. `--backend openai --base-url URL --model NAME` uses an OpenAI-compatible server (key in `CARCUX_LLM_API_KEY`), for example a model served from Colab. Keep real CARCUX-BD reports on a local model unless the data's terms allow sending them out.
 
+**No room for the 4.7 GB model?** `notebooks/b6_colab.ipynb` runs B6 on Google Colab's free GPU: open it in Colab (File → Open notebook → GitHub, or upload it), choose a T4 GPU, Run all. It installs Ollama, the model and this repository there, runs the simulated sets (0, 30, 60 %, with stance; 30 % text only), caches answers in Google Drive so a disconnect loses nothing, and downloads the results. Simulated data only. The answer cache is keyed by model and prompt, so the same model run later on a local PC can reuse it: copy the Drive folder's `llm-cache.jsonl` into `.llm-cache/`.
+
 On Windows PowerShell use a folder such as `$env:TEMP\fus` in place of `/tmp/fus`.
 
 ## The simulator
