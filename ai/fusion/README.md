@@ -1,6 +1,6 @@
 # 3 · Fusion: evidence under conflict
 
-**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), the calibration study (RQ5), and an LLM baseline (B6, local through Ollama or any OpenAI-compatible server); checked on simulated data only. B6 results and real-data runs are next.
+**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), the calibration study (RQ5), and an LLM baseline (B6, local through Ollama or any OpenAI-compatible server); checked on simulated data only. real-data runs are next.
 
 Given an event and its observations, decides **which sources are really independent, where they conflict, and how certain the assessment is**, and keeps those answers calibrated as the information gets noisier.
 
@@ -62,6 +62,14 @@ pytest -q && ruff check . && ruff format --check .
 ```
 
 B6 calls the model once per event and checkpoint with new evidence; answers are cached in `.llm-cache/`, so a rerun is instant. `--no-stance` gives the model the text only. `--backend openai --base-url URL --model NAME` uses an OpenAI-compatible server (key in `CARCUX_LLM_API_KEY`), for example a model served from Colab. Keep real CARCUX-BD reports on a local model unless the data's terms allow sending them out.
+
+**Reproduce the B6 tables without a GPU:** the model's answers are committed, so a replay makes no model calls:
+
+```bash
+python -m carcux_fusion.llm --simulate --events 60 --contamination 0.3 --cache results/b6-qwen2.5-7b
+```
+
+(repeat with `--contamination 0.0`, `0.6`, and `0.3 --no-stance`; Ollama need not be running, and any answer missing from the file would be asked of the model.)
 
 **No room for the 4.7 GB model?** `notebooks/b6_colab.ipynb` runs B6 on Google Colab's free GPU: open it in Colab (File → Open notebook → GitHub, or upload it), choose a T4 GPU, Run all. It installs Ollama, the model and this repository there, runs the simulated sets (0, 30, 60 %, with stance; 30 % text only), caches answers in Google Drive so a disconnect loses nothing, and downloads the results. Simulated data only. The answer cache is keyed by model and prompt, so the same model run later on a local PC can reuse it: copy the Drive folder's `llm-cache.jsonl` into `.llm-cache/`.
 
@@ -189,14 +197,47 @@ What this supports, on simulated data:
 - How report volume relates to occurrence is a property of the simulator; real data must confirm it.
 - ECE on 120 events per run is noisy, which is why the adaptive version is reported and the diagrams pool seeds and hide bins with fewer than 5 events.
 
+### B6: does an LLM reading all the reports do as well?
+
+`qwen2.5:7b` (4-bit, through Ollama on an RTX 5050, about 2.9 s per answer, no unusable answers), one simulated set per level (seed 1, 60 seed events, 5-fold CV), given each report's stance. Brier (lower is better):
+
+| | 0 % T+6h | 0 % final | 30 % T+6h | 30 % final | 60 % T+6h | 60 % final |
+|---|---|---|---|---|---|---|
+| majority | 0.144 | 0.114 | 0.253 | 0.253 | 0.200 | 0.208 |
+| **reliability-dep (proposed)** | **0.133** | 0.104 | **0.114** | **0.053** | **0.076** | **0.038** |
+| LLM, calibrated | 0.152 | **0.100** | 0.231 | 0.257 | 0.195 | 0.223 |
+| LLM, as stated | 0.243 | 0.158 | 0.396 | 0.300 | 0.545 | 0.439 |
+
+Proposed vs calibrated LLM: no difference at 0 % (p = 0.59, 0.94); proposed better at 30 % and 60 % (p ≤ 0.001). Without stance (30 %): calibrated LLM 0.210 at T+6h, 0.253 at final, about the same.
+
+Its own six labels, wrongly called verified (final checkpoint): 20 % at 0 %, 29 % at 30 %, 44 % at 60 % (at T+1h: 47 %, 59 %, 71 %); macro-F1 0.22–0.24. With conflict detection, the same error is 5–7 % on the RQ3 sets.
+
+Where it goes wrong (final checkpoint, 30 %):
+
+| Events | n | Mean probability | Called verified | Supporting reports | Denials | Supports from social accounts |
+|---|---|---|---|---|---|---|
+| real | 49 | 0.58 | 39 % | 6.1 | 1.9 | 34 % |
+| false (ordinary) | 11 | 0.25 | 18 % | 2.6 | 3.5 | 59 % |
+| false, injected rumours | 25 | 0.64 | 60 % | 5.1 | 0.3 | 97 % |
+
+At 60 %: injected rumours called verified 66 %, real events 31 %.
+
+What this supports, on simulated data:
+
+- **An LLM reading every report is fooled by rumour pile-ups.** Injected rumours arrive as several agreeing reports, almost all from social accounts, with almost no denials; the model calls most of them verified ("Multiple sources report consistent details…"), and it holds real events, which usually carry a denial or two, to a stricter standard. It counts heads and does not weigh who is speaking, although every report's source type is in the prompt. Its stated probabilities therefore rank events backwards under contamination (AUC 0.22–0.30 at T+6h); calibration on training folds flips the scale but recovers only majority-vote level.
+- **Without contamination it is as good as the proposed model**; the gap opens exactly where source reliability and copy cascades matter, which is the paper's argument.
+- The stated probabilities agree with its labels ("refuted" averages 0.07, "verified" 0.85), so this is not the model misreading the question; the prompt was not changed after seeing results.
+
+**Caveats.** One 7B model, 4-bit, one seed per level, 60 seed events: indicative, not a full comparison (a stronger or larger model, few-shot examples, or source track records in the prompt may close part of the gap, and are worth testing). The simulated reports are templated, and the injected rumours are social-heavy by design of the simulator; real rumours may look different. The model answers are kept in `results/b6-qwen2.5-7b/llm-cache.jsonl`, so these tables can be reproduced without a GPU (below).
+
 ## Baselines
 
-Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`; results to come from a local run).
+Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`; results above).
 
 ## Still to do
 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
-- **B6:** run with a local model on the simulated sets at 0, 30 and 60 %, with and without stance, and add the results here; then on real data.
+- **B6, next steps:** more seeds; a larger model (e.g. on Colab); few-shot examples or source track records in the prompt (an LLM-plus-reliability hybrid); real data on a local model.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: an assessment suggestion on each event, measured against analysts the way event suggestions are.
