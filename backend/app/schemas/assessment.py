@@ -19,6 +19,28 @@ class AssessmentReason(BaseModel):
     disputed: list[str] = Field(description="Details this source has wrong (partly supports)")
 
 
+class StatedValue(BaseModel):
+    """One source's value for a detail, read from its text."""
+
+    value: bool | int | float | str
+    unit: str | None
+    source: str
+    reliability: float = Field(ge=0, le=1)
+    surface: str = Field(description="The words it was read from")
+
+
+class DetailSummaryRead(BaseModel):
+    """What the supporting sources state about one detail."""
+
+    attribute: str = Field(description="magnitude, affected_count, casualty_count or cause")
+    estimate: bool | int | float | str = Field(
+        description="Weighted by reliability: median for counts, most supported otherwise"
+    )
+    unit: str | None
+    disputed: bool = Field(description="Two credible sources state values that disagree")
+    statements: list[StatedValue]
+
+
 class AssessmentSuggestionRead(BaseModel):
     """The suggested assessment for an event, and why.
 
@@ -35,8 +57,14 @@ class AssessmentSuggestionRead(BaseModel):
     sources_denying: int
     credible_supporting: int
     credible_denying: int
-    disputed: list[str]
+    disputed: list[str] = Field(
+        description="Details in dispute: marked by analysts or detected from the texts"
+    )
+    disputed_detected: list[str] = Field(
+        description="Of those, detected: credible sources state values that disagree"
+    )
     reasons: list[AssessmentReason]
+    details: list[DetailSummaryRead]
 
 
 class AssessmentModelRead(BaseModel):

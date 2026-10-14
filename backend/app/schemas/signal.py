@@ -3,7 +3,14 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPES
 from app.models.signal import (
@@ -13,7 +20,8 @@ from app.models.signal import (
     SignalStatus,
     SourceType,
 )
-from app.schemas.field_report import ReporterRead
+from app.schemas.field_report import DetailRead, ReporterRead, details_of
+from app.services.details import headline_and_text
 
 LANGUAGES = ("en", "bn", "bn-Latn", "mixed")  # dataset language codes
 
@@ -137,6 +145,12 @@ class SignalRead(BaseModel):
     reviewed_at: datetime | None
     review_note: str | None
     entered_by: ReporterRead | None
+
+    @computed_field
+    @property
+    def details(self) -> list[DetailRead]:
+        """Details the title and text state, found automatically."""
+        return details_of(headline_and_text(self.title, self.text))
 
 
 class SignalPage(BaseModel):

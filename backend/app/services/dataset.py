@@ -36,6 +36,8 @@ from sqlalchemy.orm import Session
 
 from app import __version__
 from app.core.event_types import BD_LAT, BD_LON
+from app.extraction import VERSION as EXTRACTION_VERSION
+from app.extraction import detect_language, extract
 from app.ingest.places import PRECISION_M, gazetteer
 from app.models.audit import AuditLog
 from app.models.event import Event, EventEvidence, EvidenceRelation
@@ -43,9 +45,10 @@ from app.models.field_report import FieldReport
 from app.models.signal import EXCERPT_MAX, Signal, Source
 from app.models.user import User
 from app.services import annotation
+from app.services import details as stated
 
 SCHEMA_VERSION = "1.2"
-GUIDELINE_VERSION = "0.2"
+GUIDELINE_VERSION = "0.3"
 DHAKA = timezone(timedelta(hours=6))
 CHECKPOINTS = [("T+1h", timedelta(hours=1)), ("T+6h", timedelta(hours=6)),
                ("T+24h", timedelta(hours=24))]  # fmt: skip
@@ -56,13 +59,6 @@ FIELD_PRECISION_M = 50.0
 _PHONE = re.compile(r"(?:\+?88)?01[3-9]\d{8}")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-_BANGLA = re.compile(r"[ঀ-৿]")
-# Common Banglish words: enough to tell "Mirpur 10 e pani" from English.
-_BANGLISH = re.compile(
-    r"\b(pani|ache|achhe|hocche|hoise|hoyeche|rasta|bondho|jome|jam|kono|onek|manush|"
-    r"gari|cholche|na|e|te|theke|dekhlam|ekhane|ekhon|agun|lagse|lagche|vore|bristi)\b",
-    re.IGNORECASE,
-)
 
 
 @dataclass
@@ -114,20 +110,20 @@ def _location(lat, lon, precision_m, district=None, locality=None) -> dict:
     }
 
 
-def _language(text: str) -> str:
-    if _BANGLA.search(text):
-        return "mixed" if re.search(r"[A-Za-z]{4,}", text) else "bn"
-    return "bn-Latn" if len(_BANGLISH.findall(text)) >= 2 else "en"
-
-
 def _redact(text: str) -> str:
     return _EMAIL.sub("[EMAIL]", _PHONE.sub("[PHONE]", text))
 
 
-def _claims(event_type: str | None) -> list[dict]:
-    claims = [{"attribute": "occurrence", "value": True}]
+def _claims(event_type: str | None, found: list = ()) -> list[dict]:
+    """Occurrence (false when the text denies the event), the type given with the item,
+    and the details found in its text (app/extraction; see the manifest)."""
+    denied = any(c.attribute == "occurrence" and c.value is False for c in found)
+    claims = [{"attribute": "occurrence", "value": not denied}]
     if event_type:
         claims.append({"attribute": "event_type", "value": event_type})
+    claims += [c.as_dict() for c in found if c.attribute != "occurrence"]
+    if denied:
+        claims[0]["surface"] = next(c.surface for c in found if c.attribute == "occurrence")
     return claims
 
 
@@ -348,6 +344,10 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
         "privacy": "Phone numbers and email addresses were removed from field report text. "
         "Read field report text and replace names of private individuals with [PERSON] "
         "before publishing.",
+        "claims": "occurrence and event_type come from how the item was linked and typed. "
+        f"The other claims (deaths, people affected, depth, cause, status, and occurrence "
+        f"false for denials) were found in the text automatically by CARCUX's extraction "
+        f"rules ({EXTRACTION_VERSION}) and have not been checked by annotators.",
         "problems": len(problems),
     }
     id_map = {
@@ -368,14 +368,14 @@ def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
         "obs_id": oid,
         "source_id": source_ids(f"reporter:{r.reporter_id}"),
         "modality": "mixed" if r.media else "text",
-        "language": _language(text),
+        "language": detect_language(text),
         "reference": f"carcux:field_report:{r.id}",
         "published_at": _iso(r.received_at),
         "observed_at": _iso(r.observed_at),
         "collected_at": _iso(r.received_at),
         "content_policy": "full",
         "text": text,
-        "claims": _claims(r.event_type),
+        "claims": _claims(r.event_type, extract(text)),
         "is_simulated": False,
     }
     if _in_bangladesh(lat, lon):
@@ -402,7 +402,7 @@ def _signal_observation(oid: str, s: Signal, source_ids: _Ids) -> dict:
         "reference": s.url or f"carcux:signal:{s.id}",
         "published_at": _iso(s.published_at),
         "collected_at": _iso(max(s.collected_at, s.published_at)),
-        "claims": _claims(s.event_type),
+        "claims": _claims(s.event_type, stated.for_signal(s)),
         "is_simulated": False,
     }
     if s.text:

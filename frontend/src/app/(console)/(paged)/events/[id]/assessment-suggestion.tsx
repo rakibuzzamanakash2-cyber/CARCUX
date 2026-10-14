@@ -4,6 +4,7 @@ import { Check, X } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { updateEvent } from "@/app/actions/events";
+import { detailLabel, detailValue } from "@/components/detail-list";
 import { AssessmentText } from "@/components/event-badges";
 import { FormMessage } from "@/components/form";
 import { assessmentLabel, claimLabel } from "@/lib/events";
@@ -15,6 +16,13 @@ const KIND: Record<string, string> = {
   public_record: "public record",
   other: "other source",
 };
+
+/** Never "100%" or "0%": the model is never certain. */
+function percent(p: number): string {
+  if (p >= 0.995) return ">99%";
+  if (p <= 0.005) return "<1%";
+  return `${Math.round(p * 100)}%`;
+}
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -41,8 +49,7 @@ export function AssessmentSuggestionPanel({
         </span>
         {s.probability !== null && (
           <span className="text-muted">
-            <strong className="text-ink">{Math.round(s.probability * 100)}%</strong> likely it
-            happened
+            <strong className="text-ink">{percent(s.probability)}</strong> likely it happened
           </span>
         )}
       </div>
@@ -65,7 +72,56 @@ export function AssessmentSuggestionPanel({
         <p>
           <span className="text-muted">Details in dispute:</span>{" "}
           {s.disputed.map(claimLabel).join(", ")}
+          {s.disputed_detected.length > 0 &&
+            s.disputed_detected.length < s.disputed.length &&
+            ` (${s.disputed_detected.map(claimLabel).join(", ").toLowerCase()} found in the texts)`}
         </p>
+      )}
+
+      {s.details.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-muted">What the sources say</p>
+          <ul className="flex flex-col gap-1.5">
+            {s.details.map((d) => (
+              <li key={d.attribute}>
+                <details className="group">
+                  <summary className="cursor-pointer list-none">
+                    <span className="text-muted">{detailLabel(d.attribute)}:</span>{" "}
+                    <span className="font-semibold">
+                      {detailValue(d.attribute, d.estimate, d.unit)}
+                    </span>
+                    {d.disputed && (
+                      <span className="ml-2 rounded bg-alert-soft px-1.5 py-0.5 text-xs font-semibold text-alert">
+                        sources disagree
+                      </span>
+                    )}
+                    <span className="ml-2 text-xs text-brand group-open:hidden">
+                      {plural(d.statements.length, "source", "sources")}
+                    </span>
+                  </summary>
+                  <ul className="mt-1 ml-3 flex flex-col gap-1 border-l border-line pl-3">
+                    {d.statements.map((x, i) => (
+                      <li key={`${x.source}-${i}`}>
+                        <span className="font-semibold">
+                          {detailValue(d.attribute, x.value, x.unit)}
+                        </span>
+                        <span className="text-muted">
+                          {" "}
+                          · {x.source} (right {Math.round(x.reliability * 100)}% of the time) · “
+                          {x.surface}”
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-muted">
+            Read from the reports&apos; text automatically; the value shown weighs each source by
+            how often it has been right.
+          </p>
+        </div>
       )}
 
       {s.reasons.length > 0 && (

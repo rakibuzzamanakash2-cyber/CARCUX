@@ -48,6 +48,14 @@ export interface ReportMedia {
   sha256: string;
 }
 
+/** A detail found automatically in a report's or a signal's text, with its words. */
+export interface Detail {
+  attribute: "occurrence" | "casualty_count" | "affected_count" | "magnitude" | "cause" | "status";
+  value: boolean | number | string;
+  unit?: string | null;
+  surface: string;
+}
+
 export interface FieldReport {
   id: string;
   client_report_id: string;
@@ -67,6 +75,7 @@ export interface FieldReport {
   reviewed_by: { id: string; full_name: string } | null;
   reviewed_at: string | null;
   review_note: string | null;
+  details: Detail[];
 }
 
 export type ReportStatus = FieldReport["status"];
@@ -270,7 +279,24 @@ export interface AssessmentSuggestion {
   credible_supporting: number;
   credible_denying: number;
   disputed: ClaimAttribute[];
+  disputed_detected: ClaimAttribute[];
   reasons: AssessmentReason[];
+  details: DetailSummary[];
+}
+
+/** What an event's supporting sources state about one detail. */
+export interface DetailSummary {
+  attribute: "magnitude" | "affected_count" | "casualty_count" | "cause";
+  estimate: number | string | boolean;
+  unit: string | null;
+  disputed: boolean;
+  statements: {
+    value: number | string | boolean;
+    unit: string | null;
+    source: string;
+    reliability: number;
+    surface: string;
+  }[];
 }
 
 export interface AssessmentModel {
@@ -421,6 +447,7 @@ export interface Signal {
   reviewed_at: string | null;
   review_note: string | null;
   entered_by: { id: string; full_name: string } | null;
+  details: Detail[];
 }
 
 export interface SignalPage {
