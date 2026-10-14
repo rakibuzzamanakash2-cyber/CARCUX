@@ -51,7 +51,13 @@ def paired_bootstrap(loss_a, loss_b, *, resamples: int = 2000, seed: int = 0) ->
 
 
 def run(
-    data: Dataset, *, k: int = 5, seed: int = 0, method_list=None, keep: dict | None = None
+    data: Dataset,
+    *,
+    k: int = 5,
+    seed: int = 0,
+    method_list=None,
+    keep: dict | None = None,
+    checkpoints=None,
 ) -> dict:
     events = [eid for eid, e in data.events.items() if e.evidence]
     if len(events) < k or len({data.events[e].occurred for e in events}) < 2:
@@ -82,7 +88,7 @@ def run(
         "detection": _mean_detection(detection),
         "checkpoints": {},
     }
-    for name, hours in CHECKPOINTS:
+    for name, hours in checkpoints or CHECKPOINTS:
         cutoffs = {eid: first[eid] + timedelta(hours=hours) for eid in events}
         preds = {m.name: {} for m in method_list}
         raws: dict[str, list[dict]] = {m.name: [] for m in method_list}

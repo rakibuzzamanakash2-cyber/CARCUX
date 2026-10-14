@@ -47,3 +47,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# LLM answer cache (carcux_fusion.llm)
+.llm-cache/
