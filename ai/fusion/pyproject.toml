@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+figures = ["matplotlib>=3.8"]  # reliability diagrams (calibrate --figures)
 
 [project.scripts]
 carcux-fusion = "carcux_fusion.evaluate:main"
