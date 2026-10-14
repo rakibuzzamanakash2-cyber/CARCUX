@@ -1,0 +1,41 @@
+[project]
+name = "carcux-extraction"
+version = "0.1.0"
+description = "CARCUX module 1: details from Bangla, Banglish and English text (language, counts, depth, cause, status)"
+requires-python = ">=3.12"
+dependencies = []  # standard library only, so the backend can use it as is
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+carcux-extract = "carcux_extraction.evaluate:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["carcux_extraction*"]
+
+[tool.setuptools.package-data]
+carcux_extraction = ["data/*.jsonl"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003"]  # Bangla text is not confusable ASCII
+
+[tool.ruff.lint.per-file-ignores]
+# Pattern tables: one alternation per line reads better than wrapped fragments.
+"carcux_extraction/claims.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["carcux_extraction", "carcux_data"]

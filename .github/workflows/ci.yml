@@ -91,18 +91,23 @@ jobs:
           cache: pip
           cache-dependency-path: |
             ai/correlation/pyproject.toml
+            ai/extraction/pyproject.toml
             ai/fusion/pyproject.toml
             data/tools/pyproject.toml
-      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]"
+      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]" -e "extraction[dev]"
       - name: Lint
         run: |
           (cd correlation && ruff check . && ruff format --check .)
           (cd fusion && ruff check . && ruff format --check .)
+          (cd extraction && ruff check . && ruff format --check .)
       - name: Test correlation
         working-directory: ai/correlation
         run: pytest -q
       - name: Test fusion
         working-directory: ai/fusion
+        run: pytest -q
+      - name: Test extraction
+        working-directory: ai/extraction
         run: pytest -q
 
   frontend:

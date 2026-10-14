@@ -1,0 +1,38 @@
+{"text": "Seven dead, dozens missing after trawler capsizes in the Meghna.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 7, "unit": "deaths"}]}
+{"text": "Lightning strikes kill 11 across four districts on Saturday.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 11, "unit": "deaths"}]}
+{"text": "Over 40,000 households without electricity in Khulna after the storm.", "language": "en", "claims": [{"attribute": "affected_count", "value": 40000, "unit": "households"}]}
+{"text": "Flash floods triggered by torrential rain have submerged 25 villages in Sherpur.", "language": "en", "claims": [{"attribute": "cause", "value": "heavy rain"}]}
+{"text": "Ankle-high water in Agrabad, traffic slow but moving.", "language": "en", "claims": [{"attribute": "magnitude", "value": "ankle-deep"}]}
+{"text": "A blaze at a chemical warehouse in Chawkbazar was doused after six hours; no one was hurt.", "language": "en", "claims": [{"attribute": "status", "value": "resolved"}, {"attribute": "casualty_count", "value": 0, "unit": "deaths"}]}
+{"text": "Police say the viral video of a bridge collapse in Gaibandha is fake.", "language": "en", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "Rescue operations are still continuing at the collapsed building in Savar.", "language": "en", "claims": [{"attribute": "status", "value": "ongoing"}]}
+{"text": "The fire, believed to have originated from a gas leak in the kitchen, spread to adjacent buildings.", "language": "en", "claims": [{"attribute": "cause", "value": "gas leak"}, {"attribute": "status", "value": "worsening"}]}
+{"text": "Two children drowned in a flooded ditch in Jamalpur.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 2, "unit": "deaths"}]}
+{"text": "Around 800 people took shelter in cyclone centres in Bhola.", "language": "en", "claims": [{"attribute": "affected_count", "value": 800, "unit": "people"}]}
+{"text": "Water rose to neck level in some low-lying homes.", "language": "en", "claims": []}
+{"text": "Water in Rangpur town is receding, officials said.", "language": "en", "claims": [{"attribute": "status", "value": "improving"}]}
+{"text": "The river breached the embankment at two points overnight.", "language": "en", "claims": [{"attribute": "cause", "value": "embankment breach"}]}
+{"text": "Road blocked by students demanding justice for their classmate.", "language": "en", "claims": []}
+{"text": "বজ্রপাতে চারজনের মৃত্যু।", "language": "bn", "claims": [{"attribute": "casualty_count", "value": 4, "unit": "deaths"}]}
+{"text": "চকবাজারে কেমিক্যাল গোডাউনে আগুন, নিয়ন্ত্রণে আনা হয়েছে।", "language": "bn", "claims": [{"attribute": "status", "value": "resolved"}]}
+{"text": "ভারী বর্ষণের ফলে নগরীর বিভিন্ন এলাকায় জলাবদ্ধতা।", "language": "bn", "claims": [{"attribute": "cause", "value": "heavy rain"}]}
+{"text": "প্রায় ১২ হাজার পরিবার পানিবন্দী অবস্থায় রয়েছে।", "language": "bn", "claims": [{"attribute": "affected_count", "value": 12000, "unit": "households"}]}
+{"text": "সাভারে ভবন ধসে আটকা পড়েছেন অনেকে।", "language": "bn", "claims": []}
+{"text": "মাথার ওপর পানি, ঘরের চাল পর্যন্ত ডুবে গেছে।", "language": "bn", "claims": [{"attribute": "magnitude", "value": "above-head"}]}
+{"text": "উপকূলে বাঁধ ধসে লোকালয়ে পানি ঢুকেছে।", "language": "bn", "claims": [{"attribute": "cause", "value": "embankment breach"}]}
+{"text": "ফেসবুকে ছড়ানো বন্যার ছবিটি পুরনো, এটি ভুয়া খবর।", "language": "bn", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "বিদ্যুৎ ফিরেছে উত্তরার বেশিরভাগ এলাকায়।", "language": "bn", "claims": [{"attribute": "status", "value": "resolved"}]}
+{"text": "সড়ক দুর্ঘটনায় একজন নিহত, তিনজন আহত।", "language": "bn", "claims": [{"attribute": "casualty_count", "value": 1, "unit": "deaths"}]}
+{"text": "নদীভাঙনে গৃহহীন হয়েছে দেড়শ পরিবার।", "language": "bn", "claims": [{"attribute": "affected_count", "value": 150, "unit": "households"}]}
+{"text": "পানি কমতে শুরু করেছে, তবে দুর্ভোগ কমেনি।", "language": "bn", "claims": [{"attribute": "status", "value": "improving"}]}
+{"text": "Chawkbazar e boro agun, fire service ashse", "language": "bn-Latn", "claims": [{"attribute": "magnitude", "value": "large"}]}
+{"text": "5 jon er lash uddhar hoise", "language": "bn-Latn", "claims": [{"attribute": "casualty_count", "value": 5, "unit": "deaths"}]}
+{"text": "pani ekhon komor porjonto, ghore dhuke gese", "language": "bn-Latn", "claims": [{"attribute": "magnitude", "value": "waist-deep"}]}
+{"text": "cylinder blast e agun, 3 jon ahoto", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "cylinder explosion"}]}
+{"text": "ei khobor ta mittha, kono agun lage nai", "language": "bn-Latn", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "tana brishtite pura shohor dube gese", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "heavy rain"}]}
+{"text": "1 hajar er beshi poribar ashroy kendre ase", "language": "bn-Latn", "claims": [{"attribute": "affected_count", "value": 1000, "unit": "households"}]}
+{"text": "current nai 6 ghonta dhore, keu kichu bolche na", "language": "bn-Latn", "claims": []}
+{"text": "pani dhire dhire komche", "language": "bn-Latn", "claims": [{"attribute": "status", "value": "improving"}]}
+{"text": "Dhanmondi te knee deep water, rickshaw o cholche na", "language": "mixed", "claims": [{"attribute": "magnitude", "value": "knee-deep"}]}
+{"text": "ভবন ধসের news টা fake, police confirm করেছে", "language": "mixed", "claims": [{"attribute": "occurrence", "value": false}]}

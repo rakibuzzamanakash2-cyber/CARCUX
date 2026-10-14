@@ -1,0 +1,51 @@
+{"text": "Knee-deep water on Mirpur 10 roundabout after heavy overnight rain.", "language": "en", "claims": [{"attribute": "magnitude", "value": "knee-deep"}, {"attribute": "cause", "value": "heavy rain"}]}
+{"text": "Three people were killed when a bus collided with a truck on the Dhaka-Aricha highway.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 3, "unit": "deaths"}, {"attribute": "cause", "value": "vehicle collision"}]}
+{"text": "At least 12 people died and 30 were injured in the fire, which started from an electrical short circuit.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 12, "unit": "deaths"}, {"attribute": "cause", "value": "electrical short circuit"}]}
+{"text": "Around 5,000 families are marooned in Kurigram as the Brahmaputra flows above the danger level.", "language": "en", "claims": [{"attribute": "affected_count", "value": 5000, "unit": "households"}, {"attribute": "cause", "value": "river overflow"}]}
+{"text": "Some 1.2 lakh people have been stranded by floodwater in Sylhet; water is still rising.", "language": "en", "claims": [{"attribute": "affected_count", "value": 120000, "unit": "people"}, {"attribute": "status", "value": "worsening"}]}
+{"text": "Fire service brought the blaze under control after two hours. No casualties were reported.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 0, "unit": "deaths"}, {"attribute": "status", "value": "resolved"}]}
+{"text": "Reports of a building collapse in Tejgaon are false, police said.", "language": "en", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "Heavy rain continues in Chattogram for the third day.", "language": "en", "claims": [{"attribute": "status", "value": "ongoing"}]}
+{"text": "Hundreds of people were displaced by the river erosion in Shariatpur.", "language": "en", "claims": []}
+{"text": "Water up to the waist in parts of Old Dhaka; residents wade through to reach the market.", "language": "en", "claims": [{"attribute": "magnitude", "value": "waist-deep"}]}
+{"text": "A massive fire gutted 40 shops at Bangabazar. The cause is not yet known.", "language": "en", "claims": [{"attribute": "magnitude", "value": "large"}, {"attribute": "cause", "value": "unknown"}]}
+{"text": "The death toll from the landslide in Rohingya camps rose to 9 on Wednesday.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 9, "unit": "deaths"}]}
+{"text": "Floodwater has receded from most roads in Feni, but 300 families remain in shelters.", "language": "en", "claims": [{"attribute": "status", "value": "resolved"}, {"attribute": "affected_count", "value": 300, "unit": "households"}]}
+{"text": "Traffic halted on the Dhaka-Mawa expressway due to a protest by transport workers.", "language": "en", "claims": [{"attribute": "cause", "value": "protest"}]}
+{"text": "Two workers died from a gas cylinder explosion at a factory in Ashulia.", "language": "en", "claims": [{"attribute": "casualty_count", "value": 2, "unit": "deaths"}, {"attribute": "cause", "value": "cylinder explosion"}]}
+{"text": "Power cut across Uttara since morning; maintenance work on the grid, DESCO said.", "language": "en", "claims": [{"attribute": "cause", "value": "maintenance work"}]}
+{"text": "Embankment breach floods six villages in Satkhira; 2,000 people affected.", "language": "en", "claims": [{"attribute": "cause", "value": "embankment breach"}, {"attribute": "affected_count", "value": 2000, "unit": "people"}]}
+{"text": "Water at chest level inside homes in Sunamganj after the onrush of hill water from upstream.", "language": "en", "claims": [{"attribute": "magnitude", "value": "chest-deep"}, {"attribute": "cause", "value": "upstream runoff"}]}
+{"text": "Ten people injured as a microbus overturned in Tangail.", "language": "en", "claims": []}
+{"text": "The water level is now going down slowly in Lalmonirhat.", "language": "en", "claims": [{"attribute": "status", "value": "improving"}]}
+{"text": "টানা বৃষ্টিতে মিরপুর ১০ এ হাঁটুসমান পানি জমেছে।", "language": "bn", "claims": [{"attribute": "magnitude", "value": "knee-deep"}, {"attribute": "cause", "value": "heavy rain"}]}
+{"text": "কারওয়ান বাজারে ভয়াবহ আগুন, তিনজন নিহত।", "language": "bn", "claims": [{"attribute": "magnitude", "value": "large"}, {"attribute": "casualty_count", "value": 3, "unit": "deaths"}]}
+{"text": "সিলেটে প্রায় দুই লাখ মানুষ পানিবন্দী হয়ে পড়েছেন।", "language": "bn", "claims": [{"attribute": "affected_count", "value": 200000, "unit": "people"}]}
+{"text": "শর্ট সার্কিট থেকে আগুনের সূত্রপাত বলে জানিয়েছে ফায়ার সার্ভিস। কেউ হতাহত হয়নি।", "language": "bn", "claims": [{"attribute": "cause", "value": "electrical short circuit"}, {"attribute": "casualty_count", "value": 0, "unit": "deaths"}]}
+{"text": "তেজগাঁওয়ে ভবন ধসের খবরটি গুজব।", "language": "bn", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "নদীর পানি বেড়ে যাওয়ায় কুড়িগ্রামের ৫০০ পরিবার পানিবন্দী।", "language": "bn", "claims": [{"attribute": "affected_count", "value": 500, "unit": "households"}, {"attribute": "cause", "value": "river overflow"}]}
+{"text": "পাহাড়ি ঢলে সুনামগঞ্জের নিম্নাঞ্চলে কোমর পানি।", "language": "bn", "claims": [{"attribute": "cause", "value": "upstream runoff"}, {"attribute": "magnitude", "value": "waist-deep"}]}
+{"text": "ফেনীতে পানি নেমে গেছে, তবে রাস্তাঘাট এখনও ক্ষতিগ্রস্ত।", "language": "bn", "claims": [{"attribute": "status", "value": "resolved"}]}
+{"text": "বাস ও ট্রাকের মুখোমুখি সংঘর্ষে ৫ জনের মৃত্যু।", "language": "bn", "claims": [{"attribute": "cause", "value": "vehicle collision"}, {"attribute": "casualty_count", "value": 5, "unit": "deaths"}]}
+{"text": "লালমনিরহাটে তিস্তার পানি বিপৎসীমার ওপর দিয়ে প্রবাহিত হচ্ছে, পানি বাড়ছে।", "language": "bn", "claims": [{"attribute": "status", "value": "worsening"}]}
+{"text": "চট্টগ্রামে ড্রেন বন্ধ থাকার কারণে জলাবদ্ধতা।", "language": "bn", "claims": [{"attribute": "cause", "value": "blocked drains"}]}
+{"text": "অগ্নিকাণ্ডে আহত হয়েছেন ২০ জন।", "language": "bn", "claims": []}
+{"text": "কয়েকশ পরিবার আশ্রয়কেন্দ্রে উঠেছে।", "language": "bn", "claims": []}
+{"text": "বাঁধ ভেঙে সাতক্ষীরার ছয় গ্রাম প্লাবিত।", "language": "bn", "claims": [{"attribute": "cause", "value": "embankment breach"}]}
+{"text": "গ্যাস লাইনের লিকেজ থেকে বিস্ফোরণ, দুইজন নিহত।", "language": "bn", "claims": [{"attribute": "cause", "value": "gas leak"}, {"attribute": "casualty_count", "value": 2, "unit": "deaths"}]}
+{"text": "Mirpur 10 e hatu pani, gari choltese na", "language": "bn-Latn", "claims": [{"attribute": "magnitude", "value": "knee-deep"}]}
+{"text": "bhari brishtir karone Dhanmondi 27 e komor pani", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "heavy rain"}, {"attribute": "magnitude", "value": "waist-deep"}]}
+{"text": "Kawran bazar e agun lagse, 2 jon mara geche", "language": "bn-Latn", "claims": [{"attribute": "casualty_count", "value": 2, "unit": "deaths"}]}
+{"text": "prai 300 poribar pani bondi hoye ase Kurigram e", "language": "bn-Latn", "claims": [{"attribute": "affected_count", "value": 300, "unit": "households"}]}
+{"text": "tejgaon e building dhoshe nai, eta gujob", "language": "bn-Latn", "claims": [{"attribute": "occurrence", "value": false}]}
+{"text": "short circuit theke agun, keu mara jay nai", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "electrical short circuit"}, {"attribute": "casualty_count", "value": 0, "unit": "deaths"}]}
+{"text": "pani ekhono barche, onek manush atka", "language": "bn-Latn", "claims": [{"attribute": "status", "value": "worsening"}]}
+{"text": "Feni te pani neme gese alhamdulillah", "language": "bn-Latn", "claims": [{"attribute": "status", "value": "resolved"}]}
+{"text": "andoloner karone Shahbag mor bondho", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "protest"}]}
+{"text": "koyekjon ahoto, hospital e nise", "language": "bn-Latn", "claims": []}
+{"text": "Uttara te gorali pani, tobe barche", "language": "bn-Latn", "claims": [{"attribute": "magnitude", "value": "ankle-deep"}, {"attribute": "status", "value": "worsening"}]}
+{"text": "bus truck er mukhomukhi shongorshe 4 jon nihoto", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "vehicle collision"}, {"attribute": "casualty_count", "value": 4, "unit": "deaths"}]}
+{"text": "ujaner dhole Sunamganj e buk pani, 2 hajar manush ashroy kendre", "language": "bn-Latn", "claims": [{"attribute": "cause", "value": "upstream runoff"}, {"attribute": "magnitude", "value": "chest-deep"}, {"attribute": "affected_count", "value": 2000, "unit": "people"}]}
+{"text": "rasta te pani ache, ekhono", "language": "bn-Latn", "claims": [{"attribute": "status", "value": "ongoing"}]}
+{"text": "Mirpur e waterlogging, হাঁটু পানি, cars stuck", "language": "mixed", "claims": [{"attribute": "magnitude", "value": "knee-deep"}]}
+{"text": "ফায়ার সার্ভিস বলেছে fire is under control, কেউ নিহত হয়নি", "language": "mixed", "claims": [{"attribute": "casualty_count", "value": 0, "unit": "deaths"}]}
