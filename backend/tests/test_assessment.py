@@ -136,12 +136,12 @@ def _event(db, analyst: User, title="Waterlogging at Mirpur 10", occurred=None, 
     return e
 
 
-def _report(db, event, worker, analyst, relation=S, conflicts=(), minutes=0, gold=None):
+def _report(db, event, worker, analyst, relation=S, conflicts=(), minutes=0, gold=None, text=None):
     r = FieldReport(
         id=uuid.uuid4(),
         client_report_id=uuid.uuid4(),
         reporter_id=worker.id,
-        text="water at mirpur 10",
+        text=text or "water at mirpur 10",
         event_type="waterlogging",
         latitude=23.8069,
         longitude=90.3687,

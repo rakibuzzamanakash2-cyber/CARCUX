@@ -1,6 +1,6 @@
 # CARCUX-BD Annotation Guideline
 
-**Version 0.2** · Schema v1.1 · Status: draft for the first annotation round
+**Version 0.3** · Schema v1.1 · Status: draft for the first annotation round
 
 This guideline tells annotators how to turn news, posts, videos and field reports about Bangladesh disaster and disruption events into CARCUX-BD records. Two annotators following it should reach the same labels. When they don't, that is a signal to improve the guideline, not to argue.
 
@@ -137,7 +137,7 @@ Claims are the checkable statements an item makes. One claim per attribute:
 | `start_time`, `end_time` | ISO time, if stated |
 | `status` | `ongoing`, `worsening`, `improving`, `resolved` |
 | `magnitude` | **Water depth:** `ankle-deep`, `knee-deep`, `waist-deep`, `chest-deep`, `above-head`. Others: short phrase ("two lanes closed") |
-| `affected_count`, `casualty_count` | numbers, with `unit` ("households", "people") |
+| `affected_count`, `casualty_count` | numbers, with `unit` ("households", "people"). `casualty_count` counts **deaths** (`unit: "deaths"`); injuries are not counted in it |
 | `cause` | short phrase: "heavy overnight rainfall" |
 
 Put the words that state the claim in `surface` (≤ 200 characters): "hatu pani" → `magnitude: knee-deep`.
@@ -243,6 +243,7 @@ Rules:
 
 | Version | Schema | Changes |
 |---|---|---|
+| 0.3 | v1.1 | Clarified that `casualty_count` counts deaths, not injuries (the CARCUX console had labelled it "deaths or injuries"). Details that CARCUX finds in item text automatically go into `claims` with their words in `surface`; the export manifest says which claims are automatic. No schema change. |
 | 0.2 | v1.1 | Added event types `earthquake` (natural_calamity) and `rail_accident` (road_infrastructure), needed by shortlist events such as the November 2025 Narsingdi earthquake and the October 2023 Bhairab train collision. Additive only: every v1.0 dataset is still valid. |
 | 0.1 | v1.0 | First version. |
 

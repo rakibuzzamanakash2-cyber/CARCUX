@@ -71,7 +71,7 @@ Scores per attribute (precision, recall, F1), with values agreeing as in the gui
 
 ## Next
 
-1. **Into the product:** extract details for every report and signal, show them, export them as observation claims, and let the assessment suggestion detect disputed details by itself (the fusion research's `conflict.py`).
+1. ~~Into the product~~: done. Reports and signals show their details, the dataset export carries them as claims, and assessment suggestions detect disputed details from them (`backend/app/extraction` is a checked copy; see the backend README).
 2. **Evaluate on real labels** from the data sprint; extend the rules where real reports differ.
 3. **An LLM extractor as a strong baseline** (local model through Ollama, as in fusion's B6).
 4. **Place names and geocoding** against the Bangladesh gazetteer; **time normalisation** ("ajke shokale", "gotokal raat theke").

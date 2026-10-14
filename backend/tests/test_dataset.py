@@ -197,6 +197,12 @@ def test_export_is_a_valid_carcux_bd_dataset(scenario, db, tmp_path):
     assert "[PHONE]" in reports[0]["text"] and "01712345678" not in reports[0]["text"]
     assert reports[0]["language"] == "bn-Latn"
     assert reports[0]["location_mentions"][0]["from_gps"] is True
+    # Details found in the text, with the words they came from; the manifest says so.
+    assert {"attribute": "magnitude", "value": "knee-deep", "surface": "hatu pani"} in reports[0][
+        "claims"
+    ]
+    assert reports[0]["claims"][0] == {"attribute": "occurrence", "value": True}
+    assert "not been checked by annotators" in export.manifest["claims"]
     assert len(reports[0]["media"][0]["phash"]) == 16
     news = next(o for o in obs.values() if o["reference"].startswith("https://"))
     assert news["content_policy"] == "excerpt" and len(news["text"]) <= 300

@@ -9,7 +9,12 @@ from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.event import Event, EventEvidence, EventStatus, Priority
 from app.models.user import Role, User
-from app.schemas.assessment import AssessmentReason, AssessmentSuggestionRead
+from app.schemas.assessment import (
+    AssessmentReason,
+    AssessmentSuggestionRead,
+    DetailSummaryRead,
+    StatedValue,
+)
 from app.schemas.event import (
     CandidateReport,
     CandidateSignal,
@@ -147,6 +152,17 @@ def assessment_suggestion(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
         credible_supporting=s.credible_supporting,
         credible_denying=s.credible_denying,
         disputed=s.disputed,
+        disputed_detected=s.disputed_detected,
+        details=[
+            DetailSummaryRead(
+                attribute=d.attribute,
+                estimate=d.estimate,
+                unit=d.unit,
+                disputed=d.disputed,
+                statements=[StatedValue(**vars(x)) for x in d.statements],
+            )
+            for d in s.details
+        ],
         reasons=[
             AssessmentReason(
                 source=r.source,

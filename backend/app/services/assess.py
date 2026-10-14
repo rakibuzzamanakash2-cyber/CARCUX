@@ -40,10 +40,11 @@ import numpy as np
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.extraction import Claim
 from app.models.assessment import AssessmentModel
 from app.models.event import Assessment, Event, EventEvidence, EvidenceRelation
 from app.models.user import User
-from app.services import audit
+from app.services import audit, details
 
 STARTING_RATES = {"field": 0.80, "public_record": 0.90, "news": 0.75, "other": 0.60}
 DEFAULT_RATE = 0.60
@@ -86,6 +87,7 @@ class Vote:
     relation: EvidenceRelation
     conflicts: tuple[str, ...]
     at: datetime
+    details: tuple[Claim, ...] = ()  # comparable details its text states
 
 
 def _vote(link: EventEvidence) -> Vote | None:
@@ -98,6 +100,7 @@ def _vote(link: EventEvidence) -> Vote | None:
         key, kind = f"reporter:{r.reporter_id}", "field"
         name = f"Field worker {r.reporter.full_name}" if r.reporter else "Field worker"
         at = r.received_at
+        stated = details.for_report(r)
     else:
         s = link.signal
         key, kind, name, at = (
@@ -106,7 +109,9 @@ def _vote(link: EventEvidence) -> Vote | None:
             s.source.name,
             (s.published_at),
         )
-    return Vote(key, kind, name, VOTE[relation], relation, tuple(conflicts or ()), at)
+        stated = details.for_signal(s)
+    comparable = tuple(c for c in stated if c.attribute in details.COMPARABLE)
+    return Vote(key, kind, name, VOTE[relation], relation, tuple(conflicts or ()), at, comparable)
 
 
 def votes(event: Event) -> list[Vote]:
@@ -241,6 +246,28 @@ def fit(resolved: list[tuple[list[Vote], bool]]) -> Weights:
 
 
 @dataclass
+class Stated:
+    """One source's value for a detail."""
+
+    value: object
+    unit: str | None
+    source: str
+    reliability: float
+    surface: str
+
+
+@dataclass
+class DetailSummary:
+    """What the supporting sources say about one detail, and the best estimate."""
+
+    attribute: str
+    estimate: object
+    unit: str | None
+    disputed: bool
+    statements: list[Stated]
+
+
+@dataclass
 class Reason:
     source: str
     kind: str
@@ -262,21 +289,85 @@ class AssessmentSuggestion:
     credible_denying: int
     disputed: list[str]
     reasons: list[Reason]
+    disputed_detected: list[str] = field(default_factory=list)
+    details: list[DetailSummary] = field(default_factory=list)
 
 
-def label_for(p: float | None, vs: list[Vote], weights: Weights) -> tuple[Assessment, list[str]]:
+def _weight(rate: float) -> float:
+    return max(_logit(rate), 0.01)
+
+
+def _estimate(attribute: str, stated: list[tuple[Claim, float]]):
+    """Weighted median for counts, weighted mode otherwise ("unknown" only if nothing
+    else is stated), each source weighted by the log-odds of its reliability."""
+    known = [(c, r) for c, r in stated if c.value != "unknown"] or stated
+    if attribute in ("affected_count", "casualty_count"):
+        pairs = sorted((float(c.value), _weight(r)) for c, r in known)
+        half, acc = sum(w for _, w in pairs) / 2, 0.0
+        for value, w in pairs:
+            acc += w
+            if acc >= half:
+                return int(value) if value.is_integer() else value
+        return pairs[-1][0]
+    totals: dict = defaultdict(float)
+    for c, r in known:
+        totals[c.value] += _weight(r)
+    return max(totals, key=lambda v: totals[v])
+
+
+def summarise_details(vs: list[Vote], weights: Weights) -> tuple[list[DetailSummary], list[str]]:
+    """Per detail the supporting sources state: every statement, the best estimate,
+    and whether two credible sources disagree (a detected dispute)."""
+    by_attribute: dict[str, list[tuple[Claim, float, Vote]]] = defaultdict(list)
+    for v in vs:
+        if v.vote < 0:
+            continue
+        rate = weights.rate(v)[0]
+        for c in v.details:
+            by_attribute[c.attribute].append((c, rate, v))
+    summaries, detected = [], []
+    for attribute in details.COMPARABLE:
+        stated = by_attribute.get(attribute)
+        if not stated:
+            continue
+        credible = [c for c, r, _ in stated if r >= CREDIBLE]
+        disputed = any(
+            not details.agrees(attribute, a.value, b.value) for a in credible for b in credible
+        )
+        if disputed:
+            detected.append(attribute)
+        estimate = _estimate(attribute, [(c, r) for c, r, _ in stated])
+        summaries.append(
+            DetailSummary(
+                attribute=attribute,
+                estimate=estimate,
+                unit=next((c.unit for c, _, _ in stated if c.value == estimate), None),
+                disputed=disputed,
+                statements=[
+                    Stated(c.value, c.unit, v.source_name, round(r, 3), c.surface)
+                    for c, r, v in sorted(stated, key=lambda x: -x[1])
+                ],
+            )
+        )
+    return summaries, detected
+
+
+def label_for(
+    p: float | None, vs: list[Vote], weights: Weights, detected: list[str] = ()
+) -> tuple[Assessment, list[str]]:
+    """The label, and the details in dispute: marked wrong by an analyst on a credible
+    source's link, or stated differently by two credible sources (`detected`)."""
     if not vs or p is None:
         return Assessment.INSUFFICIENT_EVIDENCE, []
     credible = [v for v in vs if weights.rate(v)[0] >= CREDIBLE]
-    disputed = sorted(
-        {
-            c
-            for v in credible
-            if v.relation == EvidenceRelation.PARTIALLY_SUPPORTS
-            for c in v.conflicts
-            if c != "occurrence"
-        }
-    )
+    marked = {
+        c
+        for v in credible
+        if v.relation == EvidenceRelation.PARTIALLY_SUPPORTS
+        for c in v.conflicts
+        if c != "occurrence"
+    }
+    disputed = sorted(marked | set(detected))
     if p >= HIGH:
         return (Assessment.PARTIALLY_VERIFIED if disputed else Assessment.VERIFIED), disputed
     if p <= LOW:
@@ -303,7 +394,8 @@ def suggest(db: Session, event: Event) -> AssessmentSuggestion:
     weights, model = current_weights(db)
     vs = votes(event)
     p = weights.probability(vs) if vs else None
-    label, disputed = label_for(p, vs, weights)
+    summaries, detected = summarise_details(vs, weights)
+    label, disputed = label_for(p, vs, weights, detected)
     rated = [(v, *weights.rate(v)) for v in vs]
     credible = [(v, r) for v, r, _ in rated if r >= CREDIBLE]
     rated.sort(key=lambda x: abs(_logit(x[1])), reverse=True)
@@ -330,6 +422,8 @@ def suggest(db: Session, event: Event) -> AssessmentSuggestion:
             )
             for v, r, learned in rated[:REASONS]
         ],
+        disputed_detected=detected,
+        details=summaries,
     )
 
 

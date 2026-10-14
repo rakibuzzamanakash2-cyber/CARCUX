@@ -161,7 +161,7 @@ export const CLAIM_ATTRIBUTES: { value: ClaimAttribute; label: string }[] = [
   { value: "status", label: "Whether it is still going on" },
   { value: "magnitude", label: "How bad (depth, size)" },
   { value: "affected_count", label: "Number affected" },
-  { value: "casualty_count", label: "Deaths or injuries" },
+  { value: "casualty_count", label: "Deaths" },
   { value: "cause", label: "Cause" },
   { value: "event_type", label: "Kind of event" },
 ];

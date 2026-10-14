@@ -2,6 +2,7 @@ import { ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { DetailList } from "@/components/detail-list";
 import { LinkButtons } from "@/components/evidence-controls";
 import { SuggestionMeta } from "@/components/suggestion-bits";
 import { buttonSecondary, PageBand, PageBody, Panel } from "@/components/page-header";
@@ -140,6 +141,14 @@ export default async function SignalDetailPage({
                   {gdacs && " Alert data: GDACS, CC BY 4.0."}
                 </p>
               )}
+            </Panel>
+
+            <Panel id="text-details" title="Details in the text">
+              <DetailList details={signal.details} />
+              <p className="mt-3 text-xs text-muted">
+                Read from the text automatically. Check them against it: they feed the suggested
+                assessment of any event this is linked to.
+              </p>
             </Panel>
 
             <Panel id="details" title="Details">

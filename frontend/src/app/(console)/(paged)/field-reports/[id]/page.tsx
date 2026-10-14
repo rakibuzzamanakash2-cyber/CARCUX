@@ -6,6 +6,7 @@ import { AssessmentText, PriorityBadge, StatusText } from "@/components/event-ba
 import { LinkButtons } from "@/components/evidence-controls";
 import { SuggestionMeta } from "@/components/suggestion-bits";
 import { ReviewControls } from "@/components/review-controls";
+import { DetailList } from "@/components/detail-list";
 import { buttonSecondary, PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
@@ -152,6 +153,13 @@ export default async function FieldReportPage({
             <div className="flex min-w-0 flex-col gap-6">
               <Panel id="report" title="What they saw">
                 <p className="text-[17px] leading-relaxed whitespace-pre-wrap">{report.text}</p>
+              </Panel>
+              <Panel id="text-details" title="Details in the text">
+                <DetailList details={report.details} />
+                <p className="mt-3 text-xs text-muted">
+                  Read from the text automatically. Check them against it: they feed the suggested
+                  assessment of any event this is linked to.
+                </p>
               </Panel>
               <Panel id="photos" title="Photos">
                 {report.media.length === 0 ? (

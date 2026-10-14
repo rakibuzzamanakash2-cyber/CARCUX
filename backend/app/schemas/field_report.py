@@ -1,9 +1,27 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
+from app.extraction import extract
 from app.models.field_report import ReportStatus
+
+
+class DetailRead(BaseModel):
+    """A detail the text states, found automatically (app/extraction): what, the value,
+    and the words it came from. A machine reading: analysts check it."""
+
+    attribute: str = Field(
+        description="occurrence (false = denied), casualty_count (deaths), affected_count, "
+        "magnitude, cause or status"
+    )
+    value: bool | int | float | str
+    unit: str | None = None
+    surface: str = Field(description="The words it was read from")
+
+
+def details_of(text: str) -> list[DetailRead]:
+    return [DetailRead(**c.as_dict()) for c in extract(text)]
 
 
 class IntegrityFlag(BaseModel):
@@ -51,6 +69,12 @@ class FieldReportRead(BaseModel):
     reviewed_by: ReporterRead | None = None
     reviewed_at: datetime | None = None
     review_note: str | None = None
+
+    @computed_field
+    @property
+    def details(self) -> list[DetailRead]:
+        """Details the text states, found automatically."""
+        return details_of(self.text)
 
 
 class FieldReportPage(BaseModel):
