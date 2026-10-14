@@ -1,6 +1,6 @@
 # 3 · Fusion: evidence under conflict
 
-**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), and the calibration study (RQ5); checked on simulated data only. The LLM baseline (B6) and real-data runs are next.
+**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), the calibration study (RQ5), and an LLM baseline (B6, local through Ollama or any OpenAI-compatible server); checked on simulated data only. B6 results and real-data runs are next.
 
 Given an event and its observations, decides **which sources are really independent, where they conflict, and how certain the assessment is**, and keeps those answers calibrated as the information gets noisier.
 
@@ -31,6 +31,7 @@ Given an event and its observations, decides **which sources are really independ
 | Details in dispute | `conflict.py` | Per detail (magnitude, number affected, deaths, cause): the claims of one report per copy cascade, each weighted by its source's learned reliability; **disputed** when two credible claims disagree (affected counts within 25 % agree, deaths must match); the best estimate by weighted mode or median. |
 | Assessment | `assess.py` | The dataset's six labels at each checkpoint, from the probability it happened, whether a detail is disputed, and credible reports on each side; thresholds tuned on training folds. Compared with and without conflict detection (RQ3), and against annotated conflicts as an upper bound. |
 | Calibration | `calibrate.py` | RQ5. Six ways to turn each method's score into a probability (none, temperature, Platt, isotonic, one Platt fitted at the final checkpoint for all times, Platt fitted before contamination), scored per checkpoint; reliability diagrams. Per assigned label: how often those events really happened; and whether the signals behind the labels predict occurrence beyond the probability. |
+| LLM baseline (B6) | `llm.py` | An LLM reads every report about an event published by a checkpoint (time, source type, a pseudonymous source label, the text cut to 300 characters, and the annotated stance that every other method also gets) and answers in JSON: probability it happened, one of the six labels, a reason. Scored as stated and through the same Platt calibration as the other methods; its labels against the gold labels. Local model through Ollama (default), any OpenAI-compatible server, or a fake model for tests. Answers cached on disk by model and prompt. |
 | Simulator | `simulate.py` | Valid CARCUX-BD with a contamination dial (below). |
 | RQ4 sweep | `sweep.py` | Contamination 0–60 %, several seeds, all methods. |
 
@@ -51,8 +52,18 @@ python -m carcux_fusion.calibrate /tmp/fus                        # RQ5 on one d
 pip install -e ".[figures]"                                        # matplotlib, for the diagrams
 python -m carcux_fusion.calibrate --simulate --seeds 3 --figures figures   # RQ5, about 4 minutes
 
+# B6: the LLM baseline, with Ollama running locally (https://ollama.com)
+ollama pull qwen2.5:7b
+python -m carcux_fusion.llm --simulate --events 60 --contamination 0.3 --json b6.json
+python -m carcux_fusion.llm /tmp/fus --checkpoints T+6h final   # any CARCUX-BD export
+python -m carcux_fusion.llm --simulate --backend fake            # dry run, no model
+
 pytest -q && ruff check . && ruff format --check .
 ```
+
+B6 calls the model once per event and checkpoint with new evidence; answers are cached in `.llm-cache/`, so a rerun is instant. `--no-stance` gives the model the text only. `--backend openai --base-url URL --model NAME` uses an OpenAI-compatible server (key in `CARCUX_LLM_API_KEY`), for example a model served from Colab. Keep real CARCUX-BD reports on a local model unless the data's terms allow sending them out.
+
+**No room for the 4.7 GB model?** `notebooks/b6_colab.ipynb` runs B6 on Google Colab's free GPU: open it in Colab (File → Open notebook → GitHub, or upload it), choose a T4 GPU, Run all. It installs Ollama, the model and this repository there, runs the simulated sets (0, 30, 60 %, with stance; 30 % text only), caches answers in Google Drive so a disconnect loses nothing, and downloads the results. Simulated data only. The answer cache is keyed by model and prompt, so the same model run later on a local PC can reuse it: copy the Drive folder's `llm-cache.jsonl` into `.llm-cache/`.
 
 On Windows PowerShell use a folder such as `$env:TEMP\fus` in place of `/tmp/fus`.
 
@@ -180,12 +191,12 @@ What this supports, on simulated data:
 
 ## Baselines
 
-Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), LLM-given-all-observations (B6, not yet built).
+Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`; results to come from a local run).
 
 ## Still to do
 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
-- **B6:** an LLM given all observations.
+- **B6:** run with a local model on the simulated sets at 0, 30 and 60 %, with and without stance, and add the results here; then on real data.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: an assessment suggestion on each event, measured against analysts the way event suggestions are.
