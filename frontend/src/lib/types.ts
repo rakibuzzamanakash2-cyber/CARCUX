@@ -249,6 +249,61 @@ export interface SuggestionStatus {
   from_suggestions: { total: number; first: number; top3: number };
 }
 
+/** One source behind an assessment suggestion. */
+export interface AssessmentReason {
+  source: string;
+  kind: string;
+  vote: 1 | -1;
+  reliability: number;
+  learned: boolean;
+  disputed: ClaimAttribute[];
+}
+
+/** The suggested assessment for an event: "start" (starting assumptions) or "model". */
+export interface AssessmentSuggestion {
+  label: Assessment;
+  probability: number | null;
+  method: "start" | "model";
+  model_id: string | null;
+  sources_supporting: number;
+  sources_denying: number;
+  credible_supporting: number;
+  credible_denying: number;
+  disputed: ClaimAttribute[];
+  reasons: AssessmentReason[];
+}
+
+export interface AssessmentModel {
+  id: string;
+  created_at: string;
+  created_by: { id: string; full_name: string } | null;
+  active: boolean;
+  events: number;
+  happened: number;
+  sources: number;
+  metrics: {
+    held_out_events: number;
+    held_out_happened?: number;
+    model_brier?: number;
+    start_brier?: number;
+    majority_brier?: number;
+    model_accuracy?: number;
+    start_accuracy?: number;
+    majority_accuracy?: number;
+  };
+}
+
+export interface AssessmentStatus {
+  method: "start" | "model";
+  active: AssessmentModel | null;
+  resolved_events: number;
+  resolved_happened: number;
+  min_events: number;
+  min_each: number;
+  starting_rates: Record<string, number>;
+  from_suggestions: { total: number; followed: number };
+}
+
 export function suggestionUsed(c: CandidateEvent, index: number): SuggestionUsed {
   return { rank: index + 1, method: c.method, score: c.score, model_id: c.model_id };
 }

@@ -458,8 +458,9 @@ def _gold(item: EventEvidence) -> dict[str, Any] | None:
     return _judgement(relation, conflicts, False)
 
 
-def _assessment_history(db: Session) -> dict[str, list[tuple[datetime, str, str, Any]]]:
-    """Per event: (time, old label, new label, actor) for every assessment change."""
+def _assessment_history(db: Session) -> dict[str, list[tuple]]:
+    """Per event: (time, old label, new label, actor, suggestion shown or None) for every
+    assessment change."""
     out: dict[str, list] = defaultdict(list)
     rows = db.execute(
         select(AuditLog.target_id, AuditLog.details, AuditLog.occurred_at, AuditLog.actor_id)
@@ -469,7 +470,7 @@ def _assessment_history(db: Session) -> dict[str, list[tuple[datetime, str, str,
     for target, details, at, actor in rows:
         change = (details.get("changes") or {}).get("assessment")
         if change:
-            out[target].append((at, change[0], change[1], actor))
+            out[target].append((at, change[0], change[1], actor, details.get("suggestion")))
     return out
 
 
@@ -477,12 +478,12 @@ def _event_record(ev: Event, event_ids: _Ids, first: datetime, now: datetime, hi
     changes = history.get(str(ev.id), [])
     initial = changes[0][1] if changes else ev.assessment.value
 
-    def label_at(t: datetime) -> tuple[str, Any, datetime]:
-        label, actor, when = initial, ev.created_by_id, ev.created_at
-        for at, _old, new, who in changes:
+    def label_at(t: datetime) -> tuple[str, Any, datetime, dict | None]:
+        label, actor, when, shown = initial, ev.created_by_id, ev.created_at, None
+        for at, _old, new, who, suggestion in changes:
             if at <= t:
-                label, actor, when = new, who, at
-        return label, actor, when
+                label, actor, when, shown = new, who, at, suggestion
+        return label, actor, when, shown
 
     def count_at(t: datetime) -> tuple[int, int]:
         linked = [i for i in ev.evidence if i.linked_at <= t]
@@ -495,7 +496,13 @@ def _event_record(ev: Event, event_ids: _Ids, first: datetime, now: datetime, hi
     final_at = max([now, *[t for _, t in stamps]])
     stamps.append(("final", final_at))
     for name, t in stamps:
-        label, actor, when = label_at(t)
+        label, actor, when, shown = label_at(t)
+        note = "Live analyst decision, reconstructed from the audit log"
+        if shown:
+            note += (
+                f"; CARCUX suggested {shown['label']} ({shown['method']}), "
+                f"{'followed' if shown.get('followed') else 'not followed'}"
+            )
         sup, con = count_at(t)
         assessments.append(
             {
@@ -512,7 +519,7 @@ def _event_record(ev: Event, event_ids: _Ids, first: datetime, now: datetime, hi
                         max(when, ev.created_at),
                         2,
                         label=label,
-                        note="Live analyst decision, reconstructed from the audit log",
+                        note=note,
                     )
                 ],  # fmt: skip
             }

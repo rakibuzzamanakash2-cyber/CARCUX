@@ -9,6 +9,7 @@ from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.event import Event, EventEvidence, EventStatus, Priority
 from app.models.user import Role, User
+from app.schemas.assessment import AssessmentReason, AssessmentSuggestionRead
 from app.schemas.event import (
     CandidateReport,
     CandidateSignal,
@@ -23,6 +24,7 @@ from app.schemas.event import (
 )
 from app.schemas.field_report import FieldReportRead, ReporterRead
 from app.schemas.signal import SignalRead
+from app.services import assess
 from app.services import events as service
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -128,6 +130,35 @@ def update_event(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "ended_at must not be before started_at"
         ) from None
+
+
+@router.get("/{event_id}/assessment-suggestion", response_model=AssessmentSuggestionRead)
+def assessment_suggestion(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
+    """The suggested assessment from the evidence linked so far, with the sources behind
+    it. A suggestion only: the analyst sets the assessment."""
+    s = assess.suggest(db, _event_or_404(db, event_id))
+    return AssessmentSuggestionRead(
+        label=s.label,
+        probability=s.probability,
+        method=s.method,
+        model_id=s.model_id,
+        sources_supporting=s.sources_supporting,
+        sources_denying=s.sources_denying,
+        credible_supporting=s.credible_supporting,
+        credible_denying=s.credible_denying,
+        disputed=s.disputed,
+        reasons=[
+            AssessmentReason(
+                source=r.source,
+                kind=r.kind,
+                vote=r.vote,
+                reliability=r.reliability,
+                learned=r.learned,
+                disputed=list(r.disputed),
+            )
+            for r in s.reasons
+        ],
+    )
 
 
 @router.get("/{event_id}/history", response_model=list[HistoryEntry])

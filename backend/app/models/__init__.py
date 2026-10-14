@@ -1,5 +1,6 @@
 """Import all models here so Alembic autogenerate sees them."""
 
+from app.models.assessment import AssessmentModel
 from app.models.audit import AuditLog
 from app.models.event import (
     Assessment,
@@ -26,6 +27,7 @@ from app.models.user import Role, User
 __all__ = [
     "Adapter",
     "Assessment",
+    "AssessmentModel",
     "AuditLog",
     "Event",
     "EventEvidence",

@@ -61,6 +61,7 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/events/{id}` | everyone; reviewers see more | Overview (summary, details) for all. Reviewers also get **Analyst decision** on the overview, an **Evidence** tab (linked reports with relation and unlink; possibly related reports with one-click linking) and a **History** tab in plain words. |
 | `/field-reports/{id}` | analyst, admin | An **Events** tab: events the report is linked to, open events nearby to link it to, and **Create an event from this report**. |
 
+- **Suggested assessment** on each event's overview (analysts, admins): a label, how likely it happened, the sources weighed most (each with how often it has been right, from its own record or assumed for its kind) and details in dispute, with **Set to …** to take it. It comes from starting assumptions about each kind of source until an admin trains the assessment model on events with ground truth. Changing the assessment records the suggestion and whether it was followed; the event's History shows "(as suggested)" or what was suggested.
 - Suggested events come from the 5 km / 48 h rule until an admin trains the suggestion model, then from the model; the list says which. In model mode each suggestion shows a match percentage and why: how similar the wording is, how long before or after the event's latest evidence, how far, same type. Linking from a suggestion records which one it was (rank, score, model) in the audit log. Analysts decide.
 - Closing an event (resolved or dismissed) records its end time; reopening clears it.
 - Assessment labels and their meanings are the CARCUX-BD dataset's, shown under the selector.
@@ -85,6 +86,7 @@ docker compose -f deployment/docker-compose.yml up --build
 | Event Evidence tab | analyst, admin | Each link shows relation, **how sure** (unsure, fairly sure, certain) and **out of date when published**. Choosing **Partly supports**, when linking or changing, asks **what it gets wrong** (place, times, how bad, counts, cause, kind). |
 | `/dataset` | analyst, admin; download admin | Events ready out of all, observations, labelled links, and lists of what to fix, each linking to the event. Admins download the zip (or include unlinked items). Desktop only. |
 | `/dataset`, **Event suggestions** | analyst, admin; train admin | Whether suggestions use the rule or the model; the model's held-out results next to the rule's (first suggestion right, right one in the first three); how many links exist and how many were made from the first suggestion. Admins **Train and switch on**, **Retrain**, or go back to the rule. |
+| `/dataset`, **Assessment suggestions** | analyst, admin; train admin | Starting assumptions or the trained model; the model's held-out Brier score next to the starting assumptions' and majority vote's; how many events have ground truth; how many assessments were set with a suggestion in view and how many followed it. Admins **Train and switch on**, **Retrain**, or go back to the starting assumptions. |
 
 ## Second opinions
 

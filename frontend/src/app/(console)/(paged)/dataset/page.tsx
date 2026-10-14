@@ -2,6 +2,7 @@ import { AlertTriangle, Database, Download, FileCheck2, Link2, ListChecks } from
 import Link from "next/link";
 
 import { PageBand, PageBody, Panel, StatTile, StatTiles } from "@/components/page-header";
+import { AssessmentModelControls } from "@/components/assessment-model-controls";
 import { SuggestionModelControls } from "@/components/suggestion-model-controls";
 import { api } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
@@ -10,6 +11,7 @@ import {
   REPORT_REVIEWERS,
   type DatasetProblem,
   type DatasetSummary,
+  type AssessmentStatus,
   type SuggestionStatus,
 } from "@/lib/types";
 
@@ -49,10 +51,16 @@ const FIX: Record<DatasetProblem["kind"], { title: string; how: string }> = {
 export default async function DatasetPage() {
   const user = await requireRole(...REPORT_REVIEWERS);
   const admin = user.role === "admin";
-  const [data, suggestions] = await Promise.all([
+  const [data, suggestions, assessing] = await Promise.all([
     api<DatasetSummary>("/dataset/summary"),
     api<SuggestionStatus>("/suggestions/model"),
+    api<AssessmentStatus>("/assessment/model"),
   ]);
+  const assessModel = assessing.active;
+  const canTrainAssessment =
+    assessing.resolved_events >= assessing.min_events &&
+    assessing.resolved_happened >= assessing.min_each &&
+    assessing.resolved_events - assessing.resolved_happened >= assessing.min_each;
   const model = suggestions.active;
   const canTrain =
     suggestions.labelled_items >= suggestions.min_items &&
@@ -226,6 +234,73 @@ export default async function DatasetPage() {
               </p>
               {admin ? (
                 <SuggestionModelControls active={model !== null} canTrain={canTrain} />
+              ) : (
+                <p className="text-sm text-muted">An admin can train the model.</p>
+              )}
+            </Panel>
+            <Panel
+              id="assessment-suggestions"
+              title="Assessment suggestions"
+              description="How the suggested assessment on each event's page is worked out."
+            >
+              <p className="mb-3 text-sm">
+                {assessModel ? (
+                  <>
+                    From the <strong>assessment model</strong>, trained{" "}
+                    {formatDhaka(assessModel.created_at)} on {assessModel.events} events with ground
+                    truth ({assessModel.happened} happened): each source weighed by its own record.
+                  </>
+                ) : (
+                  <>
+                    From <strong>starting assumptions</strong>: field workers right{" "}
+                    {pct(assessing.starting_rates.field)} of the time, public records{" "}
+                    {pct(assessing.starting_rates.public_record)}, news{" "}
+                    {pct(assessing.starting_rates.news)}, others{" "}
+                    {pct(assessing.starting_rates.other)}. Train a model to learn each source&apos;s
+                    own record.
+                  </>
+                )}
+              </p>
+              {assessModel && assessModel.metrics.model_brier !== undefined && (
+                <>
+                  <dl className="mb-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 text-sm">
+                    <dt className="text-muted">Brier score on held-out events (lower is better)</dt>
+                    <dd />
+                    <dt className="pl-3 text-muted">Model</dt>
+                    <dd className="text-right font-semibold">
+                      {assessModel.metrics.model_brier.toFixed(3)}
+                    </dd>
+                    <dt className="pl-3 text-muted">Starting assumptions</dt>
+                    <dd className="text-right">{assessModel.metrics.start_brier?.toFixed(3)}</dd>
+                    <dt className="pl-3 text-muted">Majority vote</dt>
+                    <dd className="text-right">{assessModel.metrics.majority_brier?.toFixed(3)}</dd>
+                  </dl>
+                  <p className="mb-3 text-xs text-muted">
+                    Measured on {assessModel.metrics.held_out_events} events the model did not learn
+                    from.
+                  </p>
+                </>
+              )}
+              {assessModel && assessModel.metrics.model_brier === undefined && (
+                <p className="mb-3 text-sm text-muted">
+                  Too few held-out events to measure it yet. Retrain when more events have ground
+                  truth.
+                </p>
+              )}
+              <p className="mb-3 text-sm text-muted">
+                {assessing.resolved_events} events with ground truth and linked evidence (
+                {assessing.resolved_happened} happened)
+                {canTrainAssessment
+                  ? "."
+                  : `; training needs at least ${assessing.min_events}, with ${assessing.min_each} that happened and ${assessing.min_each} that did not.`}
+                {assessing.from_suggestions.total > 0 &&
+                  ` ${assessing.from_suggestions.total} assessments were set with a suggestion in view; ${assessing.from_suggestions.followed} followed it.`}
+              </p>
+              {admin ? (
+                <AssessmentModelControls
+                  active={assessModel !== null}
+                  canTrain={canTrainAssessment}
+                />
               ) : (
                 <p className="text-sm text-muted">An admin can train the model.</p>
               )}
