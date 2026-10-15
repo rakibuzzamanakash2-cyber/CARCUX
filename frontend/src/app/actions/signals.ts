@@ -13,6 +13,7 @@ import {
   type ActionState,
   type EvidenceRelation,
   type ImportResult,
+  type LinkPreview,
   type IngestRun,
   type Signal,
   type SignalStatus,
@@ -135,6 +136,66 @@ export async function enterBulletin(_prev: ActionState, formData: FormData): Pro
   }
   refresh(signal.id);
   redirect(`/signals/${signal.id}?entered=1`);
+}
+
+/** What a pasted link is (platform, post, account) and whether it is already in CARCUX. */
+export async function previewLink(
+  url: string,
+): Promise<{ ok: true; preview: LinkPreview } | { ok: false; message: string }> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!url.trim() || url.length > 1000) return { ok: false, message: "Paste a link." };
+  try {
+    const preview = await api<LinkPreview>(
+      `/signals/links/preview?url=${encodeURIComponent(url.trim())}`,
+    );
+    return { ok: true, preview };
+  } catch (error) {
+    return { ok: false, message: error instanceof ApiError ? error.detail : "Could not read it." };
+  }
+}
+
+const LINK_RELATIONS = new Set(["supports", "contradicts", "related"]);
+const LINK_KINDS = new Set(["news", "public_record", "other"]);
+
+/** Add a post or article: the link, who posted it, when, and what it says. */
+export async function addLink(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  const posted = text(formData, "published_at");
+  if (!LOCAL_DATETIME.test(posted)) return { ok: false, message: "Enter when it was posted." };
+  const eventId = text(formData, "event_id");
+  const relation = text(formData, "relation");
+  const kind = text(formData, "kind");
+  if (eventId && (!isUuid(eventId) || !LINK_RELATIONS.has(relation)))
+    return { ok: false, message: "Say how it bears on the event." };
+  const body = {
+    url: text(formData, "url"),
+    account: text(formData, "account") || null,
+    kind: LINK_KINDS.has(kind) ? kind : null,
+    text: text(formData, "text"),
+    published_at: `${posted}:00${DHAKA_OFFSET}`,
+    event_type: text(formData, "event_type") || null,
+    district: text(formData, "district") || null,
+    event_id: eventId || null,
+    relation: eventId ? relation : null,
+  };
+  if (!body.url) return { ok: false, message: "Paste the link." };
+  if (body.text.length < 3) return { ok: false, message: "Paste what it says." };
+
+  let added: { signal: Signal; created: boolean };
+  try {
+    added = await api<{ signal: Signal; created: boolean }>("/signals/links", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    return failure(error, "Could not add the link.");
+  }
+  refresh(added.signal.id);
+  if (eventId) {
+    revalidatePath(`/events/${eventId}`);
+    redirect(`/events/${eventId}?tab=evidence`);
+  }
+  redirect(`/signals/${added.signal.id}?${added.created ? "entered=1" : "known=1"}`);
 }
 
 /** Admin: add a news feed. */

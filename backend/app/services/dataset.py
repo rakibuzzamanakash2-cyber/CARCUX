@@ -24,6 +24,7 @@ published (the manifest says so).
 Records that cannot be exported yet are listed as problems, so analysts can fix them.
 """
 
+import hashlib
 import json
 import math
 import re
@@ -36,6 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import __version__
+from app.core.config import get_settings
 from app.core.event_types import BD_LAT, BD_LON
 from app.extraction import VERSION as EXTRACTION_VERSION
 from app.extraction import detect_language, extract
@@ -43,11 +45,12 @@ from app.ingest.places import PRECISION_M, gazetteer
 from app.models.audit import AuditLog
 from app.models.event import Event, EventEvidence, EvidenceRelation
 from app.models.field_report import FieldReport
-from app.models.signal import EXCERPT_MAX, Signal, Source
+from app.models.signal import EXCERPT_MAX, Signal, Source, SourceType
 from app.models.user import User
 from app.services import annotation
 from app.services import copies as copy_detection
 from app.services import details as stated
+from app.services import links as link_parsing
 
 SCHEMA_VERSION = "1.2"
 GUIDELINE_VERSION = "0.3"
@@ -110,6 +113,15 @@ def _location(lat, lon, precision_m, district=None, locality=None) -> dict:
         "precision_m": max(float(precision_m or EVENT_PRECISION_M), 1.0),
         "admin": _admin(lat, lon, district, locality),
     }
+
+
+def _account_ref(source_key: str) -> str:
+    """Salted SHA-256 of a social account's key: the same account is recognisable
+    across posts and exports, but not who it is (dataset source.account_ref)."""
+    settings = get_settings()
+    own = settings.dataset_salt.get_secret_value() if settings.dataset_salt else ""
+    salt = own or settings.jwt_secret.get_secret_value()
+    return hashlib.sha256(f"{salt}:{source_key}".encode()).hexdigest()
 
 
 def _obs_key(link: EventEvidence) -> str:
@@ -216,15 +228,23 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
     for src in publishers:
         if src.id not in used_publishers:
             continue
-        sources_out.append(
-            {
-                "source_id": source_ids(f"source:{src.id}"),
-                "source_type": src.source_type.value,
-                "name": src.name,
-                **({"domain": src.domain} if src.domain else {}),
-                "languages": [src.language],
-            }
-        )
+        # A social account may be a private person's: named only by its platform, as
+        # field workers are named only "Field worker".
+        social = src.source_type in (SourceType.SOCIAL, SourceType.VIDEO_PLATFORM)
+        platform = link_parsing.PLATFORMS.get(src.domain or "")
+        record: dict[str, Any] = {
+            "source_id": source_ids(f"source:{src.id}"),
+            "source_type": src.source_type.value,
+            "name": src.name,
+            "languages": [src.language],
+        }
+        if social:
+            record["name"] = f"{platform.label if platform else 'Social media'} account"
+            record["platform"] = platform.key if platform else (src.domain or "other")
+            record["account_ref"] = _account_ref(src.key)
+        elif src.domain:
+            record["domain"] = src.domain
+        sources_out.append(record)
     for reporter_id in sorted({str(r.reporter_id) for r in reports}):
         sources_out.append(
             {
@@ -390,6 +410,9 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
         "adjudicated label, or the label all annotators agreed on (two or more).",
         "assessments": "Reconstructed from the audit log: the label set in CARCUX at each "
         "checkpoint after the first linked item (T+1h, T+6h, T+24h) and at export (final).",
+        "social_media": "Posts from social media and video platforms are given as links "
+        "(reference) with their labels only, not their text, as the platforms' terms "
+        "require; the claims found in them are kept without the quoted words.",
         "privacy": "Phone numbers and email addresses were removed from field report text. "
         "Read field report text and replace names of private individuals with [PERSON] "
         "before publishing.",
@@ -443,18 +466,25 @@ def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
 
 
 def _signal_observation(oid: str, s: Signal, source_ids: _Ids) -> dict:
+    social = s.source.source_type in (SourceType.SOCIAL, SourceType.VIDEO_PLATFORM)
+    claims = _claims(s.event_type, stated.for_signal(s))
+    if social:
+        # Platform posts are shared as links and labels only: no text, no quoted words.
+        claims = [{k: v for k, v in c.items() if k != "surface"} for c in claims]
     ob: dict[str, Any] = {
         "obs_id": oid,
         "source_id": source_ids(f"source:{s.source_id}"),
-        "modality": "text",
+        "modality": "video" if s.extraction.get("video") else "text",
         "language": s.language,
         "reference": s.url or f"carcux:signal:{s.id}",
         "published_at": _iso(s.published_at),
         "collected_at": _iso(max(s.collected_at, s.published_at)),
-        "claims": _claims(s.event_type, stated.for_signal(s)),
+        "claims": claims,
         "is_simulated": False,
     }
-    if s.text:
+    if social:
+        ob["content_policy"] = "reference_only"
+    elif s.text:
         # Excerpts only, whatever was stored: news is copyrighted, bulletins may be long.
         text = s.text if len(s.text) <= EXCERPT_MAX else s.text[: EXCERPT_MAX - 1] + "…"
         ob["content_policy"] = "excerpt"

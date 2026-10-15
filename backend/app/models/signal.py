@@ -43,10 +43,13 @@ def _values(e: type[enum.Enum]) -> list[str]:
 
 
 class SourceType(enum.StrEnum):
-    """Dataset source_type values that apply to collected sources."""
+    """Dataset source_type values that apply to collected sources (field workers are
+    the dataset's `field`, kept as users, not sources)."""
 
     NEWS = "news"
     PUBLIC_RECORD = "public_record"  # government and UN alerts and bulletins
+    SOCIAL = "social"  # a Facebook page or group, an X account, a Telegram channel …
+    VIDEO_PLATFORM = "video_platform"  # a YouTube or TikTok channel
     OTHER = "other"
 
 

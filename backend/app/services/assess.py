@@ -46,7 +46,14 @@ from app.models.event import Assessment, Event, EventEvidence, EvidenceRelation
 from app.models.user import User
 from app.services import audit, details
 
-STARTING_RATES = {"field": 0.80, "public_record": 0.90, "news": 0.75, "other": 0.60}
+STARTING_RATES = {
+    "field": 0.80,
+    "public_record": 0.90,
+    "news": 0.75,
+    "social": 0.60,
+    "video_platform": 0.60,
+    "other": 0.60,
+}
 DEFAULT_RATE = 0.60
 HIGH, LOW = 0.80, 0.20
 CREDIBLE = 0.50

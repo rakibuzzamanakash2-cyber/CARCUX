@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -272,3 +272,74 @@ class District(BaseModel):
     division: str
     latitude: float
     longitude: float
+
+
+class LinkPreview(BaseModel):
+    """What a pasted link says about itself (CARCUX never opens it)."""
+
+    platform: str = Field(description="facebook, youtube, x, tiktok, instagram, telegram, web")
+    platform_label: str
+    kind: SourceType = Field(description="The kind of source it will be filed under")
+    url: str = Field(description="The link without tracking parameters")
+    post_id: str | None
+    account: str | None = Field(description="The page or account, when the link shows it")
+    video: bool
+    existing_signal_id: uuid.UUID | None = Field(description="Already in CARCUX")
+    known_source: str | None = Field(description="The source it would be filed under, if known")
+
+
+class LinkCreate(BaseModel):
+    """A post or article an analyst pasted: the link, who posted it, when, and what it
+    says (pasted; the link is never opened). Optionally linked to an event at once."""
+
+    url: str = Field(max_length=1000)
+    account: str | None = Field(
+        default=None, max_length=100, description="Page, account or channel name"
+    )
+    kind: SourceType | None = Field(
+        default=None, description="For a website not yet known: news, public_record or other"
+    )
+    text: str = Field(min_length=3, max_length=4000, description="What it says, pasted")
+    published_at: datetime
+    event_type: str | None = None
+    district: str | None = None
+    place_name: str | None = Field(default=None, max_length=200)
+    event_id: uuid.UUID | None = None
+    relation: Literal["supports", "contradicts", "related"] | None = Field(
+        default=None, description="With event_id: how it bears on the event"
+    )
+
+    @field_validator("account", "text", "district", "place_name", mode="before")
+    @classmethod
+    def _strip(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
+
+    @field_validator("event_type")
+    @classmethod
+    def _event_type(cls, value: str | None) -> str | None:
+        if value is not None and value not in EVENT_TYPES:
+            raise ValueError(f"Unknown event_type '{value}'")
+        return value
+
+    @field_validator("published_at")
+    @classmethod
+    def _aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("must include a UTC offset, e.g. +06:00")
+        return value
+
+    @model_validator(mode="after")
+    def _relation_with_event(self) -> "LinkCreate":
+        if (self.event_id is None) != (self.relation is None):
+            raise ValueError("Give both event_id and relation, or neither")
+        return self
+
+
+class LinkAdded(BaseModel):
+    signal: SignalRead
+    created: bool = Field(description="False when the same post was already in CARCUX")
+    evidence_id: uuid.UUID | None = None
+    already_linked: bool = False

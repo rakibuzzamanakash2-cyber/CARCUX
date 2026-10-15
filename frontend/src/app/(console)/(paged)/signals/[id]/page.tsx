@@ -42,6 +42,12 @@ function HowFound({ signal }: { signal: Signal }) {
   if (Array.isArray(x.reliefweb_disaster_types) && x.reliefweb_disaster_types.length)
     lines.push(`ReliefWeb disaster type: ${x.reliefweb_disaster_types.join(", ")}.`);
   if (x.method === "entered by hand") lines.push("Entered by hand from the publisher's bulletin.");
+  if (x.method === "link pasted by an analyst")
+    lines.push(
+      `Link pasted by an analyst, with what it says (CARCUX did not open it)${
+        x.post_id ? `; ${x.video ? "video" : "post"} ${String(x.post_id)}` : ""
+      }.`,
+    );
   if (lines.length === 0) return <span className="text-muted">Not recorded</span>;
   return (
     <ul className="flex flex-col gap-1">
@@ -57,10 +63,10 @@ export default async function SignalDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ entered?: string }>;
+  searchParams: Promise<{ entered?: string; known?: string }>;
 }) {
   const user = await verifySession();
-  const [{ id }, { entered }] = await Promise.all([params, searchParams]);
+  const [{ id }, { entered, known }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
 
   let signal: Signal;
@@ -111,7 +117,12 @@ export default async function SignalDetailPage({
       <PageBody>
         {entered && (
           <p role="status" className="rounded-md border border-ok/40 bg-brand-soft px-3 py-2">
-            Bulletin saved. Link it to an event below, or create one from it.
+            Saved. Link it to an event below, or create one from it.
+          </p>
+        )}
+        {known && (
+          <p role="status" className="rounded-md border border-line bg-medium-soft px-3 py-2">
+            This post was already in CARCUX, so nothing new was added. Here it is.
           </p>
         )}
         <div className="grid gap-6 lg:grid-cols-[1fr_24rem] lg:items-start">
