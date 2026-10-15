@@ -229,6 +229,18 @@ def train_assessment() -> int:
         engine.dispose()
 
 
+def evaluate_stance() -> int:
+    from app.services import stance
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            print(stance.table(stance.evaluate(db)))
+            return 0
+    finally:
+        engine.dispose()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -249,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
     sub.add_parser("train-suggestions", help="train the event suggestion model from links")
     sub.add_parser("train-assessment", help="train the assessment model on resolved events")
+    sub.add_parser("evaluate-stance", help="compare stance suggestions with analysts' labels")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
@@ -263,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
         return train_suggestions()
     if args.command == "train-assessment":
         return train_assessment()
+    if args.command == "evaluate-stance":
+        return evaluate_stance()
     return 2
 
 

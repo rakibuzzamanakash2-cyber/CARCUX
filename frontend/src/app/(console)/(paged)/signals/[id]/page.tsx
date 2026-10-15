@@ -289,6 +289,7 @@ export default async function SignalDetailPage({
                             signalId={signal.id}
                             label="Link to this event as"
                             suggestion={suggestionUsed(c, i)}
+                            stance={c.stance}
                           />
                         </li>
                       ))}

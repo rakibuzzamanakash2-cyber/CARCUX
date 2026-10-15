@@ -28,12 +28,17 @@ from app.schemas.event import (
     EvidenceRead,
     EvidenceUpdate,
     HistoryEntry,
+    StanceQuery,
+    StanceRead,
+    stance_read,
 )
 from app.schemas.field_report import FieldReportRead, ReporterRead
 from app.schemas.signal import SignalRead
 from app.services import assess
 from app.services import copies as copy_detection
 from app.services import events as service
+from app.services import stance as stance_service
+from app.services.details import headline_and_text
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -206,6 +211,10 @@ def list_evidence(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
     out = []
     for link in event.evidence:
         item = EvidenceRead.model_validate(link)
+        item.stance = stance_read(
+            stance_service.suggest(db, event, _item_text(link), item_type=_item_type(link),
+                                   exclude=link.id)
+        )  # fmt: skip
         c = found.get(link.id)
         if c is not None:
             item.copy_of = CopyRead(
@@ -219,6 +228,23 @@ def list_evidence(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             )
         out.append(item)
     return out
+
+
+def _item_text(link) -> str:
+    if link.field_report is not None:
+        return link.field_report.text
+    return headline_and_text(link.signal.title, link.signal.text)
+
+
+def _item_type(link) -> str | None:
+    return (link.field_report or link.signal).event_type
+
+
+@router.post("/{event_id}/stance", response_model=StanceRead)
+def read_stance(event_id: uuid.UUID, body: StanceQuery, db: DbSession, _user: Reviewer):
+    """How a text not yet in CARCUX (a link being added) reads toward the event."""
+    event = _event_or_404(db, event_id)
+    return stance_read(stance_service.suggest(db, event, body.text, item_type=body.event_type))
 
 
 @router.put("/{event_id}/evidence/{evidence_id}/copy", status_code=204)
@@ -339,6 +365,9 @@ def candidate_reports(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             distance_km=m.distance_km,
             hours_apart=m.hours_apart,
             same_type=report.event_type == event.event_type,
+            stance=stance_read(
+                stance_service.suggest(db, event, report.text, item_type=report.event_type)
+            ),
         )
         for report, m in service.candidate_reports(db, event)
     ]
@@ -354,6 +383,14 @@ def candidate_signals(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             distance_km=m.distance_km,
             hours_apart=m.hours_apart,
             same_type=signal.event_type == event.event_type,
+            stance=stance_read(
+                stance_service.suggest(
+                    db,
+                    event,
+                    headline_and_text(signal.title, signal.text),
+                    item_type=signal.event_type,
+                )
+            ),
         )
         for signal, m in service.candidate_signals(db, event)
     ]

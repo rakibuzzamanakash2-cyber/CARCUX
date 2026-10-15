@@ -338,6 +338,7 @@ export default async function FieldReportPage({
                         reportId={report.id}
                         label="Link to this event as"
                         suggestion={suggestionUsed(c, i)}
+                        stance={c.stance}
                       />
                     </li>
                   ))}

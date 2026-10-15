@@ -17,6 +17,7 @@ import {
   type IngestRun,
   type Signal,
   type SignalStatus,
+  type StanceSuggestion,
   type SuggestionUsed,
 } from "@/lib/types";
 
@@ -151,6 +152,24 @@ export async function previewLink(
     return { ok: true, preview };
   } catch (error) {
     return { ok: false, message: error instanceof ApiError ? error.detail : "Could not read it." };
+  }
+}
+
+/** How CARCUX reads pasted text against an event, before it is linked. */
+export async function readStance(
+  eventId: string,
+  text: string,
+  eventType: string,
+): Promise<StanceSuggestion | null> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(eventId) || text.trim().length < 3) return null;
+  try {
+    return await api<StanceSuggestion>(`/events/${eventId}/stance`, {
+      method: "POST",
+      body: JSON.stringify({ text: text.slice(0, 4000), event_type: eventType || null }),
+    });
+  } catch {
+    return null;
   }
 }
 

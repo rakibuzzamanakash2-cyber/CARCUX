@@ -34,6 +34,8 @@ from app.models.signal import Signal, SignalStatus
 from app.models.user import User
 from app.schemas.event import NO_CLAIM
 from app.services import assess, audit
+from app.services import stance as stance_service
+from app.services.details import headline_and_text
 from app.services.integrity import haversine_km
 
 MATCH_RADIUS_KM = 5.0
@@ -261,6 +263,13 @@ def _attach(
     labels: dict[str, Any] | None = None,
     suggestion: dict[str, Any] | None = None,
 ) -> EventEvidence:
+    # The stance CARCUX would suggest, before the item joins the event's evidence.
+    read_as = stance_service.suggest(
+        db,
+        event,
+        report.text if report else headline_and_text(signal.title, signal.text),
+        item_type=(report or signal).event_type,
+    )
     item = EventEvidence(
         id=uuid.uuid4(),
         event_id=event.id,
@@ -306,6 +315,7 @@ def _attach(
             "relation": relation.value,
             **({"conflicts": list(item.conflicts)} if item.conflicts else {}),
             **({"suggestion": suggestion} if suggestion else {}),
+            "stance_suggested": stance_service.for_audit(read_as, relation.value),
         },
     )
     return item
@@ -383,6 +393,17 @@ def update_evidence(
         raise InvalidLabelsError("Say what it gets wrong: partly supports needs a conflict")
     if relation in NO_CLAIM and conflicts:
         raise InvalidLabelsError("Related-only and unrelated items have no conflicts")
+    read_as = None
+    if "relation" in changes and changes["relation"] != item.relation:
+        source = item.field_report or item.signal
+        text = (
+            item.field_report.text
+            if item.field_report
+            else headline_and_text(item.signal.title, item.signal.text)
+        )
+        read_as = stance_service.suggest(
+            db, item.event, text, item_type=source.event_type, exclude=item.id
+        )
     diff = {}
     for field, new in changes.items():
         if field == "conflicts":
@@ -399,7 +420,16 @@ def update_evidence(
             target_type="event",
             target_id=item.event_id,
             ip_address=ip_address,
-            details={"evidence_id": str(item.id), **evidence_ref(item), "changes": diff},
+            details={
+                "evidence_id": str(item.id),
+                **evidence_ref(item),
+                "changes": diff,
+                **(
+                    {"stance_suggested": stance_service.for_audit(read_as, item.relation.value)}
+                    if read_as
+                    else {}
+                ),
+            },
         )
         # Changing the working label is also the actor's own judgement of the item.
         mine = next((j for j in item.judgements if j.annotator_id == actor.id), None)

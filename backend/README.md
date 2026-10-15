@@ -200,6 +200,21 @@ Which linked items repeat an earlier item from another source, so a viral repost
 - **Dataset export:** copies become `dependences` with the right type and evidence; analyst-confirmed ones as that analyst's annotation (confidence 3, `annotator_judgement`), unreviewed detections as automatic (ANN-000, confidence 2); rejected ones are left out.
 - Migration 0011 adds `copy_decisions` (one per linked item).
 
+## Stance suggestions
+
+How a report or signal bears on an event, suggested to the analyst who links it (`app/services/stance.py`). Transparent rules, each with its reason, strongest first:
+
+1. **Contradicts** (strong): the text denies the event or calls it false or a rumour ("eta gujob", "খবরটি গুজব"), as the extraction module reads denials.
+2. **Not this event** (medium): the item is about a kind of event in another family (its own type, or the type its words point to).
+3. **Partly supports** (medium): it states a detail (deaths, people affected, depth, cause) that disagrees with the estimate from the event's other credible sources, with that detail as the conflict ("says 20 dead; other sources say 3 dead"). Copies are left out of the estimate.
+4. **Related only** (weak): it asks or comments ("ki hoise?", "dua koren", "anyone know") and states nothing checkable.
+5. **Supports** (weak) otherwise. The weakest suggestion: the analyst must read the item.
+
+- **Where it shows:** candidate reports, signals and events (`stance` on each), each linked item on `GET /api/v1/events/{id}/evidence` (read without itself), and `POST /api/v1/events/{id}/stance` with `{"text": …, "event_type": …}` for text not yet in CARCUX (the add-link form).
+- **A suggestion only.** The app marks the suggested option but never chooses it. When an analyst links an item or changes its relation, the suggestion at that moment and whether it was followed go into the audit log (`stance_suggested` on `event.evidence_linked` / `event.evidence_updated`).
+- **Never in the blind queue:** `GET /api/v1/annotation/queue` carries no suggestion, so second opinions stay independent and agreement is not inflated.
+- **How good is it:** `python -m app.cli evaluate-stance` compares the suggestions with blind second opinions (the fair test: made without seeing any suggestion) and with working labels (which may have seen it): accuracy, macro-F1 and F1 per relation, and how often analysts followed a suggestion. This is the rule baseline for stance in the CARCUX-BD dataset paper.
+
 ## Links pasted by analysts (Facebook, YouTube, news …)
 
 Social media and any web page, without scraping (`app/services/links.py`, `services/signals.py`).

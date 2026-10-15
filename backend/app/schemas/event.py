@@ -280,6 +280,24 @@ class EvidenceUpdate(_EvidenceLabels):
         return self
 
 
+class StanceRead(BaseModel):
+    """How CARCUX reads an item's stance toward an event: a suggestion with its reasons
+    (services/stance.py). The analyst labels the link."""
+
+    relation: EvidenceRelation
+    strength: Literal["strong", "medium", "weak"]
+    reasons: list[str]
+    conflicts: list[ClaimAttribute] = Field(
+        default_factory=list, description="For partly supports: the details it gets wrong"
+    )
+
+
+def stance_read(s) -> "StanceRead":
+    return StanceRead(
+        relation=s.relation, strength=s.strength, reasons=s.reasons, conflicts=s.conflicts
+    )
+
+
 class CopyRead(BaseModel):
     """This item repeats an earlier item from another source, so it is counted through
     that item, not as a voice of its own."""
@@ -323,6 +341,7 @@ class EvidenceRead(BaseModel):
     copy_of: CopyRead | None = Field(
         None, description="Set when this item repeats another source's (see CopyRead)"
     )
+    stance: StanceRead | None = Field(None, description="CARCUX's reading (event page only)")
 
 
 class CandidateReport(BaseModel):
@@ -332,6 +351,7 @@ class CandidateReport(BaseModel):
     distance_km: float
     hours_apart: float
     same_type: bool
+    stance: StanceRead | None = None
 
 
 class CandidateSignal(BaseModel):
@@ -341,6 +361,7 @@ class CandidateSignal(BaseModel):
     distance_km: float
     hours_apart: float
     same_type: bool
+    stance: StanceRead | None = None
 
 
 class CandidateEvent(BaseModel):
@@ -364,6 +385,7 @@ class CandidateEvent(BaseModel):
         None, description="Hours after (positive) or before the event's newest evidence"
     )
     model_id: uuid.UUID | None = None
+    stance: StanceRead | None = Field(None, description="How this item reads toward the event")
 
 
 class ReportLink(BaseModel):
@@ -409,3 +431,10 @@ class SuggestionStatus(BaseModel):
     from_suggestions: dict[str, int] = Field(
         description="Links made from a suggestion list: total, first, top three"
     )
+
+
+class StanceQuery(BaseModel):
+    """Text not yet in CARCUX (e.g. a link being added), to read toward an event."""
+
+    text: str = Field(min_length=3, max_length=4000)
+    event_type: str | None = None

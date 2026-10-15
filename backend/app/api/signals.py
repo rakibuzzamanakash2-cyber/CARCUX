@@ -42,6 +42,7 @@ from app.services import events as event_service
 from app.services import links, signal_import
 from app.services import signals as service
 from app.services import suggest as suggest_service
+from app.services.details import headline_and_text
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 places_router = APIRouter(prefix="/places", tags=["signals"])
@@ -266,7 +267,10 @@ def candidate_events(signal_id: uuid.UUID, db: DbSession, _user: Reviewer):
     """Events this signal may be about, ranked: suggestions only. By area and time
     overlap until a suggestion model is trained, then by the model (see /suggestions)."""
     signal = _signal_or_404(db, signal_id)
-    return [as_candidate(s) for s in suggest_service.for_signal(db, signal)]
+    text = headline_and_text(signal.title, signal.text)
+    return [
+        as_candidate(s, db, text, signal.event_type) for s in suggest_service.for_signal(db, signal)
+    ]
 
 
 @places_router.get("/districts", response_model=list[District])

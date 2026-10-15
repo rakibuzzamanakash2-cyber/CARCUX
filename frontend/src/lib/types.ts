@@ -197,6 +197,17 @@ export interface Evidence {
   signal: Signal | null;
   /** Set when this item repeats another source's: counted through that one. */
   copy_of: CopyInfo | null;
+  /** How CARCUX reads the item against the event (read without the item itself). */
+  stance?: StanceSuggestion | null;
+}
+
+/** CARCUX's suggested relation of an item to an event, with its reasons. A suggestion
+ * only: the analyst decides. Never shown in the blind second-opinion queue. */
+export interface StanceSuggestion {
+  relation: EvidenceRelation;
+  strength: "strong" | "medium" | "weak";
+  reasons: string[];
+  conflicts: ClaimAttribute[];
 }
 
 export interface CopyInfo {
@@ -214,6 +225,7 @@ export interface CandidateReport {
   distance_km: number;
   hours_apart: number;
   same_type: boolean;
+  stance?: StanceSuggestion | null;
 }
 
 /** A suggested event. `method` says how the list was ranked: the 5 km / 48 h rule, or
@@ -229,6 +241,7 @@ export interface CandidateEvent {
   text_similarity: number | null;
   hours_from_latest: number | null;
   model_id: string | null;
+  stance?: StanceSuggestion | null;
 }
 
 /** Which suggestion an analyst linked from, recorded in the audit log. */
@@ -488,6 +501,7 @@ export interface CandidateSignal {
   distance_km: number;
   hours_apart: number;
   same_type: boolean;
+  stance?: StanceSuggestion | null;
 }
 
 export interface District {
