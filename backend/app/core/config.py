@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 30
 
+    # Salt for dataset account_ref (a hash of a social account, never its handle). Set it
+    # once and keep it, so the same account gets the same reference in every export;
+    # unset, it is derived from the JWT secret.
+    dataset_salt: SecretStr | None = None
+
     # Field report media (photos). Stored on disk, outside the database.
     media_dir: Path = Path("media")
     max_photos_per_report: int = 4

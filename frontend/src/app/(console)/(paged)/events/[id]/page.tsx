@@ -1,4 +1,4 @@
-import { History as HistoryIcon, LayoutGrid, Paperclip } from "lucide-react";
+import { History as HistoryIcon, LayoutGrid, Link2, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -378,6 +378,15 @@ export default async function EventPage({
               id="evidence"
               title="Linked evidence"
               description="Field reports and public signals placed against this event, and how each bears on it."
+              actions={
+                <Link
+                  href={`/signals/add-link?event=${event.id}`}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line px-3 text-sm font-semibold text-brand hover:border-brand"
+                >
+                  <Link2 size={15} aria-hidden="true" />
+                  Add a link
+                </Link>
+              }
             >
               {evidence.length === 0 ? (
                 <p className="text-sm text-muted">Nothing linked yet.</p>

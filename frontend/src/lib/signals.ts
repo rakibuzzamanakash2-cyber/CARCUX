@@ -50,6 +50,8 @@ export const SEVERITY_COLOR: Record<Severity | "unknown", string> = {
 export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
   news: "News",
   public_record: "Official alert",
+  social: "Social media",
+  video_platform: "Video",
   other: "Other",
 };
 

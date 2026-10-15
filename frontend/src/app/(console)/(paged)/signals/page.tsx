@@ -3,6 +3,7 @@ import {
   FileUp,
   Inbox,
   Landmark,
+  Link2,
   Newspaper,
   PenLine,
   RadioTower,
@@ -95,6 +96,10 @@ export default async function SignalsPage({ searchParams }: { searchParams: Prom
               <Link href="/signals/import" className={buttonOnBand}>
                 <FileUp size={17} strokeWidth={2.25} aria-hidden="true" />
                 Import a list
+              </Link>
+              <Link href="/signals/add-link" className={buttonOnBand}>
+                <Link2 size={17} strokeWidth={2.25} aria-hidden="true" />
+                Add a link
               </Link>
               <Link href="/signals/new" className={buttonOnBand}>
                 <PenLine size={17} strokeWidth={2.25} aria-hidden="true" />

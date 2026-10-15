@@ -5,26 +5,41 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.api.suggestions import as_candidate
 from app.core.event_types import EVENT_TYPE_FAMILY, EVENT_TYPES
 from app.ingest import places
-from app.models.signal import Signal, SignalStatus, Source
+from app.models.event import Event, EvidenceRelation
+from app.models.signal import Signal, SignalStatus, Source, SourceType
 from app.models.user import Role, User
 from app.schemas.event import CandidateEvent, EventRead, ReportLink
 from app.schemas.signal import (
     District,
     ImportResultRead,
     ImportRow,
+    LinkAdded,
+    LinkCreate,
+    LinkPreview,
     SignalCreate,
     SignalPage,
     SignalRead,
     SignalReview,
 )
 from app.services import events as event_service
-from app.services import signal_import
+from app.services import links, signal_import
 from app.services import signals as service
 from app.services import suggest as suggest_service
 
@@ -110,6 +125,81 @@ def enter_bulletin(body: SignalCreate, request: Request, db: DbSession, user: Re
         raise _unprocessable(f"{source.name} is read automatically; pick a manual source") from None
     except service.UnknownDistrictError:
         raise _unprocessable(f"Unknown district '{body.district}'") from None
+
+
+@router.get("/links/preview", response_model=LinkPreview)
+def preview_link(db: DbSession, _user: Reviewer, url: Annotated[str, Query(max_length=1000)]):
+    """What a pasted link says about itself, and whether it is already in CARCUX. The
+    link is not opened."""
+    try:
+        link = links.parse(url)
+    except links.BadLinkError as exc:
+        raise _unprocessable(str(exc)) from None
+    existing = service.find_link(db, link)
+    known = None
+    if link.platform is links.WEB:
+        src = db.scalar(
+            select(Source).where(Source.domain.in_([link.domain, f"www.{link.domain}"])).limit(1)
+        )
+        known = src.name if src else None
+    elif link.account:
+        src = db.scalar(
+            select(Source).where(
+                Source.key == f"{link.platform.key}-{service._slug(link.account)}"[:40]
+            )
+        )
+        known = src.name if src else None
+    return LinkPreview(
+        platform=link.platform.key,
+        platform_label=link.platform.label,
+        kind=SourceType(link.platform.kind),
+        url=link.url,
+        post_id=link.post_id,
+        account=link.account,
+        video=link.video,
+        existing_signal_id=existing.id if existing else None,
+        known_source=known,
+    )
+
+
+@router.post("/links", response_model=LinkAdded)
+def add_link(body: LinkCreate, request: Request, response: Response, db: DbSession, user: Reviewer):
+    """Add a post or article an analyst pasted (Facebook, YouTube, X, TikTok, Instagram,
+    Telegram, any news site), with what it says. One source per account, so each page
+    builds its own track record. The same post twice is one signal. 201 when new."""
+    event = None
+    if body.event_id is not None:
+        event = db.get(Event, body.event_id)
+        if event is None:
+            raise _unprocessable("Event not found")
+    try:
+        signal, created = service.add_link(
+            db, actor=user, data=body.model_dump(), ip_address=client_ip(request)
+        )
+    except (links.BadLinkError, service.LinkError) as exc:
+        raise _unprocessable(str(exc)) from None
+    except service.UnknownDistrictError:
+        raise _unprocessable(f"Unknown district '{body.district}'") from None
+    evidence_id, already = None, False
+    if event is not None:
+        try:
+            item = event_service.link_signal(
+                db, actor=user, event=event, signal_id=signal.id,
+                relation=EvidenceRelation(body.relation), note=None,
+                ip_address=client_ip(request),
+            )  # fmt: skip
+            evidence_id = item.id
+        except event_service.AlreadyLinkedError:
+            already = True
+    if created:
+        response.status_code = status.HTTP_201_CREATED
+    db.refresh(signal)
+    return LinkAdded(
+        signal=SignalRead.model_validate(signal),
+        created=created,
+        evidence_id=evidence_id,
+        already_linked=already,
+    )
 
 
 @router.post("/import", response_model=ImportResultRead)

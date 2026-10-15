@@ -392,7 +392,20 @@ export interface AuditPage {
 }
 
 /** Mirrors the backend's signal and source schemas. */
-export type SourceType = "news" | "public_record" | "other";
+export type SourceType = "news" | "public_record" | "social" | "video_platform" | "other";
+
+/** What a pasted link says about itself (CARCUX never opens it). */
+export interface LinkPreview {
+  platform: string;
+  platform_label: string;
+  kind: SourceType;
+  url: string;
+  post_id: string | null;
+  account: string | null;
+  video: boolean;
+  existing_signal_id: string | null;
+  known_source: string | null;
+}
 export type SourceAdapter = "gdacs" | "rss" | "reliefweb" | "manual";
 export type SignalStatus = "new" | "reviewed" | "dismissed";
 export type Severity = "minor" | "moderate" | "severe";

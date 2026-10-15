@@ -14,6 +14,8 @@ const KIND: Record<string, string> = {
   field: "field worker",
   news: "news",
   public_record: "public record",
+  social: "social media",
+  video_platform: "video channel",
   other: "other source",
 };
 
