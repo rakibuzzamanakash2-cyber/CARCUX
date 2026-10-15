@@ -37,6 +37,7 @@ class AuditAction:
     SOURCE_BACKFILLED = "source.backfilled"
     SUGGESTIONS_TRAINED = "suggestions.trained"
     ASSESSMENT_TRAINED = "assessment.trained"
+    COPY_DECIDED = "event.copy_decided"
 
 
 def record(

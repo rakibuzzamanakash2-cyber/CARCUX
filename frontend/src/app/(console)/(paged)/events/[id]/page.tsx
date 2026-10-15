@@ -2,6 +2,7 @@ import { History as HistoryIcon, LayoutGrid, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CopyNote } from "@/components/copy-note";
 import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
 import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
@@ -141,6 +142,14 @@ function describe(entry: HistoryEntry): React.ReactNode {
         </>
       );
     }
+    case "event.copy_decided":
+      return d.cleared ? (
+        <>left it to the automatic check whether {reportLink} is a copy</>
+      ) : d.copy_of ? (
+        <>marked {reportLink} as a copy of another linked item</>
+      ) : (
+        <>marked {reportLink} as not a copy</>
+      );
     case "event.evidence_unlinked":
       return (
         <>
@@ -168,6 +177,15 @@ const AGREEMENT: Record<Evidence["agreement"], (n: number) => React.ReactNode> =
   ),
   resolved: () => " · final label decided",
 };
+
+/** A short label for a linked item, for choosing a copy's origin. */
+function itemLabel(item: Evidence): string {
+  const who = item.field_report
+    ? item.field_report.reporter.full_name
+    : (item.signal?.source.name ?? "Item");
+  const what = item.field_report ? item.field_report.text : (item.signal?.title ?? "");
+  return `${who}: ${what.length > 60 ? `${what.slice(0, 57)}…` : what}`;
+}
 
 function AgreementNote({ agreement, count }: { agreement: Evidence["agreement"]; count: number }) {
   return <>{AGREEMENT[agreement](count)}</>;
@@ -379,6 +397,14 @@ export default async function EventPage({
                           <div className="mb-2">
                             <SignalSummary signal={item.signal} />
                           </div>
+                          <CopyNote
+                            eventId={event.id}
+                            evidenceId={item.id}
+                            copy={item.copy_of}
+                            others={evidence
+                              .filter((o) => o.id !== item.id)
+                              .map((o) => ({ id: o.id, label: itemLabel(o) }))}
+                          />
                           <EvidenceControls
                             eventId={event.id}
                             evidenceId={item.id}
@@ -436,6 +462,14 @@ export default async function EventPage({
                             ))}
                           </p>
                         )}
+                        <CopyNote
+                          eventId={event.id}
+                          evidenceId={item.id}
+                          copy={item.copy_of}
+                          others={evidence
+                            .filter((o) => o.id !== item.id)
+                            .map((o) => ({ id: o.id, label: itemLabel(o) }))}
+                        />
                         <EvidenceControls
                           eventId={event.id}
                           evidenceId={item.id}

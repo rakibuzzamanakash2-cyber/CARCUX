@@ -65,6 +65,9 @@ class AssessmentSuggestionRead(BaseModel):
     )
     reasons: list[AssessmentReason]
     details: list[DetailSummaryRead]
+    counted_once: int = Field(
+        0, description="Linked items that copy another source's and are not counted again"
+    )
 
 
 class AssessmentModelRead(BaseModel):

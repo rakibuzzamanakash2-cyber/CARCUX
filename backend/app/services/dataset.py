@@ -10,7 +10,8 @@ What goes where:
   (or every one, with include_unlinked).
 - relations.jsonl: each link, with the analyst's relation, conflicts, stale flag and
   confidence.
-- dependences.jsonl: reused photos flagged at submission (same_media).
+- dependences.jsonl: reused photos flagged at submission (same_media), and copies among
+  each event's evidence (services/copies.py), confirmed by analysts or detected.
 - sources.jsonl: one source per publisher, and one per field worker (named only
   "Field worker").
 
@@ -45,6 +46,7 @@ from app.models.field_report import FieldReport
 from app.models.signal import EXCERPT_MAX, Signal, Source
 from app.models.user import User
 from app.services import annotation
+from app.services import copies as copy_detection
 from app.services import details as stated
 
 SCHEMA_VERSION = "1.2"
@@ -108,6 +110,10 @@ def _location(lat, lon, precision_m, district=None, locality=None) -> dict:
         "precision_m": max(float(precision_m or EVENT_PRECISION_M), 1.0),
         "admin": _admin(lat, lon, district, locality),
     }
+
+
+def _obs_key(link: EventEvidence) -> str:
+    return f"r:{link.field_report_id}" if link.field_report_id else f"s:{link.signal_id}"
 
 
 def _redact(text: str) -> str:
@@ -306,6 +312,49 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
                 }
             )
             break  # only the item it was directly copied from
+
+    # --- Dependences: copies among each event's evidence (services/copies.py) ---------
+    already = {(d["obs_id"], d["origin_obs_id"]) for d in dependences}
+    for ev in events:
+        links = {link.id: link for link in ev.evidence}
+        for c in copy_detection.resolved(db, ev).values():
+            if c.status == "rejected":
+                continue
+            key, origin_key = _obs_key(links[c.evidence_id]), _obs_key(links[c.origin_evidence_id])
+            if key not in published or origin_key not in published:
+                continue
+            if published[origin_key] > published[key]:
+                continue  # the dataset needs the origin first
+            pair = (obs_ids(key), obs_ids(origin_key))
+            if pair in already:
+                continue
+            already.add(pair)
+            how = {
+                "same_media": ["media_hash"],
+                "cites": ["attribution", "text_overlap"],
+                "repost": ["annotator_judgement"],
+            }.get(c.kind, ["text_overlap"])
+            confirmed = c.status == "confirmed"
+            if confirmed and "annotator_judgement" not in how:
+                how = [*how, "annotator_judgement"]
+            dependences.append(
+                {
+                    "obs_id": pair[0],
+                    "origin_obs_id": pair[1],
+                    "type": c.kind,
+                    "evidence": [*how, "timestamp_order"],
+                    "annotations": [
+                        ann(
+                            c.decided_by_id if confirmed else None,
+                            c.decided_at if confirmed and c.decided_at else published[key],
+                            3 if confirmed else 2,
+                            note="Confirmed by an analyst"
+                            if confirmed
+                            else "Detected automatically: " + "; ".join(c.reasons),
+                        )
+                    ],
+                }
+            )
 
     # --- Events with reconstructed assessments ----------------------------------------
     history = _assessment_history(db)

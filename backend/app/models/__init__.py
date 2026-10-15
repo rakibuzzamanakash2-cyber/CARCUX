@@ -2,6 +2,7 @@
 
 from app.models.assessment import AssessmentModel
 from app.models.audit import AuditLog
+from app.models.copy import CopyDecision
 from app.models.event import (
     Assessment,
     Event,
@@ -29,6 +30,7 @@ __all__ = [
     "Assessment",
     "AssessmentModel",
     "AuditLog",
+    "CopyDecision",
     "Event",
     "EventEvidence",
     "EventStatus",

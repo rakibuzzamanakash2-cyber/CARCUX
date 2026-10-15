@@ -240,4 +240,4 @@ Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), 
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
 - **B6, next steps:** more seeds; a larger model (e.g. on Colab); few-shot examples or source track records in the prompt (an LLM-plus-reliability hybrid); real data on a local model.
 - Real CARCUX-BD runs once stances and dependences are annotated.
-- In the product: done as assessment suggestions (`backend/app/services/assess.py`, see the backend README); next, copy detection between sources there too.
+- In the product: done as assessment suggestions (`backend/app/services/assess.py`) with copy detection (`backend/app/services/copies.py`; stricter thresholds than here, and copies dropped rather than a second channel until real data can learn its weight); see the backend README.

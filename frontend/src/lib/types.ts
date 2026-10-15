@@ -195,6 +195,18 @@ export interface Evidence {
   /** Exactly one of these is set. */
   field_report: FieldReport | null;
   signal: Signal | null;
+  /** Set when this item repeats another source's: counted through that one. */
+  copy_of: CopyInfo | null;
+}
+
+export interface CopyInfo {
+  origin_evidence_id: string;
+  origin_source: string;
+  kind: "same_media" | "verbatim_copy" | "cites" | "rewrite" | "repost";
+  text_similarity: number | null;
+  reasons: string[];
+  status: "detected" | "confirmed" | "rejected";
+  decided_by: string | null;
 }
 
 export interface CandidateReport {
@@ -282,6 +294,7 @@ export interface AssessmentSuggestion {
   disputed_detected: ClaimAttribute[];
   reasons: AssessmentReason[];
   details: DetailSummary[];
+  counted_once: number;
 }
 
 /** What an event's supporting sources state about one detail. */

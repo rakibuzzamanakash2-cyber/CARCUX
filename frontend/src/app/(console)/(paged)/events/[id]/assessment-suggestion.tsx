@@ -68,6 +68,14 @@ export function AssessmentSuggestionPanel({
           .
         </p>
       )}
+      {s.counted_once > 0 && (
+        <p className="text-muted">
+          {s.counted_once === 1
+            ? "1 item repeats another source and is counted once, through it."
+            : `${s.counted_once} items repeat other sources and are counted once, through them.`}{" "}
+          See Evidence.
+        </p>
+      )}
       {s.disputed.length > 0 && (
         <p>
           <span className="text-muted">Details in dispute:</span>{" "}

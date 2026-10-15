@@ -114,10 +114,13 @@ def _vote(link: EventEvidence) -> Vote | None:
     return Vote(key, kind, name, VOTE[relation], relation, tuple(conflicts or ()), at, comparable)
 
 
-def votes(event: Event) -> list[Vote]:
-    """One vote per source: its latest item about the event."""
+def votes(event: Event, copies: frozenset | set = frozenset()) -> list[Vote]:
+    """One vote per source: its latest item about the event. Items in `copies` repeat
+    an earlier item from another source and are counted through it, not again."""
     latest: dict[str, Vote] = {}
     for link in event.evidence:
+        if link.id in copies:
+            continue
         v = _vote(link)
         if v is not None and (v.source_key not in latest or v.at >= latest[v.source_key].at):
             latest[v.source_key] = v
@@ -291,6 +294,7 @@ class AssessmentSuggestion:
     reasons: list[Reason]
     disputed_detected: list[str] = field(default_factory=list)
     details: list[DetailSummary] = field(default_factory=list)
+    counted_once: int = 0  # items that repeat another source's, not counted again
 
 
 def _weight(rate: float) -> float:
@@ -391,8 +395,11 @@ def current_weights(db: Session) -> tuple[Weights, AssessmentModel | None]:
 
 
 def suggest(db: Session, event: Event) -> AssessmentSuggestion:
+    from app.services import copies as copy_detection
+
     weights, model = current_weights(db)
-    vs = votes(event)
+    found = copy_detection.resolved(db, event)
+    vs = votes(event, copy_detection.counted_once(found))
     p = weights.probability(vs) if vs else None
     summaries, detected = summarise_details(vs, weights)
     label, disputed = label_for(p, vs, weights, detected)
@@ -424,6 +431,7 @@ def suggest(db: Session, event: Event) -> AssessmentSuggestion:
         ],
         disputed_detected=detected,
         details=summaries,
+        counted_once=len(copy_detection.counted_once(found)),
     )
 
 
@@ -441,12 +449,19 @@ def for_audit(s: AssessmentSuggestion, chosen: str) -> dict:
 # --- Training ----------------------------------------------------------------------------
 
 
+def copied(db: Session, event: Event) -> set:
+    """The event's items that are copies (detected or confirmed, not rejected)."""
+    from app.services import copies as copy_detection
+
+    return copy_detection.counted_once(copy_detection.resolved(db, event))
+
+
 def resolved_events(db: Session) -> list[tuple[Event, list[Vote]]]:
     """Events whose outcome is recorded and that have at least one vote."""
     events = db.scalars(select(Event).where(Event.occurred.is_not(None))).all()
     out = []
     for e in events:
-        vs = votes(e)
+        vs = votes(e, copied(db, e))
         if vs:
             out.append((e, vs))
     out.sort(key=lambda x: str(x[0].id))
