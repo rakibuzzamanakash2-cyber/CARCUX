@@ -280,6 +280,28 @@ class EvidenceUpdate(_EvidenceLabels):
         return self
 
 
+class CopyRead(BaseModel):
+    """This item repeats an earlier item from another source, so it is counted through
+    that item, not as a voice of its own."""
+
+    origin_evidence_id: uuid.UUID
+    origin_source: str
+    kind: str = Field(description="same_media, verbatim_copy, cites, rewrite or repost")
+    text_similarity: float | None
+    reasons: list[str]
+    status: Literal["detected", "confirmed", "rejected"] = Field(
+        description="detected automatically; confirmed or rejected by an analyst"
+    )
+    decided_by: str | None = None
+
+
+class CopyDecisionIn(BaseModel):
+    """An analyst's decision on a linked item: a copy of another item linked to the same
+    event, or (null) not a copy."""
+
+    origin_evidence_id: uuid.UUID | None
+
+
 class EvidenceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -298,6 +320,9 @@ class EvidenceRead(BaseModel):
     gold_relation: EvidenceRelation | None = None
     field_report: FieldReportRead | None
     signal: SignalRead | None
+    copy_of: CopyRead | None = Field(
+        None, description="Set when this item repeats another source's (see CopyRead)"
+    )
 
 
 class CandidateReport(BaseModel):

@@ -185,6 +185,21 @@ The extraction module (`ai/extraction`) reads each field report's and signal's t
 - **Dataset export:** observation `claims` carry them, with `surface`; a denial sets `occurrence` to false; `language` comes from the same module. The manifest's `claims` note says which claims are automatic and not yet checked by annotators.
 - `casualty_count` counts deaths, as the annotation guideline (0.3) now says.
 
+## Copies among an event's evidence
+
+Which linked items repeat an earlier item from another source, so a viral repost is one voice, not many (`app/services/copies.py`). This is the research's copy detector (`ai/fusion/carcux_fusion/dependence.py`) in the product, made stricter.
+
+- **Detected** per event, against earlier items from other sources:
+  - the same photo (difference hash within 6 bits);
+  - the same words: character n-gram TF-IDF cosine **≥ 0.7** for news and other signals, **≥ 0.9** for field reports (field workers at the same spot write similar short sentences and are still two eyewitnesses);
+  - attribution ("according to", "er moto", "এর মতে", "share korlam", "RT") with at least 0.3 of the text in common.
+
+  Texts under 40 characters are never copies on wording alone, and an item that takes the opposite stance (quoting a claim to deny it) is not a copy. The type follows the dataset: `verbatim_copy` (the same words in order), `rewrite`, `cites`, `same_media`, `repost` (named by an analyst). The research used 0.6 on simulated text; these stricter values stay until real annotated copies can tune them.
+- **Analysts decide:** `PUT /api/v1/events/{id}/evidence/{evidence_id}/copy` with `{"origin_evidence_id": …}` confirms a copy or names the origin; with `null` it says "not a copy"; `DELETE` goes back to the detection. Audit-logged (`event.copy_decided`). `GET …/evidence` shows each item's `copy_of` (origin, kind, reasons, detected / confirmed / rejected).
+- **Counted once:** assessment suggestions and their training leave confirmed and detected copies out (the origin carries the voice); rejected ones count. The suggestion says how many items were counted once. (The research's proposed model keeps copies as a second, learned channel; the product drops them until there is enough real data to learn that weight.)
+- **Dataset export:** copies become `dependences` with the right type and evidence; analyst-confirmed ones as that analyst's annotation (confidence 3, `annotator_judgement`), unreviewed detections as automatic (ANN-000, confidence 2); rejected ones are left out.
+- Migration 0011 adds `copy_decisions` (one per linked item).
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

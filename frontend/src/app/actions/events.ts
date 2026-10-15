@@ -210,6 +210,42 @@ export async function unlinkEvidence(
   return { ok: true, message: "Unlinked." };
 }
 
+/** Say whether a linked item copies another item of the same event: `originId` names
+ * the origin, null says it is not a copy. */
+export async function decideCopy(
+  eventId: string,
+  evidenceId: string,
+  originId: string | null,
+): Promise<ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(eventId) || !isUuid(evidenceId) || (originId !== null && !isUuid(originId))) {
+    return { ok: false, message: "Unknown evidence." };
+  }
+  try {
+    await apiFetch(`/events/${eventId}/evidence/${evidenceId}/copy`, {
+      method: "PUT",
+      body: JSON.stringify({ origin_evidence_id: originId }),
+    });
+  } catch (error) {
+    return failure(error, "Could not save the decision.");
+  }
+  refresh(eventId);
+  return { ok: true, message: "Saved." };
+}
+
+/** Forget the decision: the automatic detection applies again. */
+export async function clearCopy(eventId: string, evidenceId: string): Promise<ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(eventId) || !isUuid(evidenceId)) return { ok: false, message: "Unknown evidence." };
+  try {
+    await apiFetch(`/events/${eventId}/evidence/${evidenceId}/copy`, { method: "DELETE" });
+  } catch (error) {
+    return failure(error, "Could not undo the decision.");
+  }
+  refresh(eventId);
+  return { ok: true, message: "Saved." };
+}
+
 /** Give your own (blind) judgement of a link: the second opinion. */
 export async function judgeLink(
   evidenceId: string,

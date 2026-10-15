@@ -18,6 +18,8 @@ from app.schemas.assessment import (
 from app.schemas.event import (
     CandidateReport,
     CandidateSignal,
+    CopyDecisionIn,
+    CopyRead,
     EventCreate,
     EventPage,
     EventRead,
@@ -30,6 +32,7 @@ from app.schemas.event import (
 from app.schemas.field_report import FieldReportRead, ReporterRead
 from app.schemas.signal import SignalRead
 from app.services import assess
+from app.services import copies as copy_detection
 from app.services import events as service
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -153,6 +156,7 @@ def assessment_suggestion(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
         credible_denying=s.credible_denying,
         disputed=s.disputed,
         disputed_detected=s.disputed_detected,
+        counted_once=s.counted_once,
         details=[
             DetailSummaryRead(
                 attribute=d.attribute,
@@ -197,7 +201,65 @@ def event_history(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
 
 @router.get("/{event_id}/evidence", response_model=list[EvidenceRead])
 def list_evidence(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
-    return _event_or_404(db, event_id).evidence
+    event = _event_or_404(db, event_id)
+    found = copy_detection.resolved(db, event)
+    out = []
+    for link in event.evidence:
+        item = EvidenceRead.model_validate(link)
+        c = found.get(link.id)
+        if c is not None:
+            item.copy_of = CopyRead(
+                origin_evidence_id=c.origin_evidence_id,
+                origin_source=c.origin_source,
+                kind=c.kind,
+                text_similarity=c.text_similarity,
+                reasons=c.reasons,
+                status=c.status,
+                decided_by=c.decided_by,
+            )
+        out.append(item)
+    return out
+
+
+@router.put("/{event_id}/evidence/{evidence_id}/copy", status_code=204)
+def decide_copy(
+    event_id: uuid.UUID,
+    evidence_id: uuid.UUID,
+    body: CopyDecisionIn,
+    request: Request,
+    db: DbSession,
+    user: Reviewer,
+):
+    """Confirm that a linked item copies another item of the same event (or name which),
+    or say it is not a copy (`origin_evidence_id: null`). Overrides the detection."""
+    event = _event_or_404(db, event_id)
+    item = _evidence_or_404(db, event, evidence_id)
+    try:
+        copy_detection.decide(
+            db,
+            actor=user,
+            event=event,
+            item=item,
+            origin_evidence_id=body.origin_evidence_id,
+            ip_address=client_ip(request),
+        )
+    except copy_detection.NotInEventError:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "The origin must be another item linked to this event",
+        ) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{event_id}/evidence/{evidence_id}/copy", status_code=204)
+def clear_copy_decision(
+    event_id: uuid.UUID, evidence_id: uuid.UUID, request: Request, db: DbSession, user: Reviewer
+):
+    """Forget the analyst's decision: the automatic detection applies again."""
+    event = _event_or_404(db, event_id)
+    item = _evidence_or_404(db, event, evidence_id)
+    copy_detection.clear(db, actor=user, event=event, item=item, ip_address=client_ip(request))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
