@@ -253,7 +253,10 @@ def candidate_events(report_id: uuid.UUID, db: DbSession, _user: Reviewer):
     report = db.get(FieldReport, report_id)
     if report is None:
         raise _NOT_FOUND
-    return [as_candidate(s) for s in suggest_service.for_report(db, report)]
+    return [
+        as_candidate(s, db, report.text, report.event_type)
+        for s in suggest_service.for_report(db, report)
+    ]
 
 
 @router.post("/{report_id}/review", response_model=FieldReportRead)

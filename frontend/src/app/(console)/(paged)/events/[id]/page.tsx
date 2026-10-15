@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CopyNote } from "@/components/copy-note";
+import { StanceNote } from "@/components/stance-note";
 import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
 import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
@@ -88,6 +89,12 @@ function describe(entry: HistoryEntry): React.ReactNode {
   ) : (
     "a report"
   );
+  const read = d.stance_suggested as { relation: string; followed: boolean } | undefined;
+  const readAs = read
+    ? read.followed
+      ? " (as CARCUX read it)"
+      : ` (CARCUX read it as ${showValue("relation", read.relation)})`
+    : "";
   switch (entry.action) {
     case "event.created": {
       const n = Number(d.reports ?? 0);
@@ -118,6 +125,7 @@ function describe(entry: HistoryEntry): React.ReactNode {
       return (
         <>
           linked {reportLink} as {showValue("relation", d.relation)}
+          {readAs}
         </>
       );
     case "event.evidence_updated": {
@@ -126,6 +134,7 @@ function describe(entry: HistoryEntry): React.ReactNode {
         <>
           changed {reportLink} from {showValue("relation", rel[0])} to{" "}
           {showValue("relation", rel[1])}
+          {readAs}
         </>
       ) : (
         <>
@@ -414,6 +423,7 @@ export default async function EventPage({
                               .filter((o) => o.id !== item.id)
                               .map((o) => ({ id: o.id, label: itemLabel(o) }))}
                           />
+                          <StanceNote stance={item.stance} labelled={item.relation} />
                           <EvidenceControls
                             eventId={event.id}
                             evidenceId={item.id}
@@ -479,6 +489,7 @@ export default async function EventPage({
                             .filter((o) => o.id !== item.id)
                             .map((o) => ({ id: o.id, label: itemLabel(o) }))}
                         />
+                        <StanceNote stance={item.stance} labelled={item.relation} />
                         <EvidenceControls
                           eventId={event.id}
                           evidenceId={item.id}
@@ -544,6 +555,7 @@ export default async function EventPage({
                           eventId={event.id}
                           reportId={c.report.id}
                           label="Link this report as"
+                          stance={c.stance}
                         />
                       </li>
                     ))}
@@ -589,6 +601,7 @@ export default async function EventPage({
                           eventId={event.id}
                           signalId={c.signal.id}
                           label="Link this signal as"
+                          stance={c.stance}
                         />
                       </li>
                     ))}

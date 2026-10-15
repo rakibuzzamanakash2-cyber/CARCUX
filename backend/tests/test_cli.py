@@ -54,3 +54,14 @@ def test_cli_admin_with_internal_domain_can_log_in(monkeypatch, client):
 def test_cli_rejects_malformed_email(monkeypatch, engine, db):
     assert _run(monkeypatch, [], email="not-an-email") == 1
     assert db.scalar(select(User)) is None
+
+
+def test_evaluate_stance_on_an_empty_database(monkeypatch, engine, db, capsys):
+    monkeypatch.setenv("CARCUX_DATABASE_URL", TEST_DATABASE_URL)
+    get_settings.cache_clear()
+    try:
+        assert cli.main(["evaluate-stance"]) == 0
+    finally:
+        get_settings.cache_clear()
+    out = capsys.readouterr().out
+    assert "Against blind second opinions" in out and "none yet" in out

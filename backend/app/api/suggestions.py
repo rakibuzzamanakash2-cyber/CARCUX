@@ -6,7 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import DbSession, client_ip, require_roles
 from app.models.user import Role, User
-from app.schemas.event import CandidateEvent, EventRead, SuggestionModelRead, SuggestionStatus
+from app.schemas.event import (
+    CandidateEvent,
+    EventRead,
+    SuggestionModelRead,
+    SuggestionStatus,
+    stance_read,
+)
+from app.services import stance as stance_service
 from app.services import suggest as service
 
 router = APIRouter(prefix="/suggestions", tags=["suggestions"])
@@ -14,8 +21,16 @@ Reviewer = Annotated[User, Depends(require_roles(Role.ANALYST, Role.ADMIN))]
 Admin = Annotated[User, Depends(require_roles(Role.ADMIN))]
 
 
-def as_candidate(s: service.Suggestion) -> CandidateEvent:
+def as_candidate(
+    s: service.Suggestion, db=None, text: str | None = None, item_type: str | None = None
+) -> CandidateEvent:
+    """A suggested event; with `db` and the item's `text`, also how the item reads
+    toward it (stance suggestion)."""
+    stance = None
+    if db is not None and text:
+        stance = stance_read(stance_service.suggest(db, s.event, text, item_type=item_type))
     return CandidateEvent(
+        stance=stance,
         event=EventRead.model_validate(s.event),
         distance_km=s.distance_km,
         hours_apart=s.hours_apart,

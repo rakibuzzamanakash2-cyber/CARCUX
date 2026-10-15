@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { startTransition, useActionState, useMemo, useState } from "react";
 
-import { addLink, previewLink } from "@/app/actions/signals";
+import { addLink, previewLink, readStance } from "@/app/actions/signals";
 import { Field, FormMessage, SelectField, SubmitButton, TextAreaField } from "@/components/form";
 import { EVENT_TYPE_GROUPS } from "@/lib/event-types";
-import type { LinkPreview } from "@/lib/types";
+import { StanceNote } from "@/components/stance-note";
+import type { LinkPreview, StanceSuggestion } from "@/lib/types";
 
 const KINDS = [
   { value: "news", label: "News site" },
@@ -33,7 +34,9 @@ export function LinkForm({
   const [postedAt, setPostedAt] = useState(now);
   const [eventType, setEventType] = useState("");
   const [district, setDistrict] = useState("");
-  const [relation, setRelation] = useState("supports");
+  // No default: the analyst chooses, with CARCUX's reading marked but not chosen for them.
+  const [relation, setRelation] = useState("");
+  const [stance, setStance] = useState<StanceSuggestion | null>(null);
   const [state, action, pending] = useActionState(addLink, undefined);
 
   const byDivision = useMemo(() => {
@@ -59,6 +62,11 @@ export function LinkForm({
       setPreview(null);
       setPreviewError(result.message);
     }
+  }
+
+  async function read(text: string, type: string) {
+    if (!event) return;
+    setStance(text.trim().length >= 3 ? await readStance(event.id, text, type) : null);
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -162,6 +170,7 @@ export function LinkForm({
         placeholder="Paste the post's text. For a video, write what is said or shown."
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onBlur={(e) => read(e.target.value, eventType)}
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -169,7 +178,10 @@ export function LinkForm({
           label="What it is about (optional)"
           name="event_type"
           value={eventType}
-          onChange={(e) => setEventType(e.target.value)}
+          onChange={(e) => {
+            setEventType(e.target.value);
+            if (body) read(body, e.target.value);
+          }}
         >
           <option value="">Not sure</option>
           {EVENT_TYPE_GROUPS.map((g) => (
@@ -205,21 +217,35 @@ export function LinkForm({
         <fieldset className="rounded-lg border border-line p-3">
           <legend className="px-1 text-sm font-semibold">Link to “{event.title}” as</legend>
           <input type="hidden" name="event_id" value={event.id} />
-          <div className="mt-1 flex flex-wrap gap-4 text-sm">
+          <div aria-live="polite" className="mt-1">
+            <StanceNote stance={stance} />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-4 text-sm">
             {[
               ["supports", "Supports"],
               ["contradicts", "Contradicts"],
               ["related", "Related only"],
             ].map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2">
+              <label
+                key={value}
+                className={`flex items-center gap-2 ${
+                  stance?.relation === value
+                    ? "rounded border border-dashed border-brand px-1.5 text-brand"
+                    : ""
+                }`}
+              >
                 <input
                   type="radio"
                   name="relation"
                   value={value}
+                  required
                   checked={relation === value}
                   onChange={() => setRelation(value)}
                 />
                 {label}
+                {stance?.relation === value && (
+                  <span className="sr-only"> (CARCUX suggests this)</span>
+                )}
               </label>
             ))}
           </div>

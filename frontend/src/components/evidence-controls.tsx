@@ -5,7 +5,15 @@ import { useId, useState, useTransition } from "react";
 import { changeRelation, linkReport, unlinkEvidence } from "@/app/actions/events";
 import { linkSignal } from "@/app/actions/signals";
 import { CLAIM_ATTRIBUTES, claimLabel, CONFIDENCE, RELATIONS } from "@/lib/events";
-import type { ActionState, ClaimAttribute, EvidenceRelation, SuggestionUsed } from "@/lib/types";
+import type {
+  ActionState,
+  ClaimAttribute,
+  EvidenceRelation,
+  StanceSuggestion,
+  SuggestionUsed,
+} from "@/lib/types";
+
+import { StanceNote } from "./stance-note";
 
 const smallBtn =
   "h-9 rounded-md border px-3 text-sm font-semibold shadow-sm transition-colors disabled:cursor-wait disabled:opacity-60";
@@ -66,6 +74,7 @@ export function LinkButtons({
   signalId,
   label,
   suggestion,
+  stance,
 }: {
   eventId: string;
   reportId?: string;
@@ -73,6 +82,8 @@ export function LinkButtons({
   label: string;
   /** Set when the buttons sit on a suggestion; recorded with the link. */
   suggestion?: SuggestionUsed;
+  /** CARCUX's reading: its button is marked, never chosen for the analyst. */
+  stance?: StanceSuggestion | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<ActionState>();
@@ -91,25 +102,33 @@ export function LinkButtons({
 
   return (
     <div className="flex flex-col gap-2">
+      <StanceNote stance={stance} />
       <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-        {RELATIONS.map((r) => (
-          <button
-            key={r.value}
-            type="button"
-            disabled={pending}
-            aria-expanded={r.value === "partially_supports" ? partial : undefined}
-            onClick={() =>
-              r.value === "partially_supports" ? setPartial((v) => !v) : link(r.value)
-            }
-            className={`${smallBtn} ${
-              r.value === "partially_supports" && partial
-                ? "border-alert bg-alert-soft text-ink"
-                : "border-line bg-panel text-ink hover:border-brand hover:text-brand"
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
+        {RELATIONS.map((r) => {
+          const suggested = stance?.relation === r.value;
+          return (
+            <button
+              key={r.value}
+              type="button"
+              disabled={pending}
+              aria-expanded={r.value === "partially_supports" ? partial : undefined}
+              data-suggested={suggested || undefined}
+              onClick={() =>
+                r.value === "partially_supports" ? setPartial((v) => !v) : link(r.value)
+              }
+              className={`${smallBtn} ${
+                r.value === "partially_supports" && partial
+                  ? "border-alert bg-alert-soft text-ink"
+                  : suggested
+                    ? "border-dashed border-brand bg-panel text-brand hover:bg-brand-soft"
+                    : "border-line bg-panel text-ink hover:border-brand hover:text-brand"
+              }`}
+            >
+              {r.label}
+              {suggested && <span className="sr-only"> (CARCUX suggests this)</span>}
+            </button>
+          );
+        })}
       </div>
       {partial && (
         <div className="flex flex-col gap-2">

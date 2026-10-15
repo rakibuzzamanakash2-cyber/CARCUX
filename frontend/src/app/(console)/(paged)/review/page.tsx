@@ -256,6 +256,7 @@ export default async function ReviewPage({
                                 reportId={r.id}
                                 label="Link to this event as"
                                 suggestion={suggestionUsed(c, k)}
+                                stance={c.stance}
                               />
                             </li>
                           ))}
