@@ -208,3 +208,13 @@ def test_second_opinion_annotators_never_see_a_suggestion(client, db, people, ma
     queue = client.get("/api/v1/annotation/queue", headers=login("second@office.local")).json()
     assert queue["total"] == 1
     assert "stance" not in str(queue) and "calls it false" not in str(queue)
+
+
+def test_scores_when_a_label_is_never_suggested():
+    # People said "related" twice; CARCUX always suggested "supports".
+    r = stance._scores([("supports", "related"), ("supports", "related")])
+    assert r["accuracy"] == 0.0
+    assert r["per_relation"]["related"]["f1"] == 0.0 and r["macro_f1"] == 0.0
+    out = stance.table({"blind_second_opinions": r, "working_labels": r,
+                        "followed": {"shown": 0, "followed": 0}})  # fmt: skip
+    assert "macro-F1 0.000" in out and "suggested    2" in out
