@@ -157,9 +157,10 @@ def _scores(pairs: list[tuple[str, str]]) -> dict:
         actual = sum(confusion[label].values())
         p = tp / predicted if predicted else None
         r = tp / actual if actual else None
-        f = 2 * p * r / (p + r) if p and r else (0.0 if p is not None and r is not None else None)
+        # 2·TP / (predicted + labelled): 0 when a label is never suggested (or never right).
+        f = 2 * tp / (predicted + actual) if predicted + actual else None
         per[label] = {"labelled": actual, "precision": p, "recall": r, "f1": f}
-    scored = [v["f1"] for v in per.values() if v["labelled"] and v["f1"] is not None]
+    scored = [v["f1"] for v in per.values() if v["labelled"]]
     return {
         "n": n,
         "accuracy": sum(confusion[x][x] for x in LABELS) / n if n else None,
@@ -212,6 +213,14 @@ def evaluate(db) -> dict:
     }
 
 
+def _num(x: float | None) -> str:
+    return "-" if x is None else f"{x:.3f}"
+
+
+def _suggested(r: dict, label: str) -> int:
+    return sum(row[label] for row in r["confusion"].values())
+
+
 def table(result: dict) -> str:
     lines = []
     for name, title in (
@@ -224,12 +233,14 @@ def table(result: dict) -> str:
             lines += ["  none yet", ""]
             continue
         lines.append(
-            f"  {r['n']} labels, accuracy {r['accuracy']:.3f}, macro-F1 {r['macro_f1']:.3f}"
+            f"  {r['n']} labels, accuracy {_num(r['accuracy'])}, macro-F1 {_num(r['macro_f1'])}"
         )
         for label, v in r["per_relation"].items():
             if v["labelled"] or (v["precision"] is not None):
-                f = "-" if v["f1"] is None else f"{v['f1']:.3f}"
-                lines.append(f"  {label:<20} labelled {v['labelled']:>4}   F1 {f}")
+                lines.append(
+                    f"  {label:<20} labelled {v['labelled']:>4}   suggested "
+                    f"{_suggested(r, label):>4}   F1 {_num(v['f1'])}"
+                )
         lines.append("")
     f = result["followed"]
     lines.append(
