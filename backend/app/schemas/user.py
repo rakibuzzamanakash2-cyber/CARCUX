@@ -55,3 +55,16 @@ class UserRead(BaseModel):
     created_at: datetime
     last_login_at: datetime | None
     official_page: OfficialPageRef | None = None
+
+
+class AccountRiskRead(BaseModel):
+    """How unlike its own history a field worker's last day looks. For a conversation
+    with the worker, never an automatic block."""
+
+    user_id: uuid.UUID
+    full_name: str
+    score: float  # 0 (as usual) to 1
+    parts: dict[str, float]
+    reasons: list[str]
+    recent: int  # reports in the last 24 hours
+    baseline: int  # earlier reports it is compared with

@@ -2,7 +2,9 @@ import { ShieldCheck, UserCheck, Users as UsersIcon, UserRoundCog } from "lucide
 import { PageBand, PageBody, Panel, StatTile, StatTiles } from "@/components/page-header";
 import { api } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
-import type { User } from "@/lib/types";
+import type { AccountRisk, User } from "@/lib/types";
+
+import { AccountRiskPanel } from "./account-risk";
 
 import { CreateUserForm } from "./create-user-form";
 import { UserRow } from "./user-row";
@@ -11,7 +13,10 @@ export const metadata = { title: "Users" };
 
 export default async function UsersPage() {
   const me = await requireRole("admin");
-  const users = await api<User[]>("/users");
+  const [users, risks] = await Promise.all([
+    api<User[]>("/users"),
+    api<AccountRisk[]>("/users/risk"),
+  ]);
   const active = users.filter((u) => u.is_active).length;
 
   return (
@@ -80,6 +85,8 @@ export default async function UsersPage() {
             </tbody>
           </table>
         </section>
+
+        <AccountRiskPanel risks={risks} />
 
         <Panel
           id="add"
