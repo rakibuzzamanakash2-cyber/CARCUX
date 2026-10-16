@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 include = ["carcux_extraction*"]
 
 [tool.setuptools.package-data]
-carcux_extraction = ["data/*.jsonl"]
+carcux_extraction = ["data/*.jsonl", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
