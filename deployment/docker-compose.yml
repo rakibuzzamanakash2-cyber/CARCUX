@@ -33,6 +33,9 @@ services:
       CARCUX_REDIS_URL: redis://redis:6379/0
       CARCUX_MEDIA_DIR: /app/media
       CARCUX_RELIEFWEB_APPNAME: ${CARCUX_RELIEFWEB_APPNAME:-}
+      # Your own long random string, set once in deployment/.env and never changed:
+      # it keeps dataset references to social media accounts the same across exports.
+      CARCUX_DATASET_SALT: ${CARCUX_DATASET_SALT:-}
       # Public site emails (account confirmation) go to Mailpit: read them at
       # http://localhost:8025. In production, point these at a real SMTP server.
       CARCUX_PUBLIC_BASE_URL: http://localhost:3000
