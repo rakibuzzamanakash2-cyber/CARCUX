@@ -892,3 +892,30 @@ export type AccountRisk = {
   recent: number;
   baseline: number;
 };
+
+/** Decision support for one event (GET /events/{id}/briefing). Suggestions only. */
+export interface PriorityFactor {
+  name: string;
+  points: number;
+  reason: string;
+}
+
+export interface PrioritySuggestion {
+  level: Priority;
+  score: number;
+  factors: PriorityFactor[];
+}
+
+export interface CitedSentence {
+  text: string;
+  cites: string[]; // evidence link ids
+  kind: string;
+}
+
+export interface Briefing {
+  generated_at: string;
+  since: string;
+  priority: PrioritySuggestion;
+  summary: CitedSentence[];
+  changes: CitedSentence[];
+}
