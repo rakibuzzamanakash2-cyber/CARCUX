@@ -47,6 +47,56 @@ def escape_like(text: str) -> str:
 
 
 MATCH_WINDOW = timedelta(hours=48)
+# An event without an end time is treated as running until a week after its latest
+# linked item (or its start), and never past now. A live event that keeps getting
+# reports keeps moving forward; an old case study does not pull in news from years later.
+OPEN_EVENT_REACH = timedelta(days=7)
+
+
+def _latest_evidence(db: Session, event_ids: list[uuid.UUID]) -> dict[uuid.UUID, datetime]:
+    """Time of each event's latest linked item, ignoring items labelled not this event."""
+    if not event_ids:
+        return {}
+    about = (
+        EventEvidence.event_id.in_(event_ids),
+        EventEvidence.relation != EvidenceRelation.UNRELATED,
+    )
+    rows = (
+        db.execute(
+            select(EventEvidence.event_id, func.max(FieldReport.observed_at))
+            .join(FieldReport, FieldReport.id == EventEvidence.field_report_id)
+            .where(*about)
+            .group_by(EventEvidence.event_id)
+        ).all()
+        + db.execute(
+            select(
+                EventEvidence.event_id,
+                func.max(func.coalesce(Signal.valid_until, Signal.published_at)),
+            )
+            .join(Signal, Signal.id == EventEvidence.signal_id)
+            .where(*about)
+            .group_by(EventEvidence.event_id)
+        ).all()
+    )
+    latest: dict[uuid.UUID, datetime] = {}
+    for event_id, moment in rows:
+        if moment is not None and (event_id not in latest or moment > latest[event_id]):
+            latest[event_id] = moment
+    return latest
+
+
+def effective_end(event: Event, now: datetime, latest: datetime | None = None) -> datetime:
+    """Until when an event matches new items: its end time, or for an open event a week
+    after its latest linked item or its start, never past now."""
+    if event.ended_at is not None:
+        return event.ended_at
+    anchor = max(event.started_at, latest) if latest else event.started_at
+    return min(now, anchor + OPEN_EVENT_REACH)
+
+
+def _ends(db: Session, events, now: datetime) -> dict[uuid.UUID, datetime]:
+    latest = _latest_evidence(db, [e.id for e in events if e.ended_at is None])
+    return {e.id: effective_end(e, now, latest.get(e.id)) for e in events}
 
 
 class ReportsNotFoundError(Exception):
@@ -527,12 +577,13 @@ def candidate_events(
         )
     ).all()
 
+    ends = _ends(db, events, now)
     matches = []
     for event in events:
         km = haversine_km(report.latitude, report.longitude, event.latitude, event.longitude)
-        if km > MATCH_RADIUS_KM:
+        if km > MATCH_RADIUS_KM or ends[event.id] < report.observed_at - MATCH_WINDOW:
             continue
-        hours = _hours_outside(report.observed_at, event.started_at, event.ended_at or now)
+        hours = _hours_outside(report.observed_at, event.started_at, ends[event.id])
         matches.append((event, Match(round(km, 2), round(hours, 1))))
     matches.sort(key=lambda m: (m[0].event_type != report.event_type, m[1].distance_km))
     return matches[:limit]
@@ -546,7 +597,7 @@ def candidate_reports(
     now = datetime.now(UTC)
     dlat, dlon = _bbox(event.latitude, event.longitude, MATCH_RADIUS_KM)
     linked = select(EventEvidence.field_report_id).where(EventEvidence.event_id == event.id)
-    end = event.ended_at or now
+    end = _ends(db, [event], now)[event.id]
     reports = db.scalars(
         select(FieldReport).where(
             FieldReport.status != ReportStatus.DISMISSED,
@@ -618,12 +669,13 @@ def candidate_events_for_signal(
             func.coalesce(Event.ended_at, now) >= start - MATCH_WINDOW,
         )
     ).all()
+    ends = _ends(db, events, now)
     matches = []
     for event in events:
         km = haversine_km(signal.latitude, signal.longitude, event.latitude, event.longitude)
-        if km > reach:
+        if km > reach or ends[event.id] < start - MATCH_WINDOW:
             continue
-        hours = _gap_hours((start, end), (event.started_at, event.ended_at or now))
+        hours = _gap_hours((start, end), (event.started_at, ends[event.id]))
         matches.append((event, Match(round(km, 2), round(hours, 1))))
     matches.sort(key=lambda m: (m[0].event_type != signal.event_type, m[1].distance_km))
     return matches[:limit]
@@ -632,7 +684,7 @@ def candidate_events_for_signal(
 def candidate_signals(db: Session, event: Event, *, limit: int = 25) -> list[tuple[Signal, Match]]:
     """Signals that may be about this event: placed, not dismissed, not yet linked."""
     now = datetime.now(UTC)
-    end = event.ended_at or now
+    end = _ends(db, [event], now)[event.id]
     widest = MATCH_RADIUS_KM + MAX_SIGNAL_REACH_KM
     dlat, dlon = _bbox(event.latitude, event.longitude, widest)
     linked = select(EventEvidence.signal_id).where(

@@ -84,7 +84,7 @@ An event is the working record of one real situation ("Waterlogging at Mirpur 10
 | `GET /api/v1/field-reports/{id}/candidate-events` | analyst, admin | Events a report may belong to |
 
 - **Status:** `active`, `monitoring`, `resolved`, `dismissed`. **Priority:** `low` to `critical`. **Assessment:** the dataset's six labels, from `verified` to `insufficient_evidence`; new events start `unverified`.
-- **Matching is only a suggestion.** Until a suggestion model is trained: within 5 km, and the report falls within 48 h of the event's time span (an open event runs until now); same type first, then nearest. After training, see [Event suggestions](#event-suggestions).
+- **Matching is only a suggestion.** Until a suggestion model is trained: within 5 km, and the report falls within 48 h of the event's time span; same type first, then nearest. An event without an end time runs until a week after its latest linked item (or its start), never past now: a live event that keeps getting reports moves forward, while an old case study is not offered news from months later. Items labelled *not this event* do not extend it; an end time set by an analyst always wins. After training, see [Event suggestions](#event-suggestions).
 - Linking a report marks it `reviewed`. Every create, change, link, relation change and unlink is audit-logged with old and new values.
 
 ## Public signals
