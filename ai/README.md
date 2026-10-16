@@ -1,6 +1,6 @@
 # CARCUX AI modules
 
-Six modules, one per area in Spec v1.0 §6. **All six are built and deployed.** Two of them, `correlation` and `fusion`, are also the **research core** behind the Q1 paper, so they get original methods, baselines, ablations and robustness experiments. The other four are built with proven, existing tools so the effort stays where the paper needs it.
+Six modules, one per area in Spec v1.0 §6. Two of them, `correlation` and `fusion`, are also the **research core** behind the Q1 paper, so they get original methods, baselines, ablations and robustness experiments. The other four are built with proven, existing tools so the effort stays where the paper needs it.
 
 | # | Module | Area | Role | Paper |
 |---|---|---|---|---|
@@ -10,6 +10,8 @@ Six modules, one per area in Spec v1.0 §6. **All six are built and deployed.** 
 | 4 | [`correlation/`](correlation/) | Spatiotemporal event correlation | **Research core** | **Q1 paper** |
 | 5 | [`integrity/`](integrity/) | Secure field systems (AI side) | Engineered | — |
 | 6 | [`decision_support/`](decision_support/) | Human–AI decision support | Engineered, evaluated after deployment | Candidate 2nd paper |
+
+**Status (17 October 2026):** `correlation` and `fusion` are built and evaluated (real news benchmark; simulated contamination). `extraction` is built and in the product (details, language, places, times). `integrity` has rule checks in the backend (`backend/app/services/integrity.py`); its learned half is next. `decision_support` and `media` are next. Each module's README has its own status line.
 
 ## How they connect
 

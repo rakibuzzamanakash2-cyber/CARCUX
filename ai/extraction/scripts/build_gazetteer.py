@@ -1,21 +1,24 @@
-"""Build app/data/bd_gazetteer.json, the place list used to put news items on the map.
+"""Build carcux_extraction/data/bd_gazetteer.json, the place list behind place extraction
+(and so behind putting news items on the map, and place-based event matching).
 
 Sources:
 - Districts (with coordinates), divisions and upazilas, English and Bangla names:
   nuhil/bangladesh-geocode (MIT License, (c) 2014 Nuhil Mehdy),
   https://github.com/nuhil/bangladesh-geocode
-- City localities: approximate centres added by CARCUX (precision 2.5 km).
+- City localities: approximate centres added by CARCUX (within about 2 km; precision
+  2.5 km).
 
-Run from backend/:  python scripts/build_gazetteer.py <dir with districts.json etc.>
+Run from ai/extraction/:  python scripts/build_gazetteer.py <dir with districts.json etc.>
+then copy it into the backend:  python ../../backend/scripts/sync_extraction.py
 The three input files are the repository's districts/, divisions/ and upazilas/ JSON.
 """
 
 import json
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parents[1] / "app" / "data" / "bd_gazetteer.json"
+OUT = Path(__file__).resolve().parents[1] / "carcux_extraction" / "data" / "bd_gazetteer.json"
 
 # Names after the 2018 spelling changes, plus older and common spellings.
 DISTRICT_ALIASES = {
@@ -36,9 +39,10 @@ DISTRICT_DISPLAY = {"Coxsbazar": "Cox's Bazar", "Barisal": "Barishal", "Comilla"
 DIVISION_DISPLAY = {"Chattagram": "Chattogram", "Barisal": "Barishal"}
 DIVISION_ALIASES = {"Chattagram": ["Chittagong", "Chattogram"], "Barisal": ["Barishal"]}
 
-# Upazila names that are also districts, Dhaka localities, ordinary words, or too
-# short to match safely are left out; so are names shared by several upazilas.
-UPAZILA_SKIP = {"Mirpur", "Sadarsouth", "Companiganj", "Nawabganj", "Kaliganj"}
+# Upazila names that are also districts, ordinary words, or too short to match safely
+# are left out. Names shared by several upazilas (Kaliganj, Lohagara) or with a Dhaka
+# locality (Mirpur) are kept: places.py settles them from the districts the text names.
+UPAZILA_SKIP = {"Sadarsouth"}
 
 # (name, aliases, bangla, district, lat, lon): approximate centres.
 LOCALITIES = [
@@ -67,7 +71,38 @@ LOCALITIES = [
     ("Bahaddarhat", [], "বহদ্দারহাট", "Chattogram", 22.369, 91.846),
     ("Chawkbazar", ["Chowkbazar"], "চকবাজার", "Chattogram", 22.350, 91.838),
     ("Halishahar", [], "হালিশহর", "Chattogram", 22.327, 91.786),
+    ("Diabari", [], "দিয়াবাড়ী", "Dhaka", 23.880, 90.360),
+    ("Bailey Road", ["Baily Road"], "বেইলি রোড", "Dhaka", 23.742, 90.410),
+    ("Moghbazar", ["Mogbazar", "Maghbazar"], "মগবাজার", "Dhaka", 23.749, 90.405),
+    ("Paltan", ["Purana Paltan"], "পল্টন", "Dhaka", 23.736, 90.413),
+    ("Ramna", [], "রমনা", "Dhaka", 23.739, 90.401),
+    ("Hatirjheel", [], "হাতিরঝিল", "Dhaka", 23.757, 90.401),
+    ("Sayedabad", [], "সায়েদাবাদ", "Dhaka", 23.719, 90.425),
+    ("Sadarghat", [], "সদরঘাট", "Dhaka", 23.706, 90.407),
+    ("Lalbagh", [], "লালবাগ", "Dhaka", 23.719, 90.388),
+    ("New Market", ["Newmarket"], "নিউ মার্কেট", "Dhaka", 23.733, 90.385),
+    ("Shyamoli", ["Shymoli"], "শ্যামলী", "Dhaka", 23.774, 90.365),
+    ("Agargaon", [], "আগারগাঁও", "Dhaka", 23.778, 90.378),
+    ("Pallabi", [], "পল্লবী", "Dhaka", 23.825, 90.365),
+    ("Khilkhet", [], "খিলক্ষেত", "Dhaka", 23.829, 90.422),
+    ("Kuril", [], "কুড়িল", "Dhaka", 23.819, 90.420),
+    ("Bashundhara", ["Bashundhara R/A"], "বসুন্ধরা", "Dhaka", 23.819, 90.452),
+    (
+        "Shahjalal Airport",
+        ["Hazrat Shahjalal International Airport", "Dhaka airport"],
+        "শাহজালাল বিমানবন্দর",
+        "Dhaka",
+        23.843,
+        90.398,
+    ),
+    ("Ashulia", [], "আশুলিয়া", "Dhaka", 23.892, 90.320),
+    ("Demra", [], "ডেমরা", "Dhaka", 23.716, 90.495),
+    ("Kamrangirchar", [], "কামরাঙ্গীরচর", "Dhaka", 23.718, 90.373),
+    ("Tongi", [], "টঙ্গী", "Gazipur", 23.896, 90.404),
+    ("Patenga", [], "পতেঙ্গা", "Chattogram", 22.235, 91.791),
+    ("GEC Circle", ["GEC"], "জিইসি", "Chattogram", 22.359, 91.821),
 ]
+LOCALITY_ALIASES = {"Shahbagh": ["Shahbag"]}
 
 
 def table(path: Path) -> list[dict]:
@@ -116,23 +151,23 @@ def main(src: Path) -> None:
     district_names = {r["name"].lower() for r in dist_out} | {
         a.lower() for r in dist_out for a in r["aliases"]
     }
-    counts = Counter(u["name"] for u in upazilas)
     upa_out = []
     for u in upazilas:
         name = u["name"]
-        if (
-            counts[name] > 1
-            or name in UPAZILA_SKIP
-            or "Sadar" in name
-            or len(name) < 5
-            or name.lower() in district_names
-        ):
+        if name in UPAZILA_SKIP or len(name) < 5 or name.lower() in district_names:
             continue
         dist = dist_by_id[u["district_id"]]
         upa_out.append({"name": name, "bn": u["bn_name"], "district": dist["name"]})
 
     loc_out = [
-        {"name": n, "aliases": a, "bn": bn, "district": dist, "lat": lat, "lon": lon}
+        {
+            "name": n,
+            "aliases": [*a, *LOCALITY_ALIASES.get(n, [])],
+            "bn": bn,
+            "district": dist,
+            "lat": lat,
+            "lon": lon,
+        }
         for n, a, bn, dist, lat, lon in LOCALITIES
     ]
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -140,7 +175,7 @@ def main(src: Path) -> None:
         json.dumps(
             {
                 "credits": "Districts, divisions, upazilas: nuhil/bangladesh-geocode (MIT). "
-                "Localities: approximate centres by CARCUX.",
+                "Localities: approximate centres by CARCUX (within about 2 km).",
                 "divisions": div_out,
                 "districts": sorted(dist_out, key=lambda r: r["name"]),
                 "upazilas": sorted(upa_out, key=lambda r: r["name"]),

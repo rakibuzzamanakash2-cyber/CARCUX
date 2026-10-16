@@ -24,6 +24,11 @@ def test_copy_matches_the_original():
             f"app/extraction/{name} differs from ai/extraction: "
             "run python backend/scripts/sync_extraction.py"
         )
+    for name in sync.DATA:
+        assert (sync.TARGET / name).read_bytes() == (sync.SOURCE / name).read_bytes(), (
+            f"app/extraction/{name} differs from ai/extraction: "
+            "run python backend/scripts/sync_extraction.py"
+        )
 
 
 def test_it_works_inside_the_backend():
