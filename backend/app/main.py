@@ -19,6 +19,7 @@ from app.api import (
     overview,
     signals,
     sources,
+    statements,
     suggestions,
     users,
 )
@@ -72,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         suggestions.router,
         assessment.router,
         official_pages.router,
+        statements.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

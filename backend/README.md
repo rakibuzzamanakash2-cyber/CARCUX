@@ -236,6 +236,17 @@ Verified accounts of government bodies and office holders (the Prime Minister's 
 - **Reading:** `GET /api/v1/official-pages` (admins: all; others: verified), `GET …/by-slug/{slug}` (verified pages for everyone signed in; how it was verified and its officials only for admins and its own officials), `GET …/mine` for an official.
 - Every step is audit-logged (`official_page.created`, `.updated`, `.document_added`, `.verified`, `.suspended`, `.reinstated`).
 
+## Official statements
+
+What a verified official page says about an event (`app/models/statement.py`, `app/services/statements.py`). Migration 0014.
+
+- **Written from CARCUX's brief.** `GET /api/v1/events/{id}/brief` (officials of verified pages, analysts, admins) gives what CARCUX knows: the analysts' assessment, CARCUX's suggested assessment and how likely it is that the event happened, sources for and against (with how many are credible), disputed details with best estimates and the values stated, copies counted once, and each source's track record. **Field workers are never named** in a brief ("A field worker"); public sources are.
+- **Publishing** (`POST /api/v1/statements`): only an active official of a *verified* page, not on a dismissed event. The official chooses a finding (*confirmed*, *partly confirmed*, *denied*, *under review*) and writes a title and the statement in their own words. The brief at that moment is stored with the statement, and the statement is marked `informed_by_carcux`.
+- **Never ground truth for CARCUX.** A statement written from CARCUX's brief must not be used to evaluate CARCUX (that would be CARCUX grading itself). Ground truth stays with sources published independently afterwards.
+- **Never edited or deleted** (a database trigger refuses both). A correction is a new statement with `supersedes_id`; one correction per statement, only by the same page on the same event, always of the latest. Readers see "corrected" with a link both ways.
+- **Reading:** `GET /api/v1/statements` (filter `event_id`, `page_id`; newest first) and `GET /api/v1/statements/{id}` (with its brief), for everyone signed in, from verified pages only (admins and the page's own officials also see a suspended page's). Who wrote it is shown to admins and the page's officials only: the office speaks, not the person.
+- Audit-logged (`statement.published`, with CARCUX's suggested label at the time).
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

@@ -103,8 +103,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema. The 'official' role value stays (PostgreSQL cannot drop it)."""
-    op.execute("DELETE FROM users WHERE role = 'official'")
+    """Downgrade schema. Official accounts become viewers (the audit log refers to them,
+    so they are kept); the 'official' role value stays (PostgreSQL cannot drop it)."""
+    op.execute("UPDATE users SET role = 'viewer', official_page_id = NULL WHERE role = 'official'")
     op.drop_constraint(op.f("ck_users_official_has_page"), "users", type_="check")
     op.drop_constraint(
         op.f("fk_users_official_page_id_official_pages"), "users", type_="foreignkey"

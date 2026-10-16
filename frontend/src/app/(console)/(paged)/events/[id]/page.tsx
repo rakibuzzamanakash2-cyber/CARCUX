@@ -9,6 +9,7 @@ import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/eve
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
 import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { SignalSummary } from "@/components/signal-bits";
+import { StatementCard } from "@/components/statement-bits";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
@@ -33,6 +34,7 @@ import {
   type Evidence,
   type EvidenceRelation,
   type HistoryEntry,
+  type Statement,
   type Priority,
 } from "@/lib/types";
 
@@ -244,6 +246,8 @@ export default async function EventPage({
         null,
       ];
 
+  const statements = await api<Statement[]>(`/statements?event_id=${id}`);
+  const canSpeak = user.role === "official" && user.official_page?.status === "verified";
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
   const base = `/events/${event.id}`;
 
@@ -355,6 +359,33 @@ export default async function EventPage({
                 )}
               </Panel>
               {details}
+              <Panel
+                id="statements"
+                title="Official statements"
+                description="What verified official pages have said about this event."
+                actions={
+                  canSpeak ? (
+                    <Link
+                      href={`/events/${event.id}/statement`}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-md bg-water px-3 text-sm font-semibold text-white hover:bg-brand-strong"
+                    >
+                      {statements.some((x) => x.page.id === user.official_page?.id)
+                        ? "Correct your statement"
+                        : "Write a statement"}
+                    </Link>
+                  ) : undefined
+                }
+              >
+                {statements.length === 0 ? (
+                  <p className="text-sm text-muted">None yet.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {statements.map((x) => (
+                      <StatementCard key={x.id} s={x} showEvent={false} />
+                    ))}
+                  </div>
+                )}
+              </Panel>
             </div>
             {reviewer && (
               <div className="flex flex-col gap-6">

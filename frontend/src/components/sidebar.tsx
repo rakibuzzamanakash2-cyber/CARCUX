@@ -6,6 +6,7 @@ import {
   Inbox,
   Landmark,
   Map,
+  Megaphone,
   Radar,
   RadioTower,
   Rss,
@@ -30,6 +31,7 @@ const ICONS: Record<NavIcon, typeof Map> = {
   annotation: Users2,
   users: Users,
   official: Landmark,
+  statements: Megaphone,
   audit: ScrollText,
 };
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageBand, PageBody, Panel } from "@/components/page-header";
+import { StatementCard } from "@/components/statement-bits";
 import { api, ApiError } from "@/lib/api";
 import { verifySession } from "@/lib/dal";
 import { formatDhaka } from "@/lib/format";
@@ -11,6 +12,7 @@ import {
   VERIFICATION_LABEL,
   type OfficialPage,
   type OfficialPageDetail,
+  type Statement,
 } from "@/lib/types";
 
 import {
@@ -49,6 +51,7 @@ export default async function OfficialPageView({
   }
   const admin = user.role === "admin";
   const detail = isDetail(page) ? page : null;
+  const statements = await api<Statement[]>(`/statements?page_id=${page.id}`);
 
   return (
     <>
@@ -88,6 +91,23 @@ export default async function OfficialPageView({
                   {page.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                   <ExternalLink size={14} aria-hidden="true" />
                 </a>
+              )}
+            </Panel>
+
+            <Panel title="Statements" id="page-statements">
+              {statements.length === 0 ? (
+                <p className="text-sm text-muted">
+                  No statements yet.
+                  {user.official_page?.id === page.id &&
+                    page.status === "verified" &&
+                    " Open an event and choose Write a statement."}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {statements.map((x) => (
+                    <StatementCard key={x.id} s={x} />
+                  ))}
+                </div>
               )}
             </Panel>
 
