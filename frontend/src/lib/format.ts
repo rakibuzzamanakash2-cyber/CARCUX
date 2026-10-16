@@ -71,6 +71,16 @@ export const FLAG_INFO: Record<string, { label: string; meaning: string }> = {
     label: "Rough location",
     meaning: "The phone reported a weak GPS fix, so the true position may be far from the pin.",
   },
+  location_text_mismatch: {
+    label: "Place and GPS disagree",
+    meaning:
+      "The text names a place, but the GPS position is far from it. The worker may be reporting about somewhere else, or the phone may not be where the report says.",
+  },
+  copied_text: {
+    label: "Copied text",
+    meaning:
+      "The words are almost the same as a public post or another worker's report. It may be a rumour re-entered as a field report, or one report sent from several accounts.",
+  },
 };
 
 export function flagLabel(code: string): string {

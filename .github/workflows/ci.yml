@@ -93,13 +93,15 @@ jobs:
             ai/correlation/pyproject.toml
             ai/extraction/pyproject.toml
             ai/fusion/pyproject.toml
+            ai/integrity/pyproject.toml
             data/tools/pyproject.toml
-      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]" -e "extraction[dev]"
+      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]" -e "extraction[dev]" -e "integrity[dev]"
       - name: Lint
         run: |
           (cd correlation && ruff check . && ruff format --check .)
           (cd fusion && ruff check . && ruff format --check .)
           (cd extraction && ruff check . && ruff format --check .)
+          (cd integrity && ruff check . && ruff format --check .)
       - name: Test correlation
         working-directory: ai/correlation
         run: pytest -q
@@ -108,6 +110,9 @@ jobs:
         run: pytest -q
       - name: Test extraction
         working-directory: ai/extraction
+        run: pytest -q
+      - name: Test integrity
+        working-directory: ai/integrity
         run: pytest -q
 
   frontend:

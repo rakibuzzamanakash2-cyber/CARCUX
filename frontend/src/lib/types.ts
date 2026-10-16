@@ -881,3 +881,14 @@ export interface AgreementStats {
   by_label: Record<string, number>;
   open_disagreements: number;
 }
+
+/** How unlike its own history a field worker's last day looks (GET /users/risk). */
+export type AccountRisk = {
+  user_id: string;
+  full_name: string;
+  score: number;
+  parts: Record<string, number>;
+  reasons: string[];
+  recent: number;
+  baseline: number;
+};

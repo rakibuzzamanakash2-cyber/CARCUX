@@ -106,6 +106,7 @@ def submit(
     flags = integrity.evaluate(
         db,
         reporter_id=reporter.id,
+        text=data.text,
         latitude=data.latitude,
         longitude=data.longitude,
         accuracy_m=data.location_accuracy_m,
