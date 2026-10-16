@@ -247,6 +247,17 @@ What a verified official page says about an event (`app/models/statement.py`, `a
 - **Reading:** `GET /api/v1/statements` (filter `event_id`, `page_id`; newest first) and `GET /api/v1/statements/{id}` (with its brief), for everyone signed in, from verified pages only (admins and the page's own officials also see a suspended page's). Who wrote it is shown to admins and the page's officials only: the office speaks, not the person.
 - Audit-logged (`statement.published`, with CARCUX's suggested label at the time).
 
+## The public site: official posts, likes and comments
+
+Official posts (statements of verified pages) are open to everyone at `/api/v1/public/...` (`app/api/public.py`, `app/services/public.py`). Migration 0015.
+
+- **Reading, no account:** `GET /public/posts` (newest first), `/public/posts/{id}` (with visible comments), `/public/pages/{slug}`, `/public/incidents/{event_id}` (only once a verified page has posted about it). The public never sees the brief, the author or anything of the console. A suspended page's posts disappear.
+- **Public accounts are separate from staff accounts** (`public_accounts`): their tokens are of another type, refused by staff endpoints (and staff tokens are refused here). Sign up with an email, a display name and a password (`POST /public/auth/signup`; the answer is the same whether the email exists, so it does not reveal accounts). An emailed link (48 h) confirms the address (`POST /public/auth/verify`); only then can the person sign in. The token itself is never stored, only its SHA-256.
+- **Taking part:** like (`PUT`/`DELETE /public/posts/{id}/like`), comment (2 to 1000 characters, at most 5 per 10 minutes), report a comment (false information, abuse, spam, personal information, other), delete one's own comment. A comment reported by **3** different people is hidden at once until a moderator decides.
+- **Moderation** (`/api/v1/moderation`): admins for every comment, officials for comments on their own page's posts. *Hide* (with a reason), *keep* (unhide; further reports no longer hide it). Admins *ban* an account (signed out, its comments hidden) and lift bans. All audit-logged.
+- **Privacy:** stored are the email (never shown), the display name, a password hash, likes, comments and reports. `POST /public/auth/delete` with the password deletes the account and everything it posted. This is the only place CARCUX keeps profiles of the public.
+- **Email:** without `CARCUX_SMTP_HOST`, emails are written to the backend log. The Docker stack sends them to Mailpit (inbox at http://localhost:8025). Settings: `CARCUX_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_STARTTLS`, `CARCUX_MAIL_FROM`, `CARCUX_PUBLIC_BASE_URL` (for links), `CARCUX_PUBLIC_TOKEN_DAYS`.
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

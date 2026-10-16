@@ -45,6 +45,10 @@ class AuditAction:
     OFFICIAL_PAGE_SUSPENDED = "official_page.suspended"
     OFFICIAL_PAGE_REINSTATED = "official_page.reinstated"
     STATEMENT_PUBLISHED = "statement.published"
+    COMMENT_HIDDEN = "public.comment_hidden"
+    COMMENT_RESTORED = "public.comment_restored"
+    PUBLIC_ACCOUNT_BANNED = "public.account_banned"
+    PUBLIC_ACCOUNT_UNBANNED = "public.account_unbanned"
 
 
 def record(

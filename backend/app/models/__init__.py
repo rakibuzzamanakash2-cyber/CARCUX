@@ -14,6 +14,13 @@ from app.models.event import (
 )
 from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
 from app.models.official import OfficialPage, PageKind, PageStatus, VerificationMethod
+from app.models.public import (
+    AccountStatus,
+    CommentReport,
+    PublicAccount,
+    StatementComment,
+    StatementLike,
+)
 from app.models.signal import (
     Adapter,
     IngestRun,
@@ -28,6 +35,11 @@ from app.models.suggestion import SuggestionModel
 from app.models.user import Role, User
 
 __all__ = [
+    "AccountStatus",
+    "CommentReport",
+    "PublicAccount",
+    "StatementComment",
+    "StatementLike",
     "Adapter",
     "Assessment",
     "AssessmentModel",

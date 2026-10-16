@@ -69,6 +69,17 @@ export default async function StatementPage({
                 {s.page.name}
               </Link>
               {s.author && ` · written by ${s.author}`}
+              {s.page.status === "verified" && (
+                <>
+                  {" · "}
+                  <Link
+                    href={`/public/posts/${s.id}`}
+                    className="font-semibold text-brand hover:underline"
+                  >
+                    View on the public site
+                  </Link>
+                </>
+              )}
               {s.supersedes_id && (
                 <>
                   {" · corrects "}

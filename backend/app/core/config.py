@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     # ReliefWeb's API needs an approved app name (https://apidoc.reliefweb.int).
     reliefweb_appname: str | None = None
 
+    # Public site: people sign up with an email address to like and comment. Links in
+    # emails point here. Without an SMTP host, emails are written to the log instead.
+    public_base_url: str = "http://localhost:3000"
+    public_token_days: int = 14
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_starttls: bool = True
+    mail_from: str = "CARCUX <no-reply@carcux.local>"
+
     @model_validator(mode="after")
     def _production_requires_real_secret(self) -> "Settings":
         if self.environment == "production":

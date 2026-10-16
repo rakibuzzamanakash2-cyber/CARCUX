@@ -15,8 +15,10 @@ from app.api import (
     events,
     field_reports,
     health,
+    moderation,
     official_pages,
     overview,
+    public,
     signals,
     sources,
     statements,
@@ -53,7 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
 
@@ -74,6 +76,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         assessment.router,
         official_pages.router,
         statements.router,
+        public.router,
+        moderation.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

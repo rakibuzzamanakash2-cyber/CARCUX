@@ -1,5 +1,6 @@
 # Local development stack: PostgreSQL + PostGIS, Redis, backend API, the ingest worker
-# (reads GDACS, news feeds and ReliefWeb into public signals), frontend console.
+# (reads GDACS, news feeds and ReliefWeb into public signals), frontend (console and the
+# public site), and Mailpit (catches emails).
 # Run from the repository root:  docker compose -f deployment/docker-compose.yml up --build
 name: carcux
 
@@ -32,6 +33,12 @@ services:
       CARCUX_REDIS_URL: redis://redis:6379/0
       CARCUX_MEDIA_DIR: /app/media
       CARCUX_RELIEFWEB_APPNAME: ${CARCUX_RELIEFWEB_APPNAME:-}
+      # Public site emails (account confirmation) go to Mailpit: read them at
+      # http://localhost:8025. In production, point these at a real SMTP server.
+      CARCUX_PUBLIC_BASE_URL: http://localhost:3000
+      CARCUX_SMTP_HOST: mailpit
+      CARCUX_SMTP_PORT: "1025"
+      CARCUX_SMTP_STARTTLS: "false"
     volumes:
       - media_data:/app/media
     ports:
@@ -41,6 +48,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      mailpit:
+        condition: service_started
+
+  # Catches every email in development; web inbox at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest  # development only
+    ports:
+      - "8025:8025"
 
   # Reads enabled sources on their schedules. Needs internet access.
   ingest:

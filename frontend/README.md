@@ -116,6 +116,18 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/statements`, `/statements/{id}` | everyone signed in | All statements, newest first; one statement with **Informed by CARCUX**: the brief the official had in view. |
 | `/official-pages/{slug}` | as before | Also lists the page's statements. |
 
+## The public site (`/public`)
+
+Open to everyone, no staff sign-in; its own header, its own session cookie (`carcux_public`, path `/public`).
+
+| Page | What |
+|---|---|
+| `/public` | **Official posts** from verified pages, newest first: the office (with a verified tick), its finding, the post, likes, comments and **Share** (the phone's share sheet or copy link, and Facebook). |
+| `/public/posts/{id}` | One post with its comments. Signed in: like, comment, report a comment (with a reason), delete your own. |
+| `/public/pages/{slug}`, `/public/incidents/{id}` | An official page and its posts; an incident (once an office posted about it) and its posts. |
+| `/public/signup`, `/public/verify`, `/public/signin`, `/public/account`, `/public/rules` | Join with an email (confirmed by a link, which takes one click so email scanners cannot use it up), sign in, delete your account with everything you posted, the rules and what is stored. |
+| `/moderation` (console) | Admins and officials: reported and hidden comments, **Hide**, **Keep it up**, **Restore**; admins **Ban account** / **Lift ban**. |
+
 ## Review queue, audit log and account
 
 | Page | Who | What |

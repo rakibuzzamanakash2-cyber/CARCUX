@@ -182,6 +182,77 @@ export interface StatementDetail extends Statement {
   brief: Brief;
 }
 
+/** The public site. */
+export interface PublicMe {
+  id: string;
+  display_name: string;
+  email: string;
+}
+
+export interface PublicComment {
+  id: string;
+  author: string;
+  body: string;
+  created_at: string;
+  mine: boolean;
+}
+
+export interface PublicPost {
+  id: string;
+  page: Statement["page"];
+  event: Statement["event"];
+  finding: Finding;
+  title: string;
+  body: string;
+  published_at: string;
+  supersedes_id: string | null;
+  superseded_by_id: string | null;
+  likes: number;
+  comments: number;
+  liked: boolean;
+}
+
+export interface PublicPostDetail extends PublicPost {
+  comment_list: PublicComment[];
+}
+
+export interface PublicPageView {
+  page: Statement["page"];
+  description: string | null;
+  website: string | null;
+  verified_at: string | null;
+  posts: PublicPost[];
+}
+
+export interface PublicIncident {
+  event: Statement["event"];
+  posts: PublicPost[];
+}
+
+export const REPORT_REASONS: { value: string; label: string }[] = [
+  { value: "false_information", label: "False information" },
+  { value: "abuse", label: "Abuse or hate" },
+  { value: "spam", label: "Spam" },
+  { value: "personal_information", label: "Shares someone's personal information" },
+  { value: "other", label: "Something else" },
+];
+
+export interface ModerationComment {
+  id: string;
+  statement_id: string;
+  statement_title: string;
+  page_name: string;
+  author: string;
+  account_id: string;
+  account_status: "active" | "banned";
+  body: string;
+  created_at: string;
+  reports: number;
+  report_reasons: string[];
+  hidden_at: string | null;
+  hidden_reason: string | null;
+}
+
 export interface Health {
   status: string;
   service: string;
