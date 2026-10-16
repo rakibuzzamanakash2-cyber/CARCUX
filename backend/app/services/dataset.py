@@ -40,7 +40,7 @@ from app import __version__
 from app.core.config import get_settings
 from app.core.event_types import BD_LAT, BD_LON
 from app.extraction import VERSION as EXTRACTION_VERSION
-from app.extraction import detect_language, extract
+from app.extraction import detect_language, extract, find_places, observed_at
 from app.ingest.places import PRECISION_M, gazetteer
 from app.models.audit import AuditLog
 from app.models.event import Event, EventEvidence, EvidenceRelation
@@ -420,6 +420,11 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
         f"The other claims (deaths, people affected, depth, cause, status, and occurrence "
         f"false for denials) were found in the text automatically by CARCUX's extraction "
         f"rules ({EXTRACTION_VERSION}) and have not been checked by annotators.",
+        "places_and_times": "A field report's location_mentions are its GPS position "
+        "(from_gps) and the places its text names; a signal's is the place it was put on "
+        "the map at. Places named in text, and a signal's observed_at (the earliest clear "
+        f"time its text gives), were found automatically by the same rules "
+        f"({EXTRACTION_VERSION}) and have not been checked by annotators.",
         "problems": len(problems),
     }
     id_map = {
@@ -450,8 +455,9 @@ def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
         "claims": _claims(r.event_type, extract(text)),
         "is_simulated": False,
     }
+    mentions = []
     if _in_bangladesh(lat, lon):
-        ob["location_mentions"] = [
+        mentions.append(
             {
                 "surface": (r.place_name or "GPS position")[:200],
                 "resolved": _location(
@@ -459,7 +465,10 @@ def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
                 ),
                 "from_gps": True,
             }
-        ]
+        )
+    mentions += _text_places(text)
+    if mentions:
+        ob["location_mentions"] = mentions
     if r.media:
         ob["media"] = [{"kind": "image", "phash": m.dhash.lower()} for m in r.media]
     return ob
@@ -482,6 +491,9 @@ def _signal_observation(oid: str, s: Signal, source_ids: _Ids) -> dict:
         "claims": claims,
         "is_simulated": False,
     }
+    seen = observed_at(stated.headline_and_text(s.title, s.text), s.published_at)
+    if seen is not None:
+        ob["observed_at"] = _iso(seen)
     if social:
         ob["content_policy"] = "reference_only"
     elif s.text:
@@ -510,6 +522,23 @@ def _signal_observation(oid: str, s: Signal, source_ids: _Ids) -> dict:
             }
         ]
     return ob
+
+
+def _text_places(text: str) -> list[dict]:
+    """Places the text names (app/extraction/places.py), as location mentions."""
+    return [
+        {
+            "surface": p.surface[:200],
+            "resolved": _location(
+                p.latitude,
+                p.longitude,
+                p.precision_m,
+                district=p.district,
+                locality=p.name if p.level == "locality" else None,
+            ),
+        }
+        for p in find_places(text)
+    ]
 
 
 def _judgement(relation: EvidenceRelation, conflicts, stale: bool) -> dict[str, Any]:

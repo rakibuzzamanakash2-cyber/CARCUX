@@ -98,7 +98,7 @@ Signals are evidence from outside CARCUX: disaster alerts, official bulletins an
 | ReliefWeb | API v2 | Off until you set `CARCUX_RELIEFWEB_APPNAME` (an approved app name) and enable it. Carries BMD and FFWC bulletins. |
 | BMD, FFWC | Entered by hand | `POST /api/v1/signals` with a district or coordinates; the full bulletin text can be kept. |
 
-- **Placing news.** `app/ingest/places.py` looks up names in `app/data/bd_gazetteer.json` (64 districts and 8 divisions with coordinates, upazilas, and city localities; English and Bangla; districts and upazilas from [nuhil/bangladesh-geocode](https://github.com/nuhil/bangladesh-geocode), MIT). The first place mentioned anchors the item, refined to the most specific place in its district; precision is the uncertainty radius (2.5 km for a locality, 30 km for a district) and widens when the text names other districts too.
+- **Placing news.** `app/ingest/places.py` uses the extraction module's place finder (`app/extraction/places.py`, a checked copy of `ai/extraction`), which looks up names in `app/extraction/data/bd_gazetteer.json` (64 districts and 8 divisions with coordinates, 481 upazilas and 48 city localities; English, Bangla and Banglish spellings with case endings; districts and upazilas from [nuhil/bangladesh-geocode](https://github.com/nuhil/bangladesh-geocode), MIT). Names shared by several places are settled by the districts the text names. The first place mentioned anchors the item, refined to the most specific place in its district; precision is the uncertainty radius (2.5 km for a locality, 30 km for a district) and widens when the text names other districts too.
 - **Fresh news only.** Feed items older than 7 days are left out (some feed addresses redirect to archives that stopped years ago).
 - **Classifying news.** `app/ingest/classify.py` uses English and Bangla keywords per event type; it needs a match in the headline, or two in the summary. Matched words are stored in `extraction`, so each decision can be explained. Both are baselines for the learned models.
 - **Matching signals to events:** the 5 km / 48 h rule, widened by the signal's precision (up to 300 km) and using its validity period; or the suggestion model once trained (see [Event suggestions](#event-suggestions)).
@@ -309,7 +309,7 @@ backend/
 │   ├── main.py          # application factory
 │   ├── cli.py           # command-line tasks (create-admin, ingest, export-dataset)
 │   ├── ingest/          # source adapters, keyword classifier, gazetteer, runner
-│   ├── data/            # Bangladesh gazetteer (scripts/build_gazetteer.py)
+│   ├── extraction/      # copy of ai/extraction (details, language, places, times) and its gazetteer
 │   ├── core/            # settings, password hashing, tokens
 │   ├── db/              # base model, engine and sessions
 │   ├── models/          # database tables
