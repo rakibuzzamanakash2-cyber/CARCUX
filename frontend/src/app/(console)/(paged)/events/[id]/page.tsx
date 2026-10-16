@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CopyNote } from "@/components/copy-note";
+import { ElsewhereNote } from "@/components/elsewhere-note";
 import { StanceNote } from "@/components/stance-note";
 import { AssessmentText, EvidenceSummary, PriorityBadge } from "@/components/event-badges";
 import { EvidenceControls, LinkButtons } from "@/components/evidence-controls";
@@ -424,6 +425,14 @@ export default async function EventPage({
                               .map((o) => ({ id: o.id, label: itemLabel(o) }))}
                           />
                           <StanceNote stance={item.stance} labelled={item.relation} />
+                          {item.relation === "unrelated" && (
+                            <ElsewhereNote
+                              eventId={event.id}
+                              kind="signal"
+                              itemId={item.signal.id}
+                              canCreate={!!item.signal.event_type && item.signal.latitude !== null}
+                            />
+                          )}
                           <EvidenceControls
                             eventId={event.id}
                             evidenceId={item.id}
@@ -490,6 +499,9 @@ export default async function EventPage({
                             .map((o) => ({ id: o.id, label: itemLabel(o) }))}
                         />
                         <StanceNote stance={item.stance} labelled={item.relation} />
+                        {item.relation === "unrelated" && (
+                          <ElsewhereNote eventId={event.id} kind="report" itemId={r.id} canCreate />
+                        )}
                         <EvidenceControls
                           eventId={event.id}
                           evidenceId={item.id}
