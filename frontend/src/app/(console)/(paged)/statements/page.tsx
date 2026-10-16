@@ -3,13 +3,13 @@ import { Megaphone } from "lucide-react";
 import { PageBand, PageBody } from "@/components/page-header";
 import { StatementCard } from "@/components/statement-bits";
 import { api } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import type { Statement } from "@/lib/types";
 
 export const metadata = { title: "Statements" };
 
 export default async function StatementsPage() {
-  await verifySession();
+  await verifyStaff();
   const statements = await api<Statement[]>("/statements?limit=100");
   return (
     <>

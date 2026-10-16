@@ -24,7 +24,21 @@ _UNAUTHORIZED = HTTPException(
 )
 
 
+# Second annotators must not see anyone else's label, CARCUX's suggestions, the
+# agreement figures or the events' evidence. Their accounts reach these routes only;
+# every other route that needs a signed-in user refuses them (deny by default).
+ANNOTATOR_ROUTES = frozenset(
+    {
+        ("GET", "/auth/me"),
+        ("POST", "/auth/password"),
+        ("GET", "/annotation/queue"),
+        ("POST", "/annotation/judgements"),
+    }
+)
+
+
 def get_current_user(
+    request: Request,
     db: DbSession,
     settings: AppSettings,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
@@ -40,6 +54,10 @@ def get_current_user(
     # Reject tokens for deactivated users and tokens issued before a revocation.
     if user is None or not user.is_active or user.token_version != claims.token_version:
         raise _UNAUTHORIZED
+    if user.role == Role.ANNOTATOR:
+        path = request.url.path.removeprefix(settings.api_prefix)
+        if (request.method, path) not in ANNOTATOR_ROUTES:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     return user
 
 

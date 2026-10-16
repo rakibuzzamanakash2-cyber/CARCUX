@@ -43,7 +43,7 @@ export function Sidebar({ role, badges }: { role: Role; badges: Record<string, n
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const groups = NAV.map((g) => ({
     ...g,
-    items: g.items.filter((i) => !i.roles || i.roles.includes(role)),
+    items: g.items.filter((i) => (i.roles ? i.roles.includes(role) : role !== "annotator")),
   })).filter((g) => g.items.length > 0);
   const badgeTone: Record<string, string> = {
     "/events": "bg-critical text-white",

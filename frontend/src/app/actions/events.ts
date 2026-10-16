@@ -9,6 +9,7 @@ import { ASSESSMENTS, CLAIM_ATTRIBUTES, PRIORITIES, RELATIONS, STATUSES } from "
 import { DHAKA_OFFSET, isUuid } from "@/lib/format";
 import { cleanSuggestion } from "@/lib/suggestions";
 import {
+  JUDGES,
   REPORT_REVIEWERS,
   type ActionState,
   type Assessment,
@@ -254,7 +255,7 @@ export async function judgeLink(
   relation: EvidenceRelation,
   labels: Partial<EvidenceLabels> & { note?: string },
 ): Promise<ActionState> {
-  await requireRole(...REPORT_REVIEWERS);
+  await requireRole(...JUDGES);
   if (!isUuid(evidenceId) || !RELATION_VALUES.has(relation))
     return { ok: false, message: "Unknown link or label." };
   try {
@@ -282,7 +283,7 @@ export async function adjudicateLink(
   conflicts: string[],
   note: string,
 ): Promise<ActionState> {
-  await requireRole(...REPORT_REVIEWERS);
+  await requireRole(...JUDGES);
   if (!isUuid(evidenceId) || !RELATION_VALUES.has(relation))
     return { ok: false, message: "Unknown link or label." };
   try {

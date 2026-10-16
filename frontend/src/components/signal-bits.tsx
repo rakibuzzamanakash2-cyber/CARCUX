@@ -11,7 +11,7 @@ import {
   severityLabel,
   signalStatusLabel,
 } from "@/lib/signals";
-import type { Severity, Signal, SignalStatus } from "@/lib/types";
+import type { BlindSignal, Severity, SignalStatus } from "@/lib/types";
 
 export function SeverityPill({ severity }: { severity: Severity | null }) {
   if (!severity) return <span className="text-sm text-muted">Not rated</span>;
@@ -30,7 +30,7 @@ export function SignalStatusPill({ status }: { status: SignalStatus }) {
 }
 
 /** Where a signal came from, in one line: icon, publisher, time. */
-export function SourceLine({ signal }: { signal: Signal }) {
+export function SourceLine({ signal }: { signal: BlindSignal }) {
   const { icon: Icon } = ADAPTER[signal.source.adapter];
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
@@ -57,7 +57,7 @@ export function SourceLine({ signal }: { signal: Signal }) {
 }
 
 /** A signal as evidence or a suggestion: source line, headline, excerpt, link out. */
-export function SignalSummary({ signal, blind = false }: { signal: Signal; blind?: boolean }) {
+export function SignalSummary({ signal, blind = false }: { signal: BlindSignal; blind?: boolean }) {
   return (
     <div className="flex flex-col gap-1">
       <SourceLine signal={signal} />

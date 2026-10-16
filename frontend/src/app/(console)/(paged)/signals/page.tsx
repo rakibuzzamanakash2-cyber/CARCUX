@@ -18,7 +18,7 @@ import { buttonOnBand, PageBand, PageBody, StatTile, StatTiles } from "@/compone
 import { Pager } from "@/components/pager";
 import { SeverityPill, SignalStatusPill } from "@/components/signal-bits";
 import { api } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FAMILIES } from "@/lib/events";
@@ -50,7 +50,7 @@ function since(hours: number): string {
 }
 
 export default async function SignalsPage({ searchParams }: { searchParams: Promise<Params> }) {
-  const user = await verifySession();
+  const user = await verifyStaff();
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const params = await searchParams;
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);

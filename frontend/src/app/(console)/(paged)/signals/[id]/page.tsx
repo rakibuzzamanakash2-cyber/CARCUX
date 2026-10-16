@@ -9,7 +9,7 @@ import { buttonSecondary, PageBand, PageBody, Panel } from "@/components/page-he
 import { ReviewControls } from "@/components/review-controls";
 import { SeverityPill, SignalStatusPill } from "@/components/signal-bits";
 import { api, ApiError } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { relationLabel } from "@/lib/events";
@@ -65,7 +65,7 @@ export default async function SignalDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ entered?: string; known?: string }>;
 }) {
-  const user = await verifySession();
+  const user = await verifyStaff();
   const [{ id }, { entered, known }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
 

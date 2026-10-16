@@ -18,7 +18,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { buttonOnBand, PageBand, PageBody, StatTile, StatTiles } from "@/components/page-header";
 import { Pager } from "@/components/pager";
 import { api } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FAMILIES, PRIORITIES } from "@/lib/events";
@@ -67,7 +67,7 @@ function summarise(open: EventPage) {
 }
 
 export default async function EventsPage({ searchParams }: { searchParams: Promise<Params> }) {
-  const user = await verifySession();
+  const user = await verifyStaff();
   const params = await searchParams;
   const view = VIEWS.find((v) => v.key === params.view) ?? VIEWS[0];
   const family = FAMILIES.some((f) => f.value === params.family) ? params.family! : "";

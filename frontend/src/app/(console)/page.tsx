@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import {
   REPORT_REVIEWERS,
   REPORT_SUBMITTERS,
@@ -27,7 +27,7 @@ export default async function SituationPage({
 }: {
   searchParams: Promise<{ denied?: string }>;
 }) {
-  const [user, { denied }] = await Promise.all([verifySession(), searchParams]);
+  const [user, { denied }] = await Promise.all([verifyStaff(), searchParams]);
   const reviewer = REPORT_REVIEWERS.includes(user.role);
   const since = reportWindowStart();
 

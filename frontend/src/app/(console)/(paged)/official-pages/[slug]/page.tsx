@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { PageBand, PageBody, Panel } from "@/components/page-header";
 import { StatementCard } from "@/components/statement-bits";
 import { api, ApiError } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { formatDhaka } from "@/lib/format";
 import {
   pageKindLabel,
@@ -39,7 +39,7 @@ export default async function OfficialPageView({
   searchParams: Promise<{ created?: string }>;
 }) {
   const [{ slug }, { created }] = await Promise.all([params, searchParams]);
-  const user = await verifySession();
+  const user = await verifyStaff();
   let page: OfficialPage | OfficialPageDetail;
   try {
     page = await api<OfficialPage | OfficialPageDetail>(

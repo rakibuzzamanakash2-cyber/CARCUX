@@ -1,10 +1,15 @@
-export type Role = "admin" | "analyst" | "field_worker" | "viewer" | "official";
+export type Role = "admin" | "analyst" | "field_worker" | "viewer" | "official" | "annotator";
 
 export const ROLES: { value: Role; label: string; description: string }[] = [
   { value: "admin", label: "Admin", description: "Manages accounts and settings" },
   { value: "analyst", label: "Analyst", description: "Reviews events, verifies assessments" },
   { value: "field_worker", label: "Field worker", description: "Submits field reports" },
   { value: "viewer", label: "Viewer", description: "Read-only dashboard access" },
+  {
+    value: "annotator",
+    label: "Annotator",
+    description: "Gives blind second opinions only; sees no other labels",
+  },
   {
     value: "official",
     label: "Official",
@@ -332,6 +337,8 @@ export interface VerifyResult {
 export const REPORT_READERS: Role[] = ["field_worker", "analyst", "admin"];
 export const REPORT_SUBMITTERS: Role[] = ["field_worker", "admin"];
 export const REPORT_REVIEWERS: Role[] = ["analyst", "admin"];
+/** Who gives second opinions. Annotators can do nothing else. */
+export const JUDGES: Role[] = ["analyst", "admin", "annotator"];
 
 /** Mirrors the backend's event schemas. */
 export type EventStatus = "active" | "monitoring" | "resolved" | "dismissed";
@@ -783,11 +790,58 @@ export interface ImportResult {
 }
 
 /** Second opinions, agreement and adjudication. */
+/** The queue is blind: only what is needed to judge, nothing that shows another label. */
+export type BlindEvent = Pick<
+  CarcuxEvent,
+  | "id"
+  | "title"
+  | "summary"
+  | "event_type"
+  | "family"
+  | "place_name"
+  | "latitude"
+  | "longitude"
+  | "started_at"
+  | "ended_at"
+  | "occurred"
+  | "ground_truth_sources"
+  | "ground_truth_note"
+>;
+
+export type BlindSignal = Pick<
+  Signal,
+  | "id"
+  | "source"
+  | "title"
+  | "text"
+  | "content_policy"
+  | "url"
+  | "language"
+  | "event_type"
+  | "severity"
+  | "place_name"
+  | "precision_m"
+  | "published_at"
+>;
+
+export type BlindFieldReport = Pick<
+  FieldReport,
+  | "id"
+  | "text"
+  | "event_type"
+  | "place_name"
+  | "latitude"
+  | "longitude"
+  | "observed_at"
+  | "media"
+  | "integrity_flags"
+>;
+
 export interface QueueItem {
   evidence_id: string;
-  event: CarcuxEvent;
-  field_report: FieldReport | null;
-  signal: Signal | null;
+  event: BlindEvent;
+  field_report: BlindFieldReport | null;
+  signal: BlindSignal | null;
   judgements: number;
 }
 
