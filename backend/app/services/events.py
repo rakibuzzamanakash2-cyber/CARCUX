@@ -320,6 +320,7 @@ def _attach(
         event,
         report.text if report else headline_and_text(signal.title, signal.text),
         item_type=(report or signal).event_type,
+        at=stance_service.time_of(report or signal),
     )
     item = EventEvidence(
         id=uuid.uuid4(),
@@ -453,7 +454,12 @@ def update_evidence(
             else headline_and_text(item.signal.title, item.signal.text)
         )
         read_as = stance_service.suggest(
-            db, item.event, text, item_type=source.event_type, exclude=item.id
+            db,
+            item.event,
+            text,
+            item_type=source.event_type,
+            exclude=item.id,
+            at=stance_service.time_of(source),
         )
     diff = {}
     for field, new in changes.items():

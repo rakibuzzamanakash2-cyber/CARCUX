@@ -341,13 +341,24 @@ def summarise_details(vs: list[Vote], weights: Weights) -> tuple[list[DetailSumm
         stated = by_attribute.get(attribute)
         if not stated:
             continue
-        credible = [c for c, r, _ in stated if r >= CREDIBLE]
+        credible = [(c, v) for c, r, v in stated if r >= CREDIBLE]
+        counts = attribute in details.COUNTS
         disputed = any(
-            not details.agrees(attribute, a.value, b.value) for a in credible for b in credible
+            not details.agrees(attribute, a.value, b.value)
+            # A count that rose over days is not a dispute: compare counts said together.
+            and (not counts or abs(va.at - vb.at) <= details.COUNT_WINDOW)
+            for a, va in credible
+            for b, vb in credible
         )
         if disputed:
             detected.append(attribute)
-        estimate = _estimate(attribute, [(c, r) for c, r, _ in stated])
+        current = stated
+        if counts:
+            # The estimate is the count as it stands: what was said around the latest
+            # credible statement (or the latest statement, when none is credible).
+            latest = max(v.at for _, v in credible) if credible else max(v.at for *_, v in stated)
+            current = [x for x in stated if x[2].at >= latest - details.COUNT_WINDOW]
+        estimate = _estimate(attribute, [(c, r) for c, r, _ in current])
         summaries.append(
             DetailSummary(
                 attribute=attribute,

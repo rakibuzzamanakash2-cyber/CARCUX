@@ -10,7 +10,10 @@ Transparent rules, each with its reason, strongest first:
    type, or the type its words point to, is in another family than the event's);
 3. **partially_supports:** it states a detail (deaths, people affected, depth, cause)
    that disagrees with the estimate from the event's other credible sources ("20 dead"
-   where the others say 3), with that detail as the conflict;
+   where the others say 3), with that detail as the conflict. Counts change as an event
+   goes on (a death toll rises over days), so a count is compared only with what
+   credible sources said within COUNT_WINDOW of the item (guideline v0.2: a count is
+   judged against the toll known when the item was published);
 4. **related:** it asks or comments ("ki hoise?", "dua koren", "anyone know …") and
    states nothing checkable;
 5. **supports** otherwise: it reports the event and nothing in it says otherwise. This
@@ -25,6 +28,7 @@ not show them), so agreement between annotators is not inflated by them.
 import re
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.extraction import extract
@@ -40,6 +44,17 @@ RELATED_CUES = re.compile(
     r"ki hoise|ki hoyeche|ki hoilo",
     re.IGNORECASE,
 )
+
+
+COUNT_WINDOW, COUNTS = details.COUNT_WINDOW, details.COUNTS
+
+
+def time_of(item) -> datetime | None:
+    """When an item was said: a field report's arrival, a signal's publication (as the
+    assessment counts them)."""
+    if item is None:
+        return None
+    return getattr(item, "received_at", None) or getattr(item, "published_at", None)
 
 
 @dataclass
@@ -75,9 +90,11 @@ def suggest(
     *,
     item_type: str | None = None,
     exclude: uuid.UUID | None = None,
+    at: datetime | None = None,
 ) -> StanceSuggestion:
     """The suggested relation of `text` to `event`; `exclude` is the item's own link
-    when it is already linked, so it is not compared with itself."""
+    when it is already linked, so it is not compared with itself; `at` is when the item
+    was said (see time_of), for comparing counts with what was known then."""
     claims = extract(text)
     denial = next((c for c in claims if c.attribute == "occurrence" and c.value is False), None)
     if denial is not None:
@@ -97,7 +114,7 @@ def suggest(
         )
 
     comparable = [c for c in claims if c.attribute in details.COMPARABLE]
-    conflicts, reasons = _disagreements(db, event, comparable, exclude)
+    conflicts, reasons = _disagreements(db, event, comparable, exclude, at)
     if conflicts:
         return StanceSuggestion(EvidenceRelation.PARTIALLY_SUPPORTS, "medium", reasons, conflicts)
 
@@ -112,8 +129,11 @@ def suggest(
     return StanceSuggestion(EvidenceRelation.SUPPORTS, "weak", reasons)
 
 
-def _disagreements(db, event: Event, comparable, exclude) -> tuple[list[str], list[str]]:
-    """Details this text states differently from the event's other credible sources."""
+def _disagreements(
+    db, event: Event, comparable, exclude, at: datetime | None = None
+) -> tuple[list[str], list[str]]:
+    """Details this text states differently from the event's other credible sources:
+    counts against what they said around `at`, other details against all of it."""
     if not comparable:
         return [], []
     from app.services import assess
@@ -121,7 +141,10 @@ def _disagreements(db, event: Event, comparable, exclude) -> tuple[list[str], li
     skip = assess.copied(db, event) | ({exclude} if exclude else set())
     weights, _ = assess.current_weights(db)
     summaries, _ = assess.summarise_details(assess.votes(event, skip), weights)
-    by_attribute = {s.attribute: s for s in summaries}
+    by_attribute = {s.attribute: s for s in summaries if s.attribute not in COUNTS or at is None}
+    if at is not None and any(c.attribute in COUNTS for c in comparable):
+        near, _ = assess.summarise_details(_votes_near(event, skip, at), weights)
+        by_attribute |= {s.attribute: s for s in near if s.attribute in COUNTS}
     conflicts, reasons = [], []
     for c in comparable:
         s = by_attribute.get(c.attribute)
@@ -129,11 +152,29 @@ def _disagreements(db, event: Event, comparable, exclude) -> tuple[list[str], li
             continue
         if not details.agrees(c.attribute, c.value, s.estimate):
             conflicts.append(c.attribute)
+            then = " around then" if at is not None and c.attribute in COUNTS else ""
             reasons.append(
-                f"says {_value(c.attribute, c.value, c.unit)}; other sources say "
+                f"says {_value(c.attribute, c.value, c.unit)}; other sources say{then} "
                 f"{_value(c.attribute, s.estimate, s.unit)}"
             )
     return conflicts, reasons
+
+
+def _votes_near(event: Event, skip, at: datetime) -> list:
+    """One vote per source, from its items said within COUNT_WINDOW of `at` (its latest
+    such item)."""
+    from app.services import assess
+
+    latest = {}
+    for link in event.evidence:
+        if link.id in skip:
+            continue
+        v = assess._vote(link)
+        if v is None or abs(v.at - at) > COUNT_WINDOW:
+            continue
+        if v.source_key not in latest or v.at >= latest[v.source_key].at:
+            latest[v.source_key] = v
+    return sorted(latest.values(), key=lambda v: v.at)
 
 
 def for_audit(s: StanceSuggestion, chosen: str) -> dict:
@@ -196,7 +237,9 @@ def evaluate(db) -> dict:
             if link.field_report
             else headline_and_text(link.signal.title, link.signal.text)
         )
-        s = suggest(db, link.event, text, item_type=source.event_type, exclude=link.id)
+        s = suggest(
+            db, link.event, text, item_type=source.event_type, exclude=link.id, at=time_of(source)
+        )
         working.append((s.relation.value, (link.gold_relation or link.relation).value))
         for j in link.judgements:
             if j.blind:

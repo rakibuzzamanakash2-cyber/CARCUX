@@ -15,12 +15,19 @@ Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
 
     python -m app.cli export-dataset out/            # events with ground truth, linked items
     python -m app.cli export-dataset out/ --all      # also every unlinked report and signal
+
+Second opinions away from the console (an Excel sheet of an annotator's blind queue):
+
+    python -m app.cli export-label-sheet annotator@example.org sheet.xlsx
+    python -m app.cli import-label-sheet annotator@example.org filled.xlsx          # check
+    python -m app.cli import-label-sheet annotator@example.org filled.xlsx --save   # record
 """
 
 import argparse
 import getpass
 import logging
 import sys
+from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.security import MIN_PASSWORD_LENGTH
@@ -241,6 +248,64 @@ def evaluate_stance() -> int:
         engine.dispose()
 
 
+def export_label_sheet(email: str, path: str) -> int:
+    from app.services import label_sheet
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            user = _judge_account(db, email)
+            if user is None:
+                return 1
+            n = label_sheet.export(db, user, Path(path))
+            print(f"Wrote {n} items for {user.full_name} to {path}")
+            return 0
+    finally:
+        engine.dispose()
+
+
+def import_label_sheet(email: str, path: str, save: bool) -> int:
+    from app.services import label_sheet
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            user = _judge_account(db, email)
+            if user is None:
+                return 1
+            sheet = label_sheet.read(db, Path(path))
+            for problem in sheet.errors:
+                print(f"  {problem}")
+            print(
+                f"{len(sheet.rows)} labels ready, {sheet.blank} rows without a label, "
+                f"{len(sheet.errors)} problems"
+            )
+            if sheet.errors:
+                print("Nothing saved: fix the rows above in the sheet and run this again.")
+                return 1
+            if not save:
+                print("Checked only. Add --save to record them as this annotator's judgements.")
+                return 0
+            n = label_sheet.save(db, user, sheet)
+            print(f"Saved {n} judgements for {user.full_name}.")
+            return 0
+    finally:
+        engine.dispose()
+
+
+def _judge_account(db, email: str):
+    from app.services.users import get_by_email
+
+    user = get_by_email(db, email)
+    if user is None or not user.is_active:
+        print(f"No active account for {email}")
+        return None
+    if user.role not in (Role.ANNOTATOR, Role.ANALYST, Role.ADMIN):
+        print(f"{email} cannot give second opinions (role {user.role.value})")
+        return None
+    return user
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -262,6 +327,13 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("train-suggestions", help="train the event suggestion model from links")
     sub.add_parser("train-assessment", help="train the assessment model on resolved events")
     sub.add_parser("evaluate-stance", help="compare stance suggestions with analysts' labels")
+    p = sub.add_parser("export-label-sheet", help="an annotator's blind queue as an Excel sheet")
+    p.add_argument("email", help="the annotator's account")
+    p.add_argument("file", help="where to write the .xlsx")
+    p = sub.add_parser("import-label-sheet", help="read a filled-in label sheet back")
+    p.add_argument("email", help="the annotator's account")
+    p.add_argument("file", help="the filled-in .xlsx")
+    p.add_argument("--save", action="store_true", help="record them (default: check only)")
     args = parser.parse_args(argv)
 
     if args.command == "create-admin":
@@ -278,6 +350,10 @@ def main(argv: list[str] | None = None) -> int:
         return train_assessment()
     if args.command == "evaluate-stance":
         return evaluate_stance()
+    if args.command == "export-label-sheet":
+        return export_label_sheet(args.email, args.file)
+    if args.command == "import-label-sheet":
+        return import_label_sheet(args.email, args.file, args.save)
     return 2
 
 

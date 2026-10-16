@@ -269,7 +269,8 @@ def candidate_events(signal_id: uuid.UUID, db: DbSession, _user: Reviewer):
     signal = _signal_or_404(db, signal_id)
     text = headline_and_text(signal.title, signal.text)
     return [
-        as_candidate(s, db, text, signal.event_type) for s in suggest_service.for_signal(db, signal)
+        as_candidate(s, db, text, signal.event_type, signal.published_at)
+        for s in suggest_service.for_signal(db, signal)
     ]
 
 
