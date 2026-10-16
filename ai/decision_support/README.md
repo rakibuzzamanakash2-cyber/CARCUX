@@ -14,8 +14,9 @@ Turns fused events into something staff can act on quickly, **without hiding the
 
 ```python
 from carcux_decision_support import EventFacts, suggest, summarise, what_changed
-p = suggest(event, now)            # PrioritySuggestion(level, score, factors)
-for s in summarise(event):         # Sentence(text, cites, kind)
+
+p = suggest(event, now)  # PrioritySuggestion(level, score, factors)
+for s in summarise(event):  # Sentence(text, cites, kind)
     print(s.text, s.cites)
 ```
 
