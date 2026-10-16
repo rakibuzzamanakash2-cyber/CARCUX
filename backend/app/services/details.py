@@ -16,7 +16,7 @@ from app.models.signal import Signal
 COMPARABLE = ("magnitude", "affected_count", "casualty_count", "cause")
 COUNT_TOLERANCE = 0.20  # annotation guideline §5.2: counts agree within ±20 %
 # Counts change as an event goes on (a death toll rises over days): two counts are
-# compared only when they were said within this time of each other (guideline v0.2).
+# compared only when they were said within this time of each other (guideline v0.4).
 COUNT_WINDOW = timedelta(hours=12)
 COUNTS = frozenset({"casualty_count", "affected_count"})
 

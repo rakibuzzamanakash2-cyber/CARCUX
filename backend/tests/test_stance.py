@@ -223,7 +223,7 @@ def test_scores_when_a_label_is_never_suggested():
 
 
 def test_a_rising_count_is_judged_against_what_was_said_at_the_time(client, db, people):
-    # Guideline v0.2: "3 dead" on the first day and "20 dead" two days later can both be
+    # Guideline v0.4: "3 dead" on the first day and "20 dead" two days later can both be
     # right; only a count that disagrees with what was said around the same time conflicts.
     a, (w1, w2, w3) = people["analyst"], people["workers"]
     e = _event(db, a)

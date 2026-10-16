@@ -67,7 +67,7 @@ ID_COL = len(COLUMNS)  # last column, hidden
 FIRST_ANSWER = 8  # "Your label"
 
 GUIDE = [
-    "How to label (CARCUX-BD pilot, guideline v0.2)",
+    "How to label (CARCUX-BD pilot, guideline v0.4)",
     "",
     "Each row is one news item or post, and the event it may be about. Say what the item "
     "says about that event. Another person has labelled the same items; your labels must "

@@ -12,7 +12,7 @@ Transparent rules, each with its reason, strongest first:
    that disagrees with the estimate from the event's other credible sources ("20 dead"
    where the others say 3), with that detail as the conflict. Counts change as an event
    goes on (a death toll rises over days), so a count is compared only with what
-   credible sources said within COUNT_WINDOW of the item (guideline v0.2: a count is
+   credible sources said within COUNT_WINDOW of the item (guideline v0.4: a count is
    judged against the toll known when the item was published);
 4. **related:** it asks or comments ("ki hoise?", "dua koren", "anyone know …") and
    states nothing checkable;

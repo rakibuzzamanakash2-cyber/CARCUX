@@ -55,7 +55,7 @@ def test_credible_sources_disagreeing_is_a_detected_dispute():
 
 
 def test_a_count_that_rose_over_days_is_not_a_dispute():
-    # Guideline v0.2: counts are compared only when said within 12 hours of each other,
+    # Guideline v0.4: counts are compared only when said within 12 hours of each other,
     # and the estimate is the count as it stands now.
     deaths = lambda n: Claim("casualty_count", n, "deaths", f"{n} killed")  # noqa: E731
 
