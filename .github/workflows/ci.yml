@@ -94,14 +94,18 @@ jobs:
             ai/extraction/pyproject.toml
             ai/fusion/pyproject.toml
             ai/decision_support/pyproject.toml
+            ai/media/pyproject.toml
             data/tools/pyproject.toml
-      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]" -e "extraction[dev]" -e "decision_support[dev]"
+      - name: OCR and video programs (for the media module's tests)
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-ben ffmpeg fonts-noto-core
+      - run: pip install -e ../data/tools -e "correlation[dev]" -e "fusion[dev]" -e "extraction[dev]" -e "decision_support[dev]" -e "media[dev]"
       - name: Lint
         run: |
           (cd correlation && ruff check . && ruff format --check .)
           (cd fusion && ruff check . && ruff format --check .)
           (cd extraction && ruff check . && ruff format --check .)
           (cd decision_support && ruff check . && ruff format --check .)
+          (cd media && ruff check . && ruff format --check .)
       - name: Test correlation
         working-directory: ai/correlation
         run: pytest -q
@@ -113,6 +117,9 @@ jobs:
         run: pytest -q
       - name: Test decision support
         working-directory: ai/decision_support
+        run: pytest -q
+      - name: Test media
+        working-directory: ai/media
         run: pytest -q
 
   frontend:
