@@ -27,6 +27,7 @@ import {
   REPORT_REVIEWERS,
   type Assessment,
   type AssessmentSuggestion,
+  type Briefing,
   type CandidateReport,
   type CandidateSignal,
   type CarcuxEvent,
@@ -39,6 +40,7 @@ import {
 } from "@/lib/types";
 
 import { AssessmentSuggestionPanel } from "./assessment-suggestion";
+import { BriefingPanel, PrioritySuggestionPanel } from "./briefing";
 import { GroundTruthPanel } from "./ground-truth-panel";
 import { ManagePanel } from "./manage-panel";
 
@@ -208,10 +210,11 @@ export default async function EventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string; tab?: string }>;
+  searchParams: Promise<{ created?: string; tab?: string; changes?: string }>;
 }) {
   const user = await verifyStaff();
-  const [{ id }, { created, tab: tabParam }] = await Promise.all([params, searchParams]);
+  const [{ id }, { created, tab: tabParam, changes }] = await Promise.all([params, searchParams]);
+  const hours = [1, 6, 24, 168].includes(Number(changes)) ? Number(changes) : 24;
   if (!isUuid(id)) notFound();
 
   let event: CarcuxEvent;
@@ -246,11 +249,14 @@ export default async function EventPage({
         null,
       ];
 
-  const [statements, opinions] = await Promise.all([
+  const [statements, opinions, briefing] = await Promise.all([
     api<Statement[]>(`/statements?event_id=${id}`),
     reviewer && tab === "evidence"
       ? api<CandidateSignal[]>(`/events/${id}/public-opinions`)
       : Promise.resolve([] as CandidateSignal[]),
+    reviewer && tab === "overview"
+      ? api<Briefing>(`/events/${id}/briefing?hours=${hours}`)
+      : Promise.resolve(null),
   ]);
   const canSpeak = user.role === "official" && user.official_page?.status === "verified";
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
@@ -363,6 +369,21 @@ export default async function EventPage({
                   </p>
                 )}
               </Panel>
+              {briefing && (
+                <Panel
+                  id="briefing"
+                  title="CARCUX briefing"
+                  description="A summary of the linked evidence; every sentence cites the items it rests on."
+                >
+                  <BriefingPanel
+                    briefing={briefing}
+                    base={base}
+                    order={evidence.map((e) => e.id)}
+                    labels={new Map(evidence.map((e) => [e.id, itemLabel(e)]))}
+                    hours={hours}
+                  />
+                </Panel>
+              )}
               {details}
               <Panel
                 id="statements"
@@ -401,6 +422,15 @@ export default async function EventPage({
                     description="From the evidence linked so far."
                   >
                     <AssessmentSuggestionPanel event={event} suggestion={suggestion} />
+                  </Panel>
+                )}
+                {briefing && (
+                  <Panel
+                    id="priority-suggestion"
+                    title="Suggested priority"
+                    description="From operational factors only."
+                  >
+                    <PrioritySuggestionPanel event={event} briefing={briefing} />
                   </Panel>
                 )}
                 <Panel id="manage" title="Analyst decision">
@@ -444,7 +474,8 @@ export default async function EventPage({
                       return item.signal ? (
                         <li
                           key={item.id}
-                          className={`rounded-md border border-line border-l-4 bg-panel p-3 ${RELATION_STYLE[item.relation]}`}
+                          id={`evidence-${item.id}`}
+                          className={`scroll-mt-24 rounded-md border border-line border-l-4 bg-panel p-3 target:ring-2 target:ring-brand ${RELATION_STYLE[item.relation]}`}
                         >
                           <p className="mb-1 text-xs font-bold tracking-wide text-[#2f7fb0] uppercase">
                             Public signal
@@ -491,7 +522,8 @@ export default async function EventPage({
                     return (
                       <li
                         key={item.id}
-                        className={`rounded-md border border-line border-l-4 bg-panel p-3 ${RELATION_STYLE[item.relation]}`}
+                        id={`evidence-${item.id}`}
+                        className={`scroll-mt-24 rounded-md border border-line border-l-4 bg-panel p-3 target:ring-2 target:ring-brand ${RELATION_STYLE[item.relation]}`}
                       >
                         <p className="mb-1 text-xs font-bold tracking-wide text-brand uppercase">
                           Field report
