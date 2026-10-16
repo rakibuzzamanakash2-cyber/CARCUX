@@ -11,6 +11,7 @@ import {
   RadioTower,
   Rss,
   ScrollText,
+  ShieldAlert,
   Users,
   Users2,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const ICONS: Record<NavIcon, typeof Map> = {
   users: Users,
   official: Landmark,
   statements: Megaphone,
+  moderation: ShieldAlert,
   audit: ScrollText,
 };
 

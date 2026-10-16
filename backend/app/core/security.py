@@ -90,3 +90,44 @@ def decode_access_token(settings: Settings, token: str) -> TokenClaims:
         )
     except (jwt.PyJWTError, ValueError, KeyError) as exc:
         raise InvalidTokenError(str(exc)) from exc
+
+
+# --- Public accounts ---------------------------------------------------------------------
+# A different token type: staff endpoints refuse it ("access" only), public endpoints
+# refuse staff tokens.
+
+
+@dataclass(frozen=True)
+class PublicClaims:
+    account_id: uuid.UUID
+    token_version: int
+
+
+def create_public_token(
+    settings: Settings, account_id: uuid.UUID, token_version: int
+) -> tuple[str, int]:
+    now = datetime.now(UTC)
+    lifetime = timedelta(days=settings.public_token_days)
+    payload = {
+        "sub": str(account_id), "ver": token_version, "type": "public",
+        "iat": now, "exp": now + lifetime, "jti": uuid.uuid4().hex,
+    }  # fmt: skip
+    token = jwt.encode(
+        payload, settings.jwt_secret.get_secret_value(), algorithm=settings.jwt_algorithm
+    )
+    return token, int(lifetime.total_seconds())
+
+
+def decode_public_token(settings: Settings, token: str) -> PublicClaims:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret.get_secret_value(),
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["sub", "exp", "iat", "ver", "type"]},
+        )
+        if payload["type"] != "public":
+            raise InvalidTokenError("wrong token type")
+        return PublicClaims(uuid.UUID(payload["sub"]), int(payload["ver"]))
+    except (jwt.PyJWTError, ValueError, KeyError) as exc:
+        raise InvalidTokenError(str(exc)) from exc
