@@ -75,6 +75,7 @@ export function LinkButtons({
   label,
   suggestion,
   stance,
+  onLinked,
 }: {
   eventId: string;
   reportId?: string;
@@ -84,6 +85,8 @@ export function LinkButtons({
   suggestion?: SuggestionUsed;
   /** CARCUX's reading: its button is marked, never chosen for the analyst. */
   stance?: StanceSuggestion | null;
+  /** Called after a link is saved. */
+  onLinked?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<ActionState>();
@@ -91,13 +94,13 @@ export function LinkButtons({
   const [conflicts, setConflicts] = useState<ClaimAttribute[]>([]);
 
   function link(relation: EvidenceRelation, chosen: ClaimAttribute[] = []) {
-    startTransition(async () =>
-      setState(
-        signalId
-          ? await linkSignal(eventId, signalId, relation, chosen, suggestion)
-          : await linkReport(eventId, reportId ?? "", relation, { conflicts: chosen }, suggestion),
-      ),
-    );
+    startTransition(async () => {
+      const result = signalId
+        ? await linkSignal(eventId, signalId, relation, chosen, suggestion)
+        : await linkReport(eventId, reportId ?? "", relation, { conflicts: chosen }, suggestion);
+      setState(result);
+      if (result?.ok) onLinked?.();
+    });
   }
 
   return (

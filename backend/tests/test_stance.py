@@ -64,6 +64,8 @@ def _unlinked_report(db, worker, text) -> FieldReport:
         ("Knee-deep water on Mirpur 10 road this morning", None, "supports", "weak",
          "nothing in it says otherwise"),
         ("Water everywhere", "waterlogging", "supports", "weak", "reports a waterlogging"),
+        ("Loud blast in Mirpur", "explosion", "unrelated", "medium",
+         "about an explosion, not a waterlogging"),
     ],
 )  # fmt: skip
 def test_rules(client, db, people, text, event_type, relation, strength, reason):

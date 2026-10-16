@@ -12,12 +12,14 @@ import {
   REPORT_REVIEWERS,
   type ActionState,
   type Assessment,
+  type CandidateEvent,
   type CarcuxEvent,
   type EventStatus,
   type EvidenceLabels,
   type EvidenceRelation,
   type GroundTruthSource,
   type Priority,
+  type ReportLink,
   type SuggestionUsed,
 } from "@/lib/types";
 
@@ -299,4 +301,29 @@ export async function adjudicateLink(
   revalidatePath("/annotation");
   revalidatePath("/events", "layout");
   return { ok: true, message: "Decided." };
+}
+
+/** Where else an item labelled "not this event" may belong: the events it is already
+ * linked to (other than this one) and events that match it, best first. */
+export async function otherEvents(
+  kind: "signal" | "report",
+  itemId: string,
+  exceptEventId: string,
+): Promise<{ ok: true; linked: ReportLink[]; candidates: CandidateEvent[] } | ActionState> {
+  await requireRole(...REPORT_REVIEWERS);
+  if (!isUuid(itemId)) return { ok: false, message: "Unknown item." };
+  const base = kind === "signal" ? `/signals/${itemId}` : `/field-reports/${itemId}`;
+  try {
+    const [linked, candidates] = await Promise.all([
+      api<ReportLink[]>(`${base}/events`),
+      api<CandidateEvent[]>(`${base}/candidate-events`),
+    ]);
+    return {
+      ok: true,
+      linked: linked.filter((l) => l.event.id !== exceptEventId),
+      candidates: candidates.filter((c) => c.event.id !== exceptEventId),
+    };
+  } catch (error) {
+    return failure(error, "Could not look for other events.");
+  }
 }

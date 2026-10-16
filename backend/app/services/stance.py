@@ -54,6 +54,12 @@ def _label(event_type: str) -> str:
     return event_type.replace("_", " ")
 
 
+def _a(event_type: str) -> str:
+    """The event type with its article: "a flood", "an earthquake"."""
+    label = _label(event_type)
+    return ("an " if label[0] in "aeiou" else "a ") + label
+
+
 def _value(attribute: str, value, unit: str | None) -> str:
     if attribute == "casualty_count":
         return f"{value} dead"
@@ -87,7 +93,7 @@ def suggest(
         return StanceSuggestion(
             EvidenceRelation.UNRELATED,
             "medium",
-            [f"about a {_label(kind)}, not a {_label(event.event_type)}"],
+            [f"about {_a(kind)}, not {_a(event.event_type)}"],
         )
 
     comparable = [c for c in claims if c.attribute in details.COMPARABLE]
@@ -102,7 +108,7 @@ def suggest(
 
     reasons = ["reports it; nothing in it says otherwise"]
     if kind and kind == event.event_type:
-        reasons = [f"reports a {_label(kind)}, like the event; nothing in it says otherwise"]
+        reasons = [f"reports {_a(kind)}, like the event; nothing in it says otherwise"]
     return StanceSuggestion(EvidenceRelation.SUPPORTS, "weak", reasons)
 
 
