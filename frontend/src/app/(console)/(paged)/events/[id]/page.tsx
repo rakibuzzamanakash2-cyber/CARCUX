@@ -11,7 +11,7 @@ import { PageBand, PageBody, Panel, Tabs } from "@/components/page-header";
 import { SignalSummary } from "@/components/signal-bits";
 import { StatementCard } from "@/components/statement-bits";
 import { api, ApiError } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import {
@@ -210,7 +210,7 @@ export default async function EventPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ created?: string; tab?: string }>;
 }) {
-  const user = await verifySession();
+  const user = await verifyStaff();
   const [{ id }, { created, tab: tabParam }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
 

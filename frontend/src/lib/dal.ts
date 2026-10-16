@@ -26,9 +26,20 @@ export const verifySession = cache(async (): Promise<User> => {
   }
 });
 
+/**
+ * For pages any staff member may open. Annotators give blind second opinions and the
+ * backend refuses them everything else, so they are sent to their queue instead.
+ */
+export async function verifyStaff(): Promise<User> {
+  const user = await verifySession();
+  if (user.role === "annotator") redirect("/annotation");
+  return user;
+}
+
 /** Require one of the given roles; anyone else is sent to the overview page. */
 export async function requireRole(...roles: Role[]): Promise<User> {
   const user = await verifySession();
-  if (!roles.includes(user.role)) redirect("/?denied=1");
+  if (!roles.includes(user.role))
+    redirect(user.role === "annotator" ? "/annotation" : "/?denied=1");
   return user;
 }

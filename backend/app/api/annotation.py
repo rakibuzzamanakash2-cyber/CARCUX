@@ -10,6 +10,9 @@ from app.models.user import Role, User
 from app.schemas.annotation import (
     Adjudication,
     AgreementRead,
+    BlindEvent,
+    BlindFieldReport,
+    BlindSignal,
     Disagreement,
     JudgementCreate,
     JudgementRead,
@@ -24,6 +27,8 @@ from app.services import annotation as service
 router = APIRouter(prefix="/annotation", tags=["annotation"])
 
 Reviewer = Annotated[User, Depends(require_roles(Role.ANALYST, Role.ADMIN))]
+# Anyone who gives second opinions: analysts, admins and annotators (who can do nothing else).
+Judge = Annotated[User, Depends(require_roles(Role.ANALYST, Role.ADMIN, Role.ANNOTATOR))]
 
 
 def _evidence_or_422(db, evidence_id) -> EventEvidence:
@@ -46,7 +51,7 @@ def _items(link: EventEvidence) -> dict:
 @router.get("/queue", response_model=QueuePage)
 def queue(
     db: DbSession,
-    user: Reviewer,
+    user: Judge,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
@@ -55,7 +60,15 @@ def queue(
     links, total = service.queue(db, user, limit=limit, offset=offset)
     return QueuePage(
         items=[
-            QueueItem(evidence_id=link.id, judgements=len(link.judgements), **_items(link))
+            QueueItem(
+                evidence_id=link.id,
+                judgements=len(link.judgements),
+                event=BlindEvent.model_validate(link.event),
+                field_report=BlindFieldReport.model_validate(link.field_report)
+                if link.field_report
+                else None,
+                signal=BlindSignal.model_validate(link.signal) if link.signal else None,
+            )
             for link in links
         ],
         total=total,
@@ -63,7 +76,7 @@ def queue(
 
 
 @router.post("/judgements", response_model=JudgementRead, status_code=status.HTTP_201_CREATED)
-def judge(body: JudgementCreate, request: Request, db: DbSession, user: Reviewer):
+def judge(body: JudgementCreate, request: Request, db: DbSession, user: Judge):
     link = _evidence_or_422(db, body.evidence_id)
     try:
         return service.judge(

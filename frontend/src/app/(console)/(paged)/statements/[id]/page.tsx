@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { PageBand, PageBody, Panel } from "@/components/page-header";
 import { BriefView, FindingBadge } from "@/components/statement-bits";
 import { api, ApiError } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { formatDhaka, isUuid } from "@/lib/format";
 import type { StatementDetail } from "@/lib/types";
 
@@ -18,7 +18,7 @@ export default async function StatementPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ published?: string }>;
 }) {
-  await verifySession();
+  await verifyStaff();
   const [{ id }, { published }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
   let s: StatementDetail;

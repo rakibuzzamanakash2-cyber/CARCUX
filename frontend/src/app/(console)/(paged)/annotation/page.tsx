@@ -11,13 +11,13 @@ import { eventTypeLabel } from "@/lib/event-types";
 import { claimLabel, CONFIDENCE, relationLabel, RELATIONS } from "@/lib/events";
 import { flagLabel, formatDhaka } from "@/lib/format";
 import {
-  REPORT_REVIEWERS,
+  JUDGES,
   type AgreementStats,
-  type CarcuxEvent,
+  type BlindEvent,
+  type BlindFieldReport,
+  type BlindSignal,
   type Disagreement,
-  type FieldReport,
   type QueueItem,
-  type Signal,
 } from "@/lib/types";
 
 import { DecideForm } from "./decide-form";
@@ -33,7 +33,7 @@ function num(value: number | null, digits = 2): string {
 
 /** The event as the annotator should judge against it: what, where, when, ground truth.
  * Blind: no link to the event page, whose Evidence tab and counts show the first label. */
-function EventBlock({ event, blind = false }: { event: CarcuxEvent; blind?: boolean }) {
+function EventBlock({ event, blind = false }: { event: BlindEvent; blind?: boolean }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="text-xs font-bold tracking-wide text-muted uppercase">Event</p>
@@ -80,8 +80,8 @@ function ItemBlock({
   signal,
   blind = false,
 }: {
-  report: FieldReport | null;
-  signal: Signal | null;
+  report: BlindFieldReport | null;
+  signal: BlindSignal | null;
   blind?: boolean;
 }) {
   if (signal)
@@ -129,21 +129,24 @@ export default async function AnnotationPage({
 }: {
   searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
-  await requireRole(...REPORT_REVIEWERS);
+  const user = await requireRole(...JUDGES);
+  // Annotators see only their queue: agreement figures that change as they judge would
+  // tell them whether they agreed with the first label.
+  const annotator = user.role === "annotator";
   const params = await searchParams;
-  const tab = params.tab === "agreement" ? "agreement" : "queue";
+  const tab = !annotator && params.tab === "agreement" ? "agreement" : "queue";
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
 
   const [queue, stats] = await Promise.all([
     api<{ items: QueueItem[]; total: number }>(
       `/annotation/queue?limit=${PAGE_SIZE}&offset=${(page - 1) * PAGE_SIZE}`,
     ),
-    api<AgreementStats>("/annotation/agreement"),
+    annotator ? null : api<AgreementStats>("/annotation/agreement"),
   ]);
   const disagreements =
     tab === "agreement" ? await api<Disagreement[]>("/annotation/disagreements") : [];
   const lastPage = Math.max(1, Math.ceil(queue.total / PAGE_SIZE));
-  const met = stats.kappa !== null && stats.kappa >= stats.target;
+  const met = stats !== null && stats.kappa !== null && stats.kappa >= stats.target;
   const labels = RELATIONS.map((r) => r.value);
 
   return (
@@ -164,50 +167,56 @@ export default async function AnnotationPage({
             tone="amber"
             href="/annotation"
           />
-          <StatTile
-            icon={Target}
-            value={num(stats.kappa)}
-            label="Cohen's κ"
-            note={`Target ${stats.target.toFixed(2)} or more${stats.kappa === null ? "" : met ? ", met" : ", not met yet"}`}
-            tone={stats.kappa === null ? "blue" : met ? "green" : "red"}
-            href="/annotation?tab=agreement"
-          />
-          <StatTile
-            icon={BarChart3}
-            value={num(stats.alpha)}
-            label="Krippendorff's α"
-            note={`${stats.items_with_two} of ${stats.items_total} links judged twice`}
-            tone="forest"
-          />
-          <StatTile
-            icon={Scale}
-            value={stats.open_disagreements}
-            label="To decide"
-            note="Disagreements without a final label"
-            tone={stats.open_disagreements ? "red" : "green"}
-            href="/annotation?tab=agreement"
-          />
+          {stats && (
+            <>
+              <StatTile
+                icon={Target}
+                value={num(stats.kappa)}
+                label="Cohen's κ"
+                note={`Target ${stats.target.toFixed(2)} or more${stats.kappa === null ? "" : met ? ", met" : ", not met yet"}`}
+                tone={stats.kappa === null ? "blue" : met ? "green" : "red"}
+                href="/annotation?tab=agreement"
+              />
+              <StatTile
+                icon={BarChart3}
+                value={num(stats.alpha)}
+                label="Krippendorff's α"
+                note={`${stats.items_with_two} of ${stats.items_total} links judged twice`}
+                tone="forest"
+              />
+              <StatTile
+                icon={Scale}
+                value={stats.open_disagreements}
+                label="To decide"
+                note="Disagreements without a final label"
+                tone={stats.open_disagreements ? "red" : "green"}
+                href="/annotation?tab=agreement"
+              />
+            </>
+          )}
         </StatTiles>
 
-        <Tabs
-          active={tab}
-          items={[
-            {
-              key: "queue",
-              label: "Judge",
-              href: "/annotation",
-              icon: UserCheck,
-              count: queue.total,
-            },
-            {
-              key: "agreement",
-              label: "Agreement",
-              href: "/annotation?tab=agreement",
-              icon: Scale,
-              count: stats.open_disagreements,
-            },
-          ]}
-        />
+        {stats && (
+          <Tabs
+            active={tab}
+            items={[
+              {
+                key: "queue",
+                label: "Judge",
+                href: "/annotation",
+                icon: UserCheck,
+                count: queue.total,
+              },
+              {
+                key: "agreement",
+                label: "Agreement",
+                href: "/annotation?tab=agreement",
+                icon: Scale,
+                count: stats.open_disagreements,
+              },
+            ]}
+          />
+        )}
 
         {tab === "queue" &&
           (queue.items.length === 0 ? (
@@ -251,7 +260,7 @@ export default async function AnnotationPage({
           />
         )}
 
-        {tab === "agreement" && (
+        {tab === "agreement" && stats && (
           <>
             <Panel
               id="matrix"

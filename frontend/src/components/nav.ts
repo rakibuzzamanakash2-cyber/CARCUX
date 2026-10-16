@@ -19,7 +19,7 @@ export interface NavItem {
   href: string;
   label: string;
   icon: NavIcon;
-  roles?: Role[]; // omitted = everyone
+  roles?: Role[]; // omitted = everyone but annotators, who see only what names them
   desktopOnly?: boolean; // left out of the phone tab bar, which has room for six
 }
 
@@ -47,7 +47,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
         href: "/annotation",
         label: "Second opinions",
         icon: "annotation",
-        roles: ["admin", "analyst"],
+        roles: ["admin", "analyst", "annotator"],
         desktopOnly: true,
       },
     ],

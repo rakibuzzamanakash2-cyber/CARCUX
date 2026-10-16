@@ -21,6 +21,7 @@ class Role(enum.StrEnum):
     FIELD_WORKER = "field_worker"  # submits field reports
     VIEWER = "viewer"  # read-only access to the dashboard
     OFFICIAL = "official"  # publishes statements for one verified official page
+    ANNOTATOR = "annotator"  # gives blind second opinions; sees nothing else
 
 
 class User(Base):

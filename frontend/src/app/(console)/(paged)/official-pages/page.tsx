@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { PageBand, PageBody, Panel } from "@/components/page-header";
 import { api } from "@/lib/api";
-import { verifySession } from "@/lib/dal";
+import { verifyStaff } from "@/lib/dal";
 import { formatDhaka } from "@/lib/format";
 import { pageKindLabel, type OfficialPage } from "@/lib/types";
 
@@ -14,7 +14,7 @@ import { PageStatusBadge } from "./status-badge";
 export const metadata = { title: "Official pages" };
 
 export default async function OfficialPagesPage() {
-  const user = await verifySession();
+  const user = await verifyStaff();
   // An official has one page: theirs.
   if (user.role === "official" && user.official_page) {
     redirect(`/official-pages/${user.official_page.slug}`);
