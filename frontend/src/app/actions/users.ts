@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 
 import { api, ApiError } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
-import { ROLES, type ActionState, type Role, type User } from "@/lib/types";
+import { STAFF_ROLES, type ActionState, type Role, type User } from "@/lib/types";
 
-const VALID_ROLES = new Set<string>(ROLES.map((r) => r.value));
+const VALID_ROLES = new Set<string>(STAFF_ROLES.map((r) => r.value));
 
 function failure(error: unknown, fallback: string): ActionState {
   return { ok: false, message: error instanceof ApiError ? error.detail : fallback };

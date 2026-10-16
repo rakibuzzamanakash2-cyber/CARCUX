@@ -13,6 +13,7 @@ from app.models.event import (
     Priority,
 )
 from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
+from app.models.official import OfficialPage, PageKind, PageStatus, VerificationMethod
 from app.models.signal import (
     Adapter,
     IngestRun,
@@ -39,6 +40,9 @@ __all__ = [
     "FieldReport",
     "FieldReportMedia",
     "IngestRun",
+    "OfficialPage",
+    "PageKind",
+    "PageStatus",
     "Priority",
     "ReportStatus",
     "Severity",
@@ -49,4 +53,5 @@ __all__ = [
     "SuggestionModel",
     "Role",
     "User",
+    "VerificationMethod",
 ]

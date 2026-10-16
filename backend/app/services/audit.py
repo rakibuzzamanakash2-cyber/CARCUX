@@ -38,6 +38,12 @@ class AuditAction:
     SUGGESTIONS_TRAINED = "suggestions.trained"
     ASSESSMENT_TRAINED = "assessment.trained"
     COPY_DECIDED = "event.copy_decided"
+    OFFICIAL_PAGE_CREATED = "official_page.created"
+    OFFICIAL_PAGE_UPDATED = "official_page.updated"
+    OFFICIAL_PAGE_DOCUMENT_ADDED = "official_page.document_added"
+    OFFICIAL_PAGE_VERIFIED = "official_page.verified"
+    OFFICIAL_PAGE_SUSPENDED = "official_page.suspended"
+    OFFICIAL_PAGE_REINSTATED = "official_page.reinstated"
 
 
 def record(

@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { createUser } from "@/app/actions/users";
 import { Field, FormMessage, SelectField, SubmitButton } from "@/components/form";
-import { ROLES, type ActionState } from "@/lib/types";
+import { STAFF_ROLES, type ActionState } from "@/lib/types";
 
 export function CreateUserForm() {
   // Controlled fields survive React's automatic reset when the server rejects the
@@ -62,12 +62,16 @@ export function CreateUserForm() {
         {/* Not disabled: a disabled placeholder makes browsers silently show the
             first real role (Admin) after a reset. `required` still blocks "". */}
         <option value="">Choose a role</option>
-        {ROLES.map((r) => (
+        {STAFF_ROLES.map((r) => (
           <option key={r.value} value={r.value}>
             {r.label}: {r.description}
           </option>
         ))}
       </SelectField>
+      <p className="text-sm text-muted sm:col-span-2">
+        Official accounts are added from their official page (Official pages), so each one belongs
+        to a verified office.
+      </p>
       <div className="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-center">
         <SubmitButton pending={pending} pendingText="Creating…">
           Create account
