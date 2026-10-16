@@ -17,6 +17,8 @@ from app.models.official import OfficialPage, PageKind, PageStatus, Verification
 from app.models.public import (
     AccountStatus,
     CommentReport,
+    IncidentOpinion,
+    OpinionReport,
     PublicAccount,
     StatementComment,
     StatementLike,
@@ -37,6 +39,8 @@ from app.models.user import Role, User
 __all__ = [
     "AccountStatus",
     "CommentReport",
+    "IncidentOpinion",
+    "OpinionReport",
     "PublicAccount",
     "StatementComment",
     "StatementLike",

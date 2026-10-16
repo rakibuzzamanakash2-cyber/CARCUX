@@ -140,3 +140,48 @@ export async function deleteComment(commentId: string): Promise<ActionState> {
   revalidatePath("/public", "layout");
   return { ok: true, message: "Deleted." };
 }
+
+export async function addOpinion(
+  eventId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  if (!isUuid(eventId)) return { ok: false, message: "Unknown incident." };
+  const body = String(formData.get("body") ?? "").trim();
+  if (body.length < 2) return { ok: false, message: "Write your opinion first." };
+  try {
+    await publicApi(`/incidents/${eventId}/opinions`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    });
+  } catch (error) {
+    return failure(error, "Could not post your opinion.");
+  }
+  revalidatePath(`/public/incidents/${eventId}`);
+  return { ok: true, message: "Opinion posted." };
+}
+
+export async function reportOpinion(opinionId: string, reason: string): Promise<ActionState> {
+  if (!isUuid(opinionId) || !REPORT_REASONS.some((r) => r.value === reason))
+    return { ok: false, message: "Choose a reason." };
+  try {
+    await publicApi(`/opinions/${opinionId}/report`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  } catch (error) {
+    return failure(error, "Could not send the report.");
+  }
+  return { ok: true, message: "Thank you. A moderator will look at it." };
+}
+
+export async function deleteOpinion(opinionId: string): Promise<ActionState> {
+  if (!isUuid(opinionId)) return { ok: false, message: "Unknown opinion." };
+  try {
+    await publicApi(`/opinions/${opinionId}`, { method: "DELETE" });
+  } catch (error) {
+    return failure(error, "Could not delete the opinion.");
+  }
+  revalidatePath("/public", "layout");
+  return { ok: true, message: "Deleted." };
+}

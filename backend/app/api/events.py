@@ -4,10 +4,13 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, client_ip, require_roles
 from app.core.event_types import EVENT_TYPE_FAMILY
 from app.models.event import Event, EventEvidence, EventStatus, Priority
+from app.models.public import IncidentOpinion
+from app.models.signal import Signal
 from app.models.user import Role, User
 from app.schemas.assessment import (
     AssessmentReason,
@@ -393,4 +396,41 @@ def candidate_signals(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             ),
         )
         for signal, m in service.candidate_signals(db, event)
+    ]
+
+
+@router.get("/{event_id}/public-opinions", response_model=list[CandidateSignal])
+def public_opinions(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
+    """What people said about this incident on the public site, as signals not yet
+    linked to it (hidden ones left out), newest first: evidence for analysts to judge."""
+    event = _event_or_404(db, event_id)
+    linked = select(EventEvidence.signal_id).where(
+        EventEvidence.event_id == event.id, EventEvidence.signal_id.is_not(None)
+    )
+    signals = db.scalars(
+        select(Signal)
+        .join(IncidentOpinion, IncidentOpinion.signal_id == Signal.id)
+        .where(
+            IncidentOpinion.event_id == event.id,
+            IncidentOpinion.hidden_at.is_(None),
+            Signal.id.not_in(linked),
+        )
+        .order_by(Signal.published_at.desc())
+    ).all()
+    return [
+        CandidateSignal(
+            signal=SignalRead.model_validate(signal),
+            distance_km=0.0,
+            hours_apart=0.0,
+            same_type=True,
+            stance=stance_read(
+                stance_service.suggest(
+                    db,
+                    event,
+                    headline_and_text(signal.title, signal.text),
+                    item_type=signal.event_type,
+                )
+            ),
+        )  # fmt: skip
+        for signal in signals
     ]

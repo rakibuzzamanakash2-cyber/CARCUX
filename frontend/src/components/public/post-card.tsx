@@ -78,6 +78,7 @@ export function PostCard({
         comments={post.comments}
         signedIn={signedIn}
         title={post.title}
+        incidentId={post.event.id}
       />
     </article>
   );

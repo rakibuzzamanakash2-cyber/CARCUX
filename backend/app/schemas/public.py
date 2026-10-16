@@ -42,6 +42,20 @@ class CommentCreate(BaseModel):
     body: str = Field(min_length=2, max_length=1000)
 
 
+class OpinionCreate(BaseModel):
+    body: str = Field(min_length=2, max_length=1500)
+
+
+class PublicOpinion(BaseModel):
+    """What one person says about an incident: their own view, not verified."""
+
+    id: uuid.UUID
+    author: str
+    body: str
+    created_at: datetime
+    mine: bool = False
+
+
 class ReportCreate(BaseModel):
     reason: str
 
@@ -86,9 +100,14 @@ class PublicPage(BaseModel):
 class Incident(BaseModel):
     event: EventLite
     posts: list[PublicPost]
+    opinions: list[PublicOpinion]
 
 
 class ModerationComment(BaseModel):
+    """A comment on an official post, or (kind "opinion") an opinion on an incident, in
+    which case statement_id is the incident's event id and statement_title its title."""
+
+    kind: str = "comment"
     id: uuid.UUID
     statement_id: uuid.UUID
     statement_title: str

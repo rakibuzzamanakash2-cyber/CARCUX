@@ -44,6 +44,7 @@ export function SignUpForm() {
             rules
           </Link>
           : no false information, abuse, spam or other people&apos;s personal information.
+          CARCUX&apos;s analysts may use my opinions as evidence.
         </span>
       </label>
       <SubmitButton pending={pending} pendingText="Signing up…">

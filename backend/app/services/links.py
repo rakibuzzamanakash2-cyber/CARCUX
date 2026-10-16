@@ -34,7 +34,11 @@ TIKTOK = Platform("tiktok", "TikTok", "video_platform", video=True)
 INSTAGRAM = Platform("instagram", "Instagram", "social")
 TELEGRAM = Platform("telegram", "Telegram", "social")
 WEB = Platform("web", "Website", "news")
-PLATFORMS = {p.key: p for p in (FACEBOOK, YOUTUBE, X, TIKTOK, INSTAGRAM, TELEGRAM, WEB)}
+# Opinions people post on CARCUX's own public site (never parsed from a link).
+CARCUX_PUBLIC = Platform("carcux", "CARCUX public site", "social")
+PLATFORMS = {
+    p.key: p for p in (FACEBOOK, YOUTUBE, X, TIKTOK, INSTAGRAM, TELEGRAM, WEB, CARCUX_PUBLIC)
+}
 
 
 @dataclass(frozen=True)

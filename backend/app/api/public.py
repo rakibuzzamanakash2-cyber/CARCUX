@@ -11,17 +11,18 @@ from sqlalchemy import select
 
 from app.api.deps import AppSettings, DbSession
 from app.core.security import InvalidTokenError, create_public_token, decode_public_token
-from app.models.event import Event
 from app.models.official import OfficialPage, PageStatus
-from app.models.public import AccountStatus, PublicAccount, StatementComment
+from app.models.public import AccountStatus, IncidentOpinion, PublicAccount, StatementComment
 from app.models.statement import Statement
 from app.schemas.public import (
     CommentCreate,
     Incident,
     Login,
     Me,
+    OpinionCreate,
     PasswordConfirm,
     PublicComment,
+    PublicOpinion,
     PublicPage,
     PublicPost,
     PublicPostDetail,
@@ -163,14 +164,32 @@ def page(slug: str, db: DbSession, account: Viewer):
 
 @router.get("/incidents/{event_id}", response_model=Incident)
 def incident(event_id: uuid.UUID, db: DbSession, account: Viewer):
-    """An incident is public once a verified page has posted about it."""
-    event = db.get(Event, event_id)
+    """An incident is public once a verified page has posted about it: its official posts,
+    and what people say about it (newest first)."""
+    event = service.public_incident(db, event_id)
+    if event is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Incident not found")
     rows = db.scalars(
         _visible().where(Statement.event_id == event_id).order_by(Statement.published_at.desc())
     ).all()
-    if event is None or not rows:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Incident not found")
-    return Incident(event=EventLite.model_validate(event), posts=_posts(db, list(rows), account))
+    opinions = db.scalars(
+        select(IncidentOpinion)
+        .where(IncidentOpinion.event_id == event_id, IncidentOpinion.hidden_at.is_(None))
+        .order_by(IncidentOpinion.created_at.desc())
+        .limit(200)
+    ).all()
+    return Incident(
+        event=EventLite.model_validate(event),
+        posts=_posts(db, list(rows), account),
+        opinions=[_opinion(o, account) for o in opinions],
+    )
+
+
+def _opinion(o: IncidentOpinion, account) -> PublicOpinion:
+    return PublicOpinion(
+        id=o.id, author=o.account.display_name, body=o.body, created_at=o.created_at,
+        mine=account is not None and o.account_id == account.id,
+    )  # fmt: skip
 
 
 # --- Accounts -----------------------------------------------------------------------------
@@ -286,5 +305,57 @@ def delete_comment(comment_id: uuid.UUID, db: DbSession, account: Viewer):
     if c is None or c.account_id != a.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Comment not found")
     db.delete(c)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Opinions on incidents ----------------------------------------------------------------
+
+
+@router.post(
+    "/incidents/{event_id}/opinions",
+    response_model=PublicOpinion,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_opinion(
+    event_id: uuid.UUID, body: OpinionCreate, db: DbSession, settings: AppSettings,
+    account: Viewer,
+):  # fmt: skip
+    a = _required(account)
+    event = service.public_incident(db, event_id)
+    if event is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Incident not found")
+    try:
+        op = service.opinion(db, settings, a, event, body.body)
+    except ValueError as exc:
+        raise _rule(exc) from None
+    db.commit()
+    return _opinion(op, a)
+
+
+def _opinion_or_404(db, opinion_id: uuid.UUID) -> IncidentOpinion:
+    op = db.get(IncidentOpinion, opinion_id)
+    if op is None or op.hidden_at is not None or service.public_incident(db, op.event_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opinion not found")
+    return op
+
+
+@router.post("/opinions/{opinion_id}/report", status_code=status.HTTP_204_NO_CONTENT)
+def report_opinion(opinion_id: uuid.UUID, body: ReportCreate, db: DbSession, account: Viewer):
+    try:
+        service.report_opinion(db, _required(account), _opinion_or_404(db, opinion_id), body.reason)
+    except ValueError as exc:
+        raise _rule(exc) from None
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/opinions/{opinion_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_opinion(opinion_id: uuid.UUID, db: DbSession, account: Viewer):
+    a = _required(account)
+    op = db.get(IncidentOpinion, opinion_id)
+    if op is None or op.account_id != a.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opinion not found")
+    service.delete_opinion(db, a, op)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

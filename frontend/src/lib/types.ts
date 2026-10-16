@@ -227,6 +227,7 @@ export interface PublicPageView {
 export interface PublicIncident {
   event: Statement["event"];
   posts: PublicPost[];
+  opinions: PublicComment[];
 }
 
 export const REPORT_REASONS: { value: string; label: string }[] = [
@@ -238,6 +239,8 @@ export const REPORT_REASONS: { value: string; label: string }[] = [
 ];
 
 export interface ModerationComment {
+  /** "opinion": statement_id is the incident's event id, statement_title its title. */
+  kind: "comment" | "opinion";
   id: string;
   statement_id: string;
   statement_title: string;

@@ -14,12 +14,19 @@ function failure(error: unknown, fallback: string): ActionState {
 // (revalidating would refresh the list and take the item and its confirmation away).
 function refresh() {}
 
-export async function hideComment(commentId: string, reason: string): Promise<ActionState> {
+type Kind = "comment" | "opinion";
+const PATH: Record<Kind, string> = { comment: "comments", opinion: "opinions" };
+
+export async function hideComment(
+  commentId: string,
+  reason: string,
+  kind: Kind = "comment",
+): Promise<ActionState> {
   await requireRole("admin", "official");
   if (!isUuid(commentId)) return { ok: false, message: "Unknown comment." };
   if (reason.trim().length < 3) return { ok: false, message: "Give a reason." };
   try {
-    await api(`/moderation/comments/${commentId}/hide`, {
+    await api(`/moderation/${PATH[kind]}/${commentId}/hide`, {
       method: "POST",
       body: JSON.stringify({ reason }),
     });
@@ -30,11 +37,11 @@ export async function hideComment(commentId: string, reason: string): Promise<Ac
   return { ok: true, message: "Hidden." };
 }
 
-export async function keepComment(commentId: string): Promise<ActionState> {
+export async function keepComment(commentId: string, kind: Kind = "comment"): Promise<ActionState> {
   await requireRole("admin", "official");
   if (!isUuid(commentId)) return { ok: false, message: "Unknown comment." };
   try {
-    await api(`/moderation/comments/${commentId}/restore`, { method: "POST" });
+    await api(`/moderation/${PATH[kind]}/${commentId}/restore`, { method: "POST" });
   } catch (error) {
     return failure(error, "Could not restore it.");
   }

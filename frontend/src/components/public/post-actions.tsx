@@ -17,6 +17,7 @@ export function PostActions({
   comments,
   signedIn,
   title,
+  incidentId,
 }: {
   postId: string;
   likes: number;
@@ -24,6 +25,7 @@ export function PostActions({
   comments: number;
   signedIn: boolean;
   title: string;
+  incidentId?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState({ liked, likes });
@@ -75,6 +77,11 @@ export function PostActions({
         <MessageCircle size={17} aria-hidden="true" />
         {comments} {comments === 1 ? "comment" : "comments"}
       </Link>
+      {incidentId && (
+        <Link href={`/public/incidents/${incidentId}#opinions`} className={btn}>
+          What people say
+        </Link>
+      )}
       <button type="button" onClick={share} className={btn}>
         <Share2 size={17} aria-hidden="true" />
         Share

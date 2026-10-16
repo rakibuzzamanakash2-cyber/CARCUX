@@ -258,6 +258,15 @@ Official posts (statements of verified pages) are open to everyone at `/api/v1/p
 - **Privacy:** stored are the email (never shown), the display name, a password hash, likes, comments and reports. `POST /public/auth/delete` with the password deletes the account and everything it posted. This is the only place CARCUX keeps profiles of the public.
 - **Email:** without `CARCUX_SMTP_HOST`, emails are written to the backend log. The Docker stack sends them to Mailpit (inbox at http://localhost:8025). Settings: `CARCUX_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_STARTTLS`, `CARCUX_MAIL_FROM`, `CARCUX_PUBLIC_BASE_URL` (for links), `CARCUX_PUBLIC_TOKEN_DAYS`.
 
+## People's opinions on incidents
+
+Once a verified page has posted about an event, its public incident page also carries **what people say** (`IncidentOpinion`, migration 0016).
+
+- **Posting:** signed-in public accounts, `POST /api/v1/public/incidents/{event_id}/opinions` (2 to 1500 characters, at most 3 per 10 minutes). Shown at once with `GET /public/incidents/{id}` (`opinions`, newest first), marked as not verified. Report (`POST /public/opinions/{id}/report`): three reports hide it until a moderator decides; delete one's own (`DELETE /public/opinions/{id}`).
+- **Moderation:** admins only (`/api/v1/moderation/opinions?state=reported|hidden|all`, `…/{id}/hide`, `…/{id}/restore`). Banning an account hides its opinions too.
+- **Evidence for analysts:** each opinion is also a **signal**, from a source of its own per account ("<name> · CARCUX public site", type `social`, platform `carcux`), so every person builds a track record like any page. `GET /api/v1/events/{id}/public-opinions` (analysts) lists this incident's opinions not yet linked, with CARCUX's reading; they are kept out of "possibly related signals" so they are not listed twice. A hidden opinion's signal is dismissed (unless already linked); deleting an opinion or the account removes its words from the signal ("Removed by its author") and renames a deleted account's source.
+- **Dataset:** as a social source, opinions are exported by reference with labels only, never their words, and the account only as its salted `account_ref`.
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.
