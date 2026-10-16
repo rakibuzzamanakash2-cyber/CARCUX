@@ -1,11 +1,19 @@
-export type Role = "admin" | "analyst" | "field_worker" | "viewer";
+export type Role = "admin" | "analyst" | "field_worker" | "viewer" | "official";
 
 export const ROLES: { value: Role; label: string; description: string }[] = [
   { value: "admin", label: "Admin", description: "Manages accounts and settings" },
   { value: "analyst", label: "Analyst", description: "Reviews events, verifies assessments" },
   { value: "field_worker", label: "Field worker", description: "Submits field reports" },
   { value: "viewer", label: "Viewer", description: "Read-only dashboard access" },
+  {
+    value: "official",
+    label: "Official",
+    description: "Speaks for one verified official page",
+  },
 ];
+
+/** Roles chosen on the Users page; officials are added from their official page. */
+export const STAFF_ROLES = ROLES.filter((r) => r.value !== "official");
 
 export function roleLabel(role: Role): string {
   return ROLES.find((r) => r.value === role)?.label ?? role;
@@ -20,6 +28,68 @@ export interface User {
   is_active: boolean;
   created_at: string;
   last_login_at: string | null;
+  official_page?: { id: string; slug: string; name: string; status: PageStatus } | null;
+}
+
+export type PageKind =
+  | "head_of_government"
+  | "ministry"
+  | "department"
+  | "city_corporation"
+  | "district_administration"
+  | "member_of_parliament"
+  | "agency";
+export type PageStatus = "pending" | "verified" | "suspended";
+export type VerificationMethod = "official_email" | "official_letter";
+
+export const PAGE_KINDS: { value: PageKind; label: string }[] = [
+  { value: "head_of_government", label: "Head of government (PMO)" },
+  { value: "ministry", label: "Ministry" },
+  { value: "department", label: "Division or department" },
+  { value: "city_corporation", label: "City corporation" },
+  { value: "district_administration", label: "District administration" },
+  { value: "member_of_parliament", label: "Member of parliament" },
+  { value: "agency", label: "Public agency" },
+];
+
+export const pageKindLabel = (k: PageKind) => PAGE_KINDS.find((x) => x.value === k)?.label ?? k;
+
+export const VERIFICATION_LABEL: Record<VerificationMethod, string> = {
+  official_email: "confirmed from the office's own email address",
+  official_letter: "official letter on file",
+};
+
+/** What everyone signed in sees of an official page. */
+export interface OfficialPage {
+  id: string;
+  slug: string;
+  name: string;
+  name_bn: string | null;
+  kind: PageKind;
+  description: string | null;
+  website: string | null;
+  status: PageStatus;
+  verification_method: VerificationMethod | null;
+  verified_at: string | null;
+}
+
+/** Admins and the page's own officials also see how it was verified. */
+export interface OfficialPageDetail extends OfficialPage {
+  contact_email: string | null;
+  verification_note: string | null;
+  verified_by: { id: string; full_name: string } | null;
+  has_document: boolean;
+  document_type: string | null;
+  document_sha256: string | null;
+  suspended_reason: string | null;
+  created_at: string;
+  members: {
+    id: string;
+    full_name: string;
+    email: string;
+    is_active: boolean;
+    last_login_at: string | null;
+  }[];
 }
 
 export interface Health {

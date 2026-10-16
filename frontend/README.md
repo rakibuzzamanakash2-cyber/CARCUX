@@ -100,6 +100,13 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/annotation` | analyst, admin | **Judge:** links waiting for your independent label, showing the event (with its ground truth) and the item, but not the label already given, and with no links to pages that would show it. You answer the guideline's decision procedure (5.1) in order, with conflicts, how sure and out of date. **Agreement:** Cohen's κ against the 0.70 target, Krippendorff's α, the confusion table, and disagreements to decide into a final label. Sidebar badge: links waiting for you. Desktop only. |
 | `/events/{id}` Evidence tab | analyst, admin | Each link says whether it is waiting for a second opinion, agreed, disagreed (with a link to decide) or decided. **Not this event** is a new link label. |
 
+## Official pages
+
+| Page | Who | What |
+|---|---|---|
+| `/official-pages` | admin; officials go straight to their own page | All pages with their state (verified, not verified yet, suspended) and **New official page**. |
+| `/official-pages/{slug}` | verified pages: everyone signed in; otherwise admins and the page's officials | About, the officials who speak for it, and **Verification**: how it was confirmed (the office's own email address or an official letter), what was checked, by whom and when. Admins upload the letter (and open it), **Verify**, **Suspend** with a reason, **Reinstate**, edit the details and **Add official account**. |
+
 ## Review queue, audit log and account
 
 | Page | Who | What |

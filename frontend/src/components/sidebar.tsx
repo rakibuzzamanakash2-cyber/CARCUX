@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Database,
   Inbox,
+  Landmark,
   Map,
   Radar,
   RadioTower,
@@ -28,6 +29,7 @@ const ICONS: Record<NavIcon, typeof Map> = {
   dataset: Database,
   annotation: Users2,
   users: Users,
+  official: Landmark,
   audit: ScrollText,
 };
 

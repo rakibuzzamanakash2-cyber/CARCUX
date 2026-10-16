@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.api.deps import DbSession, client_ip, require_roles
 from app.core.security import hash_password
+from app.models.official import OfficialPage
 from app.models.user import Role, User
 from app.schemas.auth import PasswordReset
 from app.schemas.user import UserCreate, UserRead, UserUpdate
@@ -35,6 +36,7 @@ def create(body: UserCreate, request: Request, db: DbSession, admin: AdminUser):
             role=body.role,
             actor_id=admin.id,
             ip_address=client_ip(request),
+            official_page_id=_page_or_422(db, body.official_page_id),
         )
     except EmailAlreadyRegisteredError:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from None
@@ -49,6 +51,24 @@ def update(user_id: uuid.UUID, body: UserUpdate, request: Request, db: DbSession
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
     changes = body.model_dump(exclude_unset=True, exclude_none=True)
+    role = changes.get("role", user.role)
+    if role == Role.OFFICIAL:
+        page_id = _page_or_422(db, changes.get("official_page_id", user.official_page_id))
+        if page_id is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "An official account needs its official page"
+            )
+        if page_id != user.official_page_id:
+            changes["official_page_id"] = page_id
+    else:
+        if body.official_page_id is not None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "Only official accounts belong to an official page",
+            )
+        if user.official_page_id is not None:
+            changes["official_page_id"] = None  # leaving the official role
+
     removes_admin = user.role == Role.ADMIN and (
         changes.get("role", Role.ADMIN) != Role.ADMIN or changes.get("is_active") is False
     )
@@ -60,7 +80,7 @@ def update(user_id: uuid.UUID, body: UserUpdate, request: Request, db: DbSession
         setattr(user, field, value)
 
     # Role or access changes take effect immediately: revoke existing tokens.
-    if "role" in changes or "is_active" in changes:
+    if {"role", "is_active", "official_page_id"} & changes.keys():
         user.token_version += 1
 
     audit.record(
@@ -75,11 +95,22 @@ def update(user_id: uuid.UUID, body: UserUpdate, request: Request, db: DbSession
         },
     )
     db.commit()
+    db.refresh(user)
     return user
 
 
 def _plain(value):
-    return value.value if isinstance(value, Role) else value
+    if isinstance(value, Role):
+        return value.value
+    return str(value) if isinstance(value, uuid.UUID) else value
+
+
+def _page_or_422(db, page_id: uuid.UUID | None) -> uuid.UUID | None:
+    if page_id is None:
+        return None
+    if db.get(OfficialPage, page_id) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown official page")
+    return page_id
 
 
 @router.post("/{user_id}/password", status_code=status.HTTP_204_NO_CONTENT)

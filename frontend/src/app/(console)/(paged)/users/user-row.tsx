@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { resetPassword } from "@/app/actions/review";
 import { updateUser } from "@/app/actions/users";
-import { ROLES, type ActionState, type Role, type User } from "@/lib/types";
+import { STAFF_ROLES, type ActionState, type Role, type User } from "@/lib/types";
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -31,27 +32,46 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
       </td>
       <td className="py-3 pr-4 text-steel">{user.email}</td>
       <td className="py-3 pr-4">
-        <label className="sr-only" htmlFor={`role-${user.id}`}>
-          Role for {user.full_name}
-        </label>
-        <select
-          id={`role-${user.id}`}
-          value={user.role}
-          disabled={pending}
-          onChange={(e) =>
-            save(
-              { role: e.target.value as Role },
-              `Change ${user.full_name}'s role? They will be signed out.`,
-            )
-          }
-          className="rounded-md border border-line bg-panel px-2 py-1 text-ink shadow-sm focus:border-brand focus:outline-none disabled:opacity-60"
-        >
-          {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        {user.role === "official" ? (
+          <span>
+            Official
+            {user.official_page && (
+              <>
+                {" · "}
+                <Link
+                  href={`/official-pages/${user.official_page.slug}`}
+                  className="font-semibold text-brand hover:underline"
+                >
+                  {user.official_page.name}
+                </Link>
+              </>
+            )}
+          </span>
+        ) : (
+          <>
+            <label className="sr-only" htmlFor={`role-${user.id}`}>
+              Role for {user.full_name}
+            </label>
+            <select
+              id={`role-${user.id}`}
+              value={user.role}
+              disabled={pending}
+              onChange={(e) =>
+                save(
+                  { role: e.target.value as Role },
+                  `Change ${user.full_name}'s role? They will be signed out.`,
+                )
+              }
+              className="rounded-md border border-line bg-panel px-2 py-1 text-ink shadow-sm focus:border-brand focus:outline-none disabled:opacity-60"
+            >
+              {STAFF_ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </td>
       <td className="py-3 pr-4 text-steel">
         {user.last_login_at ? dateFmt.format(new Date(user.last_login_at)) : "Never"}

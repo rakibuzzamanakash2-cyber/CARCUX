@@ -225,6 +225,17 @@ Social media and any web page, without scraping (`app/services/links.py`, `servi
 - `GET /api/v1/signals/links/preview?url=…`: what the link is and whether it is already in CARCUX. `POST /api/v1/signals/links`: `url`, `account` (needed when the link does not show it), `text`, `published_at`, optional `event_type`, `district`, and `event_id` + `relation` to link it to an event at once. 201 when new.
 - **Dataset export:** posts from `social` and `video_platform` sources are given by reference (the link) with their labels, `content_policy: reference_only`, no text, and claims without quoted words; videos have `modality: video`. Their sources are named only by platform ("Facebook account"), with `platform` and `account_ref`, a salted SHA-256 of the account (salt: `CARCUX_DATASET_SALT`, else derived from the JWT secret; set it once and keep it, so references stay stable across exports).
 
+## Official pages
+
+Verified accounts of government bodies and office holders (the Prime Minister's Office, ministries, departments, city corporations, district administrations, members of parliament, public agencies) that will publish statements about events (`app/models/official.py`, `app/services/official.py`). Migration 0013.
+
+- **Admins only create and verify pages** (`POST /api/v1/official-pages`). A new page is *pending*: hidden from everyone but admins and its own officials.
+- **Verification is a human check, recorded:** either *official email* (the office confirmed from its own address, stored on the page) or *official letter* (a PDF, JPEG or PNG scan up to 10 MB, checked by its bytes, stored under the media directory with its SHA-256; admins only can open it). `POST …/{id}/document`, then `POST …/{id}/verify` with the method and a note of what was checked (who confirmed, which address or letter reference, when). Who verified and when are kept on the page.
+- **Suspend and reinstate** (`POST …/{id}/suspend` with a reason, `…/reinstate`): a suspended page is hidden again and cannot publish; reinstating returns it to verified (or pending, if it never was).
+- **Official accounts** (`POST …/{id}/members`): a new role, `official`, for a named person at the office. The database refuses an official without a page, and a page for anyone else. Officials read the situation like viewers (map, events, signals) and see their own page; they do none of the analysts' work. On the Users page an official shows with its page; the role is given only from the page.
+- **Reading:** `GET /api/v1/official-pages` (admins: all; others: verified), `GET …/by-slug/{slug}` (verified pages for everyone signed in; how it was verified and its officials only for admins and its own officials), `GET …/mine` for an official.
+- Every step is audit-logged (`official_page.created`, `.updated`, `.document_added`, `.verified`, `.suspended`, `.reinstated`).
+
 ## Review, audit log and passwords
 
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.

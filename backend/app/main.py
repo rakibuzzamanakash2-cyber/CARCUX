@@ -15,6 +15,7 @@ from app.api import (
     events,
     field_reports,
     health,
+    official_pages,
     overview,
     signals,
     sources,
@@ -70,6 +71,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         annotation.router,
         suggestions.router,
         assessment.router,
+        official_pages.router,
     ):
         app.include_router(router, prefix=settings.api_prefix)
     return app

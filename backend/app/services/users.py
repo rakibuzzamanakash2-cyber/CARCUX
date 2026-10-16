@@ -43,6 +43,7 @@ def create_user(
     actor_id: uuid.UUID | None,
     action: str = audit.AuditAction.USER_CREATED,
     ip_address: str | None = None,
+    official_page_id: uuid.UUID | None = None,
 ) -> User:
     email = normalise_email(email)
     if get_by_email(db, email) is not None:
@@ -53,6 +54,7 @@ def create_user(
         full_name=full_name.strip(),
         password_hash=hash_password(password),
         role=role,
+        official_page_id=official_page_id if role == Role.OFFICIAL else None,
     )
     db.add(user)
     db.flush()  # assigns user.id for the audit record
@@ -63,7 +65,8 @@ def create_user(
         target_type="user",
         target_id=user.id,
         ip_address=ip_address,
-        details={"role": role.value},
+        details={"role": role.value}
+        | ({"official_page_id": str(official_page_id)} if role == Role.OFFICIAL else {}),
     )
     return user
 
