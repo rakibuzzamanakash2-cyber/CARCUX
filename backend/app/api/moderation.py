@@ -8,7 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.api.deps import DbSession, client_ip, require_roles
-from app.models.public import CommentReport, PublicAccount, StatementComment
+from app.models.event import Event
+from app.models.public import (
+    CommentReport,
+    IncidentOpinion,
+    OpinionReport,
+    PublicAccount,
+    StatementComment,
+)
 from app.models.statement import Statement
 from app.models.user import Role, User
 from app.schemas.public import ModerationComment, Reason
@@ -120,3 +127,83 @@ def unban(account_id: uuid.UUID, request: Request, db: DbSession, admin: Admin):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Account not found")
     service.unban(db, account, admin, client_ip(request))
     db.commit()
+
+
+# --- Opinions on incidents (admins) --------------------------------------------------------
+
+
+def _opinion_rows(db, opinions: list[IncidentOpinion]) -> list[ModerationComment]:
+    reasons: dict = {}
+    for oid, reason in db.execute(
+        select(OpinionReport.opinion_id, OpinionReport.reason).where(
+            OpinionReport.opinion_id.in_([o.id for o in opinions])
+        )
+    ):
+        reasons.setdefault(oid, []).append(reason)
+    out = []
+    for o in opinions:
+        ev = db.get(Event, o.event_id)
+        out.append(
+            ModerationComment(
+                kind="opinion",
+                id=o.id,
+                statement_id=o.event_id,
+                statement_title=ev.title,
+                page_name="People's opinions",
+                author=o.account.display_name,
+                account_id=o.account_id,
+                account_status=o.account.status.value,
+                body=o.body,
+                created_at=o.created_at,
+                reports=len(reasons.get(o.id, [])),
+                report_reasons=sorted(set(reasons.get(o.id, []))),
+                hidden_at=o.hidden_at,
+                hidden_reason=o.hidden_reason,
+            )  # fmt: skip
+        )
+    return out
+
+
+@router.get("/opinions", response_model=list[ModerationComment])
+def opinions(
+    db: DbSession,
+    _admin: Admin,
+    state: Literal["reported", "hidden", "all"] = "reported",
+    limit: int = Query(100, ge=1, le=500),
+):
+    query = select(IncidentOpinion).order_by(IncidentOpinion.created_at.desc())
+    reported = select(OpinionReport.opinion_id).distinct()
+    if state == "reported":
+        query = query.where(
+            IncidentOpinion.id.in_(reported),
+            IncidentOpinion.cleared_at.is_(None),
+            IncidentOpinion.hidden_by_id.is_(None),
+        )
+    elif state == "hidden":
+        query = query.where(IncidentOpinion.hidden_at.is_not(None))
+    return _opinion_rows(db, list(db.scalars(query.limit(limit)).unique()))
+
+
+def _opinion_or_404(db, opinion_id: uuid.UUID) -> IncidentOpinion:
+    op = db.get(IncidentOpinion, opinion_id)
+    if op is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opinion not found")
+    return op
+
+
+@router.post("/opinions/{opinion_id}/hide", response_model=ModerationComment)
+def hide_opinion(
+    opinion_id: uuid.UUID, body: Reason, request: Request, db: DbSession, admin: Admin
+):
+    op = _opinion_or_404(db, opinion_id)
+    service.hide_opinion(db, op, admin, body.reason, client_ip(request))
+    db.commit()
+    return _opinion_rows(db, [op])[0]
+
+
+@router.post("/opinions/{opinion_id}/restore", response_model=ModerationComment)
+def restore_opinion(opinion_id: uuid.UUID, request: Request, db: DbSession, admin: Admin):
+    op = _opinion_or_404(db, opinion_id)
+    service.restore_opinion(db, op, admin, client_ip(request))
+    db.commit()
+    return _opinion_rows(db, [op])[0]

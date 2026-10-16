@@ -30,6 +30,7 @@ from app.models.event import (
     Priority,
 )
 from app.models.field_report import FieldReport, ReportStatus
+from app.models.public import IncidentOpinion
 from app.models.signal import Signal, SignalStatus
 from app.models.user import User
 from app.schemas.event import NO_CLAIM
@@ -690,10 +691,15 @@ def candidate_signals(db: Session, event: Event, *, limit: int = 25) -> list[tup
     linked = select(EventEvidence.signal_id).where(
         EventEvidence.event_id == event.id, EventEvidence.signal_id.is_not(None)
     )
+    # People's opinions on this incident have their own list (GET …/public-opinions).
+    own_opinions = select(IncidentOpinion.signal_id).where(
+        IncidentOpinion.event_id == event.id, IncidentOpinion.signal_id.is_not(None)
+    )
     signals = db.scalars(
         select(Signal).where(
             Signal.status != SignalStatus.DISMISSED,
             Signal.id.not_in(linked),
+            Signal.id.not_in(own_opinions),
             Signal.latitude.between(event.latitude - dlat, event.latitude + dlat),
             Signal.longitude.between(event.longitude - dlon, event.longitude + dlon),
             func.coalesce(Signal.valid_from, Signal.published_at) <= end + MATCH_WINDOW,

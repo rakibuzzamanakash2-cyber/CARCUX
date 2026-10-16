@@ -65,7 +65,8 @@ def _clean_tables(request) -> None:
                 "TRUNCATE copy_decisions, event_evidence, events, field_report_media, "
                 "field_reports, "
                 "signals, ingest_runs, sources, suggestion_models, assessment_models, "
-                "audit_log, comment_reports, statement_comments, statement_likes, "
+                "audit_log, opinion_reports, incident_opinions, comment_reports, "
+                "statement_comments, statement_likes, "
                 "public_accounts, statements, official_pages, users "
                 "RESTART IDENTITY CASCADE"
             )

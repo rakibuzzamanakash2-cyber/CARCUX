@@ -124,9 +124,11 @@ Open to everyone, no staff sign-in; its own header, its own session cookie (`car
 |---|---|
 | `/public` | **Official posts** from verified pages, newest first: the office (with a verified tick), its finding, the post, likes, comments and **Share** (the phone's share sheet or copy link, and Facebook). |
 | `/public/posts/{id}` | One post with its comments. Signed in: like, comment, report a comment (with a reason), delete your own. |
-| `/public/pages/{slug}`, `/public/incidents/{id}` | An official page and its posts; an incident (once an office posted about it) and its posts. |
+| `/public/pages/{slug}` | An official page and its posts. |
+| `/public/incidents/{id}` | An incident (once an office posted about it): **Official posts**, and a separate **What people say** section, marked as not verified, where signed-in people post their opinion, report others' and delete their own. Every post links to it. |
 | `/public/signup`, `/public/verify`, `/public/signin`, `/public/account`, `/public/rules` | Join with an email (confirmed by a link, which takes one click so email scanners cannot use it up), sign in, delete your account with everything you posted, the rules and what is stored. |
-| `/moderation` (console) | Admins and officials: reported and hidden comments, **Hide**, **Keep it up**, **Restore**; admins **Ban account** / **Lift ban**. |
+| `/moderation` (console) | Admins and officials: reported and hidden comments, **Hide**, **Keep it up**, **Restore**; admins **Ban account** / **Lift ban**, and a second list for **Opinions on incidents** (admins only). |
+| `/events/{id}` Evidence tab | **Public opinions on this incident**: what people said on the public site, with CARCUX's reading and link buttons, for analysts to judge like any post. |
 
 ## Review queue, audit log and account
 

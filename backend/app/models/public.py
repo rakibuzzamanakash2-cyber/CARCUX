@@ -95,3 +95,41 @@ class CommentReport(Base):
     )
     reason: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IncidentOpinion(Base):
+    """What a member of the public says about an incident (an event an office has posted
+    about). Shown at once as an opinion, not verified; also becomes a signal for analysts,
+    from a source of its own per account."""
+
+    __tablename__ = "incident_opinions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id"), index=True)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("public_accounts.id", ondelete="CASCADE"), index=True
+    )
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    hidden_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    hidden_reason: Mapped[str | None] = mapped_column(Text)
+    cleared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    signal_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("signals.id", ondelete="SET NULL")
+    )
+
+    account = relationship("PublicAccount", lazy="joined")
+
+
+class OpinionReport(Base):
+    __tablename__ = "opinion_reports"
+
+    opinion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("incident_opinions.id", ondelete="CASCADE"), primary_key=True
+    )
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("public_accounts.id", ondelete="CASCADE"), primary_key=True
+    )
+    reason: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

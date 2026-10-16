@@ -13,18 +13,20 @@ export const metadata = { title: "Moderation" };
 const TABS = [
   { value: "reported", label: "Reported" },
   { value: "hidden", label: "Hidden" },
-  { value: "all", label: "All comments" },
+  { value: "all", label: "All" },
 ] as const;
 
 export default async function ModerationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string }>;
+  searchParams: Promise<{ state?: string; kind?: string }>;
 }) {
   const user = await requireRole("admin", "official");
-  const { state: raw } = await searchParams;
+  const { state: raw, kind: rawKind } = await searchParams;
   const state = TABS.some((t) => t.value === raw) ? (raw as string) : "reported";
-  const items = await api<ModerationComment[]>(`/moderation/comments?state=${state}`);
+  // Opinions on incidents are moderated by admins only.
+  const kind = rawKind === "opinions" && user.role === "admin" ? "opinions" : "comments";
+  const items = await api<ModerationComment[]>(`/moderation/${kind}?state=${state}`);
   return (
     <>
       <PageBand
@@ -38,11 +40,30 @@ export default async function ModerationPage({
         }
       />
       <PageBody>
-        <nav aria-label="Which comments" className="flex flex-wrap gap-2">
+        {user.role === "admin" && (
+          <nav aria-label="What to moderate" className="flex flex-wrap gap-2">
+            {[
+              { value: "comments", label: "Comments on official posts" },
+              { value: "opinions", label: "Opinions on incidents" },
+            ].map((k) => (
+              <Link
+                key={k.value}
+                href={`/moderation?kind=${k.value}&state=${state}`}
+                aria-current={k.value === kind ? "page" : undefined}
+                className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                  k.value === kind ? "bg-night text-white" : "bg-panel text-ink ring-1 ring-line"
+                }`}
+              >
+                {k.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+        <nav aria-label="Which ones" className="flex flex-wrap gap-2">
           {TABS.map((t) => (
             <Link
               key={t.value}
-              href={`/moderation?state=${t.value}`}
+              href={`/moderation?kind=${kind}&state=${t.value}`}
               aria-current={t.value === state ? "page" : undefined}
               className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
                 t.value === state ? "bg-brand text-white" : "bg-panel text-ink ring-1 ring-line"

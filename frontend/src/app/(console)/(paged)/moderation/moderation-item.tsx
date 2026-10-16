@@ -21,7 +21,11 @@ export function ModerationItem({ c, admin }: { c: ModerationComment; admin: bool
       <p className="text-sm text-muted">
         On{" "}
         <Link
-          href={`/public/posts/${c.statement_id}`}
+          href={
+            c.kind === "opinion"
+              ? `/public/incidents/${c.statement_id}#opinion-${c.id}`
+              : `/public/posts/${c.statement_id}`
+          }
           className="font-semibold text-ink hover:underline"
         >
           {c.statement_title}
@@ -60,7 +64,7 @@ export function ModerationItem({ c, admin }: { c: ModerationComment; admin: bool
                     "Why hide it? (shown in the audit log)",
                     "Breaks the rules",
                   );
-                  if (reason) run(() => hideComment(c.id, reason));
+                  if (reason) run(() => hideComment(c.id, reason, c.kind));
                 }}
               >
                 Hide
@@ -70,7 +74,7 @@ export function ModerationItem({ c, admin }: { c: ModerationComment; admin: bool
               type="button"
               className={link}
               disabled={pending}
-              onClick={() => run(() => keepComment(c.id))}
+              onClick={() => run(() => keepComment(c.id, c.kind))}
             >
               Keep it up
             </button>
@@ -80,7 +84,7 @@ export function ModerationItem({ c, admin }: { c: ModerationComment; admin: bool
             type="button"
             className={link}
             disabled={pending}
-            onClick={() => run(() => keepComment(c.id))}
+            onClick={() => run(() => keepComment(c.id, c.kind))}
           >
             Restore
           </button>

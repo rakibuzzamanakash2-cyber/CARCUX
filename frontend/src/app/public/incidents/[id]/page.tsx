@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { Discussion } from "@/components/public/comments";
 import { PostCard } from "@/components/public/post-card";
 import { ApiError } from "@/lib/api";
 import { eventTypeLabel } from "@/lib/event-types";
@@ -28,10 +29,17 @@ export default async function PublicIncidentPage({ params }: { params: Promise<{
         </p>
         <h1 className="text-2xl font-bold">{e.title}</h1>
       </section>
-      <h2 className="text-lg font-semibold">Official posts</h2>
-      {incident.posts.map((p) => (
-        <PostCard key={p.id} post={p} signedIn={!!me} />
-      ))}
+      <section aria-labelledby="official-h" className="flex flex-col gap-3">
+        <h2 id="official-h" className="text-lg font-semibold">
+          Official posts
+        </h2>
+        {incident.posts.map((p) => (
+          <PostCard key={p.id} post={p} signedIn={!!me} />
+        ))}
+      </section>
+      <div className="mt-4 rounded-xl border border-dashed border-line bg-panel p-4">
+        <Discussion id={e.id} kind="opinion" items={incident.opinions} signedIn={!!me} />
+      </div>
     </div>
   );
 }

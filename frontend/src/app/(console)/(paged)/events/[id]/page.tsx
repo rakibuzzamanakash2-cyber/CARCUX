@@ -246,7 +246,12 @@ export default async function EventPage({
         null,
       ];
 
-  const statements = await api<Statement[]>(`/statements?event_id=${id}`);
+  const [statements, opinions] = await Promise.all([
+    api<Statement[]>(`/statements?event_id=${id}`),
+    reviewer && tab === "evidence"
+      ? api<CandidateSignal[]>(`/events/${id}/public-opinions`)
+      : Promise.resolve([] as CandidateSignal[]),
+  ]);
   const canSpeak = user.role === "official" && user.official_page?.status === "verified";
   const mapUrl = `https://www.openstreetmap.org/?mlat=${event.latitude}&mlon=${event.longitude}#map=16/${event.latitude}/${event.longitude}`;
   const base = `/events/${event.id}`;
@@ -607,6 +612,27 @@ export default async function EventPage({
               </Panel>
             )}
 
+            {opinions.length > 0 && (
+              <Panel
+                id="public-opinions"
+                title="Public opinions on this incident"
+                description="What people said on the public site, newest first. Their own views, not verified: read each one and link it like any post."
+              >
+                <ul className="flex flex-col divide-y divide-line">
+                  {opinions.map((c) => (
+                    <li key={c.signal.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0">
+                      <SignalSummary signal={c.signal} />
+                      <LinkButtons
+                        eventId={event.id}
+                        signalId={c.signal.id}
+                        label="Link this opinion as"
+                        stance={c.stance}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
             {open && (
               <Panel
                 id="candidate-signals"
