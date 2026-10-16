@@ -4,8 +4,9 @@ dataset's own validator (data/tools)."""
 import io
 import json
 import sys
+import uuid
 import zipfile
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ from sqlalchemy import select, text
 
 from app.ingest import runner
 from app.models.audit import AuditLog
-from app.models.signal import Signal, Source
+from app.models.signal import Signal, Source, SourceType
 from app.models.user import Role
 from app.services import dataset
 from app.services.audit import AuditAction
@@ -197,6 +198,11 @@ def test_export_is_a_valid_carcux_bd_dataset(scenario, db, tmp_path):
     assert "[PHONE]" in reports[0]["text"] and "01712345678" not in reports[0]["text"]
     assert reports[0]["language"] == "bn-Latn"
     assert reports[0]["location_mentions"][0]["from_gps"] is True
+    # The place its text names, as well as where its GPS put it.
+    named = reports[0]["location_mentions"][1]
+    assert named["surface"] == "Mirpur 10" and "from_gps" not in named
+    assert named["resolved"]["admin"]["locality"] == "Mirpur"
+    assert "not been checked" in export.manifest["places_and_times"]
     # Details found in the text, with the words they came from; the manifest says so.
     assert {"attribute": "magnitude", "value": "knee-deep", "surface": "hatu pani"} in reports[0][
         "claims"
@@ -275,3 +281,17 @@ def test_cli_writes_a_valid_directory(scenario, tmp_path, monkeypatch, settings)
     assert cli.main(["export-dataset", str(tmp_path)]) == 0
     assert validate_dir(tmp_path).ok
     assert json.loads((tmp_path / "manifest.json").read_text())["problems"] == 1
+
+
+def test_a_signal_says_when_it_was_seen():
+    dhaka = timezone(timedelta(hours=6))
+    published = datetime(2024, 3, 1, 1, 52, tzinfo=dhaka)
+    source = Source(key="news", name="News", source_type=SourceType.NEWS)
+    s = Signal(id=uuid.uuid4(), source=source, source_id=uuid.uuid4(),
+               title="Fire at Bailey Road", text="The fire broke out at 9:50pm on 29 February.",
+               language="en", url="https://example.org/a", published_at=published,
+               collected_at=published, extraction={})  # fmt: skip
+    ob = dataset._signal_observation("OBS-1", s, dataset._Ids("SRC", 4))
+    assert ob["observed_at"] == "2024-02-29T21:50:00+06:00"
+    s.text = "Fire at Bailey Road, no time given."
+    assert "observed_at" not in dataset._signal_observation("OBS-1", s, dataset._Ids("SRC", 4))
