@@ -23,6 +23,7 @@ from app.models.signal import (
     Source,
     SourceType,
 )
+from app.models.statement import Finding, Statement
 from app.models.suggestion import SuggestionModel
 from app.models.user import Role, User
 
@@ -39,6 +40,7 @@ __all__ = [
     "EvidenceRelation",
     "FieldReport",
     "FieldReportMedia",
+    "Finding",
     "IngestRun",
     "OfficialPage",
     "PageKind",
@@ -50,6 +52,7 @@ __all__ = [
     "SignalStatus",
     "Source",
     "SourceType",
+    "Statement",
     "SuggestionModel",
     "Role",
     "User",

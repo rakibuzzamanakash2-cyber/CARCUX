@@ -92,6 +92,96 @@ export interface OfficialPageDetail extends OfficialPage {
   }[];
 }
 
+export type Finding = "confirmed" | "partly_confirmed" | "denied" | "under_review";
+
+export const FINDINGS: { value: Finding; label: string; description: string }[] = [
+  { value: "confirmed", label: "Confirmed", description: "It happened as reported." },
+  {
+    value: "partly_confirmed",
+    label: "Partly confirmed",
+    description: "It happened, but not as reported (place, toll, cause…).",
+  },
+  { value: "denied", label: "Denied", description: "It did not happen." },
+  { value: "under_review", label: "Under review", description: "Being checked; no finding yet." },
+];
+
+export const findingLabel = (f: Finding) => FINDINGS.find((x) => x.value === f)?.label ?? f;
+
+/** CARCUX's brief on an event, as an official sees it (field workers unnamed). */
+export interface Brief {
+  generated_at: string;
+  event: {
+    id: string;
+    title: string;
+    summary: string | null;
+    event_type: string;
+    place_name: string | null;
+    started_at: string;
+    ended_at: string | null;
+    status: EventStatus;
+    assessment: Assessment;
+    evidence_counts: EvidenceCounts;
+  };
+  suggestion: {
+    label: Assessment;
+    probability: number | null;
+    method: "start" | "model";
+    sources_supporting: number;
+    sources_denying: number;
+    credible_supporting: number;
+    credible_denying: number;
+    disputed: string[];
+    counted_once: number;
+  };
+  details: {
+    attribute: ClaimAttribute;
+    estimate: string | number | null;
+    unit: string | null;
+    disputed: boolean;
+    sources: number;
+    values: string[];
+  }[];
+  sources: {
+    source: string;
+    kind: string;
+    says: "happened" | "did not happen" | "unclear";
+    reliability: number;
+    disputes: string[];
+  }[];
+  field_workers: number;
+}
+
+export interface Statement {
+  id: string;
+  page: {
+    id: string;
+    slug: string;
+    name: string;
+    name_bn: string | null;
+    kind: PageKind;
+    status: PageStatus;
+  };
+  event: {
+    id: string;
+    title: string;
+    event_type: string;
+    place_name: string | null;
+    started_at: string;
+  };
+  finding: Finding;
+  title: string;
+  body: string;
+  published_at: string;
+  informed_by_carcux: boolean;
+  supersedes_id: string | null;
+  superseded_by_id: string | null;
+  author: string | null;
+}
+
+export interface StatementDetail extends Statement {
+  brief: Brief;
+}
+
 export interface Health {
   status: string;
   service: string;

@@ -44,6 +44,7 @@ class AuditAction:
     OFFICIAL_PAGE_VERIFIED = "official_page.verified"
     OFFICIAL_PAGE_SUSPENDED = "official_page.suspended"
     OFFICIAL_PAGE_REINSTATED = "official_page.reinstated"
+    STATEMENT_PUBLISHED = "statement.published"
 
 
 def record(

@@ -107,6 +107,15 @@ docker compose -f deployment/docker-compose.yml up --build
 | `/official-pages` | admin; officials go straight to their own page | All pages with their state (verified, not verified yet, suspended) and **New official page**. |
 | `/official-pages/{slug}` | verified pages: everyone signed in; otherwise admins and the page's officials | About, the officials who speak for it, and **Verification**: how it was confirmed (the office's own email address or an official letter), what was checked, by whom and when. Admins upload the letter (and open it), **Verify**, **Suspend** with a reason, **Reinstate**, edit the details and **Add official account**. |
 
+## Official statements
+
+| Page | Who | What |
+|---|---|---|
+| `/events/{id}` overview, **Official statements** | everyone signed in | Statements on the event, each with its page, finding (confirmed, partly confirmed, denied, under review), time and "corrected later" when it was. Officials of a verified page get **Write a statement** (or **Correct your statement**). |
+| `/events/{id}/statement` | officials of a verified page | The statement form (finding, title, statement in their own words) beside **CARCUX's brief**: suggested assessment and how likely, sources for and against, disputed details with estimates, copies, sources' track records. Field workers are not named. A second statement on the same event corrects the first. |
+| `/statements`, `/statements/{id}` | everyone signed in | All statements, newest first; one statement with **Informed by CARCUX**: the brief the official had in view. |
+| `/official-pages/{slug}` | as before | Also lists the page's statements. |
+
 ## Review queue, audit log and account
 
 | Page | Who | What |

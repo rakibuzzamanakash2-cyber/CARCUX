@@ -11,6 +11,7 @@ export type NavIcon =
   | "annotation"
   | "users"
   | "official"
+  | "statements"
   | "audit";
 
 export interface NavItem {
@@ -34,6 +35,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
         roles: ["admin", "analyst", "field_worker"],
       },
       { href: "/signals", label: "Public signals", icon: "signals" },
+      { href: "/statements", label: "Statements", icon: "statements", desktopOnly: true },
       {
         href: "/review",
         label: "Review queue",
@@ -96,5 +98,6 @@ export const SHORT_LABEL: Record<string, string> = {
   "/annotation": "Opinions",
   "/users": "Users",
   "/official-pages": "Official",
+  "/statements": "Statements",
   "/audit": "Audit",
 };
