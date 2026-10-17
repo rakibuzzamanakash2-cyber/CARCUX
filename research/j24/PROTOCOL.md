@@ -73,6 +73,26 @@ statement; this section is it, and a statement from the university's ethics comm
 
 Fact-checkers are ground truth, so they are never also sources in the model.
 
+## Items: what outlets published
+
+Fact-checks cite few outlets each (median 1 in the pilot), so the reports about each claim
+are collected from the outlets themselves:
+
+- **Outlets:** every outlet cited by 3 or more fact-checks in the pilot index, plus BBC
+  (English and Bangla), Al Jazeera, Reuters, AP, AFP, DW, The Guardian and The New York
+  Times. The list is fixed in `carcux_data/j24/news_outlets.csv` before collection.
+- **As published at the time:** each article is read from an Internet Archive (Wayback
+  Machine) capture made inside the window, so later edits and deletions do not change
+  what an outlet is recorded as having said. The capture time is stored with the item.
+- **Stored:** link, outlet, capture time, published time when the page states it, title
+  and an excerpt of at most 300 characters. Full text stays only in the collector's local
+  cache, used to suggest which claims an article is about, and is never published.
+- **Matching and stance:** the collector suggests article–claim pairs (place, date, topic
+  words); people decide whether each pair is about the claim and label its stance. Nothing
+  is labelled automatically.
+- Gaps are reported, not filled: the internet shutdown (18–23 July) and outlets with few
+  captures will have fewer items.
+
 ## Units and labels
 
 - **Claim** (dataset `event`): one neutral, checkable statement: what, where, when.
@@ -107,6 +127,10 @@ smaller supplementary test in Paper 1.
   judge, CARCUX `reliability-dep`; as implemented in `ai/fusion` at the frozen commit.
 - **Metrics:** Brier score (primary), ECE, AUROC, share of false claims marked verified at
   80 %; paired bootstrap; results by frame and overall, calibration checked within frame.
+- **Fact-checker robustness:** about two-thirds of the pilot's fact-checks are Rumor
+  Scanner's, so results are also reported by fact-checker, and the primary analysis is
+  repeated without Rumor Scanner's claims. Claims checked by more than one fact-checker
+  report their agreement; a disagreement makes the claim unresolved.
 - **H1** (descriptive): sources recur across claims.
 - **H2** (primary): on the test set, `reliability-dep` has a lower Brier score than B7 and
   majority vote.
@@ -135,12 +159,33 @@ docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e CARCUX_J24_SALT 
   sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 index --out /out && python -m carcux_data.j24 recurrence --out /out && python -m carcux_data.j24 claim-sheet --out /out"
 ```
 
+### News collection
+
+Stage 1 lists the articles each outlet had captured in the window (quick). Stage 2 reads
+them, one request every 4 seconds; run a one-day trial on a few outlets first, then the
+rest overnight. A stopped run resumes where it stopped.
+
+```powershell
+# Stage 1: list (all outlets)
+docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+  -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
+  sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 news-list --out /out"
+# Stage 2, trial: one day, three outlets
+docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+  -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
+  sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 news-fetch --out /out --outlets prothomalo,thedailystar,bbc --since 2024-07-18 --until 2024-07-18"
+```
+
 The salt must be the same in every later run, or social links will hash differently. A
 salt that has been shown in a chat or a screenshot is no longer private: make a new one
 and index again.
 
 ## Changes
 
+- 17 October 2026, after the pilot index and before any claim, stance or result:
+  added the item collection from outlets (Wayback captures, fixed outlet list) and the
+  fact-checker robustness analyses, because the pilot found a median of one outlet per
+  fact-check and two-thirds of fact-checks from one organisation.
 - 17 October 2026: the Docker command runs the tool from the read-only source folder
   (no install into the repository, which Windows refused) and keeps the salt in a file.
   Procedure only; nothing in the design changed.

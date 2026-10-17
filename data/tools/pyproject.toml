@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 include = ["carcux_data*"]
 
 [tool.setuptools.package-data]
-"carcux_data.j24" = ["outlets.csv"]
+"carcux_data.j24" = ["outlets.csv", "news_outlets.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

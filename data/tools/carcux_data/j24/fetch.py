@@ -3,6 +3,7 @@ respected, every response cached on disk so a second run sends no requests at al
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import time
@@ -66,11 +67,11 @@ class Fetcher:
     def _cache_path(self, url: str) -> Path:
         return self.cache_dir / (hashlib.sha256(url.encode()).hexdigest() + ".json")
 
-    def _request(self, url: str) -> Response:
+    def _request(self, url: str, accept: str = "application/json") -> Response:
         if self.requests:
             self.sleep(self.delay)
         self.requests += 1
-        return self.opener(url, {"User-Agent": self.agent, "Accept": "application/json"})
+        return self.opener(url, {"User-Agent": self.agent, "Accept": accept})
 
     def allowed(self, url: str) -> bool:
         parts = urlsplit(url)
@@ -106,3 +107,22 @@ class Fetcher:
                 encoding="utf-8",
             )  # fmt: skip
         return r.status, keep, parsed
+
+    def get_page(self, url: str) -> tuple[int, bytes]:
+        """(status, body) for a web page, cached compressed on disk. Pages stay in the local
+        cache only; nothing here is published."""
+        key = hashlib.sha256(url.encode()).hexdigest()
+        body_path = self.cache_dir / "pages" / key[:2] / f"{key}.html.gz"
+        status_path = body_path.with_suffix(".status")
+        if status_path.exists():
+            status = int(status_path.read_text())
+            return status, gzip.decompress(body_path.read_bytes()) if body_path.exists() else b""
+        if not self.allowed(url):
+            raise Disallowed(url)
+        r = self._request(url, accept="text/html")
+        if r.status < 500:
+            body_path.parent.mkdir(parents=True, exist_ok=True)
+            if r.status < 400:
+                body_path.write_bytes(gzip.compress(r.body))
+            status_path.write_text(str(r.status))
+        return r.status, r.body

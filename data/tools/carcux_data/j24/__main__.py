@@ -4,6 +4,9 @@
     python -m carcux_data.j24 recurrence --out DIR
     python -m carcux_data.j24 claim-sheet --out DIR
     python -m carcux_data.j24 check-sheet FILE
+    python -m carcux_data.j24 news-list --out DIR [--outlets a,b] [--since D --until D]
+    python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
+                                         [--limit N] [--text-from wayback|live]
 
 `index` needs CARCUX_J24_SALT: a long random secret that turns social-media links into
 salted hashes in the public files. Make one, keep it private, never paste it in chat:
@@ -43,6 +46,18 @@ def main(argv: list[str] | None = None) -> int:
     cs.add_argument("--out", required=True, type=Path)
     ck = sub.add_parser("check-sheet", help="check a filled claim sheet")
     ck.add_argument("file", type=Path)
+    for name, help_ in (("news-list", "list the outlets' articles captured in the window"),
+                        ("news-fetch", "read the listed articles")):  # fmt: skip
+        n = sub.add_parser(name, help=help_)
+        n.add_argument("--out", required=True, type=Path)
+        n.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
+        n.add_argument("--since", default=WINDOW[0])
+        n.add_argument("--until", default=WINDOW[1])
+        n.add_argument("--delay", type=float, default=4.0, help="seconds between requests")
+        n.add_argument("--contact", help="an e-mail for the User-Agent")
+        if name == "news-fetch":
+            n.add_argument("--limit", type=int, help="at most this many articles per outlet")
+            n.add_argument("--text-from", choices=["wayback", "live"], default="wayback")
     args = ap.parse_args(argv)
 
     if args.command == "index":
@@ -84,11 +99,52 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{n} rows written to {path}")
         return 0
 
+    if args.command in ("news-list", "news-fetch"):
+        return _news(args)
+
     from carcux_data.j24.sheet import check_sheet
 
     problems = check_sheet(args.file)
     print("\n".join(problems) if problems else "The sheet is complete.")
     return 1 if problems else 0
+
+
+def _news(args) -> int:
+    from collections import Counter
+
+    from carcux_data.j24 import news
+
+    outlets = news.load_news_outlets()
+    keys = [k.strip() for k in args.outlets.split(",") if k.strip()] or list(outlets)
+    unknown = [k for k in keys if k not in outlets]
+    if unknown:
+        print(f"Unknown outlets: {', '.join(unknown)}. Known: {', '.join(outlets)}",
+              file=sys.stderr)  # fmt: skip
+        return 2
+    fetcher = Fetcher(args.out / "cache", delay=args.delay, contact=args.contact)
+    if args.command == "news-list":
+        total = 0
+        for key in keys:
+            first = news.list_outlet(fetcher, outlets[key], args.since, args.until)
+            news.write_urls(args.out, outlets[key], first)
+            days = Counter(news.capture_day(ts) for ts in first.values())
+            busiest = ", ".join(f"{d} {n}" for d, n in sorted(days.items())[:3])
+            print(f"{key}: {len(first)} articles captured"
+                  + (f" (first days: {busiest} …)" if first else ""))  # fmt: skip
+            total += len(first)
+        print(f"\n{total} article addresses listed in {args.out / 'news' / 'urls.jsonl'} "
+              f"({fetcher.requests} requests).")  # fmt: skip
+        return 0
+    results = news.fetch_articles(
+        fetcher, args.out, outlets, keys=keys, since=args.since, until=args.until,
+        limit=args.limit, text_from=args.text_from,
+    )  # fmt: skip
+    for r in results:
+        problem = f" — {r.problem}" if r.problem else ""
+        print(f"{r.outlet}: {r.fetched} of {r.listed} read, {r.about_uprising} about the "
+              f"uprising, {r.failed} failed{problem}")  # fmt: skip
+    print(f"\n{fetcher.requests} requests. Articles in {args.out / 'news' / 'articles.jsonl'}.")
+    return 0
 
 
 if __name__ == "__main__":
