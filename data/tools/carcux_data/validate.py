@@ -59,6 +59,17 @@ TYPE_FAMILY = {
     **dict.fromkeys(
         ["fire", "building_collapse", "building_hazard", "explosion"], "urban_emergency"
     ),
+    # v1.3, for CARCUX-J24: events during unrest, described without any political
+    # attribute (who is on which side is never recorded).
+    **dict.fromkeys(
+        [
+            "protest", "armed_violence", "mob_violence", "arson", "attack_on_place_of_worship",
+            "communications_shutdown", "curfew", "mass_arrest",
+        ],
+        "civil_unrest",
+    ),
+    # v1.3: claims that something was published or stated ("outlet X reported Y").
+    **dict.fromkeys(["publication", "official_statement"], "information"),
 }  # fmt: skip
 
 # Privacy lint: personal contact details must never be stored.

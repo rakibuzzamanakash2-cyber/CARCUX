@@ -50,3 +50,6 @@ Thumbs.db
 
 # LLM answer cache (carcux_fusion.llm)
 .llm-cache/
+
+# Python build output
+build/
