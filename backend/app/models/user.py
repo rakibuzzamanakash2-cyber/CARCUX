@@ -9,7 +9,8 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -58,3 +59,15 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Two-factor sign-in (app/core/totp.py). Secrets are encrypted; recovery codes are
+    # stored as keyed hashes, each removed when used.
+    totp_secret: Mapped[str | None] = mapped_column(String(200))
+    totp_pending: Mapped[str | None] = mapped_column(String(200))  # set up, not confirmed
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    totp_last_counter: Mapped[int | None] = mapped_column(BigInteger)
+    recovery_codes: Mapped[list[str]] = mapped_column(JSONB, default=list)
+
+    @property
+    def two_factor_enabled(self) -> bool:
+        return self.totp_enabled_at is not None

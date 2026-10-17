@@ -40,6 +40,19 @@ ANNOTATOR_ROUTES = frozenset(
 )
 
 
+# Someone whose role must use two-factor sign-in (Settings.two_factor_roles) and who has
+# not set it up yet reaches only these: enough to set it up, and nothing else.
+TWO_FACTOR_SETUP_ROUTES = frozenset(
+    {
+        ("GET", "/auth/me"),
+        ("POST", "/auth/password"),
+        ("GET", "/auth/two-factor"),
+        ("POST", "/auth/two-factor/setup"),
+        ("POST", "/auth/two-factor/enable"),
+    }
+)
+
+
 def get_current_user(
     request: Request,
     db: DbSession,
@@ -57,10 +70,18 @@ def get_current_user(
     # Reject tokens for deactivated users and tokens issued before a revocation.
     if user is None or not user.is_active or user.token_version != claims.token_version:
         raise _UNAUTHORIZED
-    if user.role == Role.ANNOTATOR:
-        path = request.url.path.removeprefix(settings.api_prefix)
-        if (request.method, path) not in ANNOTATOR_ROUTES:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    path = request.url.path.removeprefix(settings.api_prefix)
+    if user.role == Role.ANNOTATOR and (request.method, path) not in ANNOTATOR_ROUTES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if (
+        user.role.value in settings.two_factor_roles
+        and not user.two_factor_enabled
+        and (request.method, path) not in TWO_FACTOR_SETUP_ROUTES
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Set up two-factor sign-in on your account page first.",
+        )
     return user
 
 

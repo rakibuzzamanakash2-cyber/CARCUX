@@ -11,6 +11,34 @@ export function LoginForm({ next }: { next?: string }) {
   // The password stays uncontrolled and is cleared on purpose.
   const [email, setEmail] = useState("");
 
+  if (state?.challenge) {
+    // Second step: the password was right; now the code from the authenticator app.
+    return (
+      <form action={action} className="flex flex-col gap-5 [&_label]:text-night-ink">
+        <input type="hidden" name="next" value={next ?? "/"} />
+        <input type="hidden" name="challenge" value={state.challenge} />
+        <p className="text-sm text-night-ink">
+          Open your authenticator app and enter the 6-digit code for CARCUX. Lost your phone? Enter
+          one of your recovery codes instead.
+        </p>
+        <Field
+          label="Code"
+          name="code"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          required
+          autoFocus
+          maxLength={20}
+        />
+        {state.message && <FormMessage state={state} />}
+        <SubmitButton pending={pending} pendingText="Checking…">
+          Sign in
+        </SubmitButton>
+      </form>
+    );
+  }
+
   return (
     <form action={action} className="flex flex-col gap-5 [&_label]:text-night-ink">
       <input type="hidden" name="next" value={next ?? "/"} />

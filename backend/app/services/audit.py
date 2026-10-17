@@ -26,6 +26,11 @@ class AuditAction:
     PASSWORD_CHANGED = "auth.password_changed"  # noqa: S105 (an action name)
     PASSWORD_CHANGE_FAILED = "auth.password_change_failed"  # noqa: S105
     PASSWORD_RESET = "user.password_reset"  # noqa: S105
+    TWO_FACTOR_ENABLED = "auth.two_factor_enabled"
+    TWO_FACTOR_DISABLED = "auth.two_factor_disabled"
+    TWO_FACTOR_FAILED = "auth.two_factor_failed"
+    TWO_FACTOR_RECOVERY_USED = "auth.two_factor_recovery_used"
+    TWO_FACTOR_RESET = "user.two_factor_reset"
     SIGNAL_ENTERED = "signal.entered"
     SIGNAL_REVIEWED = "signal.reviewed"
     SOURCE_CREATED = "source.created"

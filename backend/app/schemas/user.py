@@ -55,6 +55,7 @@ class UserRead(BaseModel):
     created_at: datetime
     last_login_at: datetime | None
     official_page: OfficialPageRef | None = None
+    two_factor_enabled: bool = False
 
 
 class AccountRiskRead(BaseModel):
@@ -68,3 +69,9 @@ class AccountRiskRead(BaseModel):
     reasons: list[str]
     recent: int  # reports in the last 24 hours
     baseline: int  # earlier reports it is compared with
+
+
+class MeRead(UserRead):
+    """The signed-in user, and whether they must set up two-factor sign-in first."""
+
+    two_factor_setup_needed: bool = False

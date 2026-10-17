@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # addresses (the frontend container); set false if the API port is exposed to a
     # network you do not trust.
     trust_forwarded_from_private: bool = True
+    # Roles that must use two-factor sign-in. Until they set it up, they can only reach
+    # their account page. Empty by default in development and tests; in production,
+    # unset means admins and analysts (see the validator below).
+    require_two_factor_roles: list[str] | None = None
     max_photo_bytes: int = 8 * 1024 * 1024
 
     # Public signals: reading outside sources (GDACS, news feeds, ReliefWeb).
@@ -69,6 +73,13 @@ class Settings(BaseSettings):
             if secret == DEV_JWT_SECRET or len(secret) < 32:
                 raise ValueError("CARCUX_JWT_SECRET must be set to 32+ random characters")
         return self
+
+    @property
+    def two_factor_roles(self) -> frozenset[str]:
+        """Roles that must use two-factor sign-in."""
+        if self.require_two_factor_roles is not None:
+            return frozenset(self.require_two_factor_roles)
+        return frozenset({"admin", "analyst"}) if self.environment == "production" else frozenset()
 
     @property
     def docs_enabled(self) -> bool:

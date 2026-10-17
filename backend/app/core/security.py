@@ -92,6 +92,39 @@ def decode_access_token(settings: Settings, token: str) -> TokenClaims:
         raise InvalidTokenError(str(exc)) from exc
 
 
+# --- Two-factor challenge -------------------------------------------------------------------
+# After a correct password, an account with two-factor sign-in gets this instead of an
+# access token: proof of the password step, good for one code within five minutes.
+
+CHALLENGE_MINUTES = 5
+
+
+def create_challenge_token(settings: Settings, user_id: uuid.UUID, token_version: int) -> str:
+    now = datetime.now(UTC)
+    payload = {
+        "sub": str(user_id), "ver": token_version, "type": "2fa",
+        "iat": now, "exp": now + timedelta(minutes=CHALLENGE_MINUTES), "jti": uuid.uuid4().hex,
+    }  # fmt: skip
+    return jwt.encode(
+        payload, settings.jwt_secret.get_secret_value(), algorithm=settings.jwt_algorithm
+    )
+
+
+def decode_challenge_token(settings: Settings, token: str) -> tuple[uuid.UUID, int]:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret.get_secret_value(),
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["sub", "exp", "iat", "ver", "type"]},
+        )
+        if payload["type"] != "2fa":
+            raise InvalidTokenError("wrong token type")
+        return uuid.UUID(payload["sub"]), int(payload["ver"])
+    except (jwt.PyJWTError, ValueError, KeyError) as exc:
+        raise InvalidTokenError(str(exc)) from exc
+
+
 # --- Public accounts ---------------------------------------------------------------------
 # A different token type: staff endpoints refuse it ("access" only), public endpoints
 # refuse staff tokens.

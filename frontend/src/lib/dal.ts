@@ -33,12 +33,14 @@ export const verifySession = cache(async (): Promise<User> => {
 export async function verifyStaff(): Promise<User> {
   const user = await verifySession();
   if (user.role === "annotator") redirect("/annotation");
+  if (user.two_factor_setup_needed) redirect("/account?two_factor=setup");
   return user;
 }
 
 /** Require one of the given roles; anyone else is sent to the overview page. */
 export async function requireRole(...roles: Role[]): Promise<User> {
   const user = await verifySession();
+  if (user.two_factor_setup_needed) redirect("/account?two_factor=setup");
   if (!roles.includes(user.role))
     redirect(user.role === "annotator" ? "/annotation" : "/?denied=1");
   return user;

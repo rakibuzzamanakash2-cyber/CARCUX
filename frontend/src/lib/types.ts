@@ -34,6 +34,24 @@ export interface User {
   created_at: string;
   last_login_at: string | null;
   official_page?: { id: string; slug: string; name: string; status: PageStatus } | null;
+  two_factor_enabled?: boolean;
+  /** GET /auth/me only: the role must use two-factor sign-in and it is not set up yet. */
+  two_factor_setup_needed?: boolean;
+}
+
+/** GET /auth/two-factor */
+export interface TwoFactorStatus {
+  enabled: boolean;
+  enabled_at: string | null;
+  recovery_codes_left: number;
+  required: boolean;
+}
+
+/** POST /auth/two-factor/setup */
+export interface TwoFactorSetup {
+  secret: string;
+  otpauth_uri: string;
+  qr_svg: string;
 }
 
 export type PageKind =
