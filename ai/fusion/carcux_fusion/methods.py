@@ -234,11 +234,17 @@ def _tz(data: Dataset):
 
 
 def methods() -> list[Method]:
+    from carcux_fusion.social import SocialSensing  # B7 (imports this module)
+
     return [
         Majority(),
         Equal(),
         TruthFinder(),
         TruthFinder(dependence=True),
+        SocialSensing(),
+        SocialSensing(dependence=True),
+        SocialSensing(dependence=True, silence=False),
+        SocialSensing(dependence=True, silence=False, supervised=True),
         Reliability(None),
         Reliability("detected", channels="dedup"),
         Reliability("detected"),

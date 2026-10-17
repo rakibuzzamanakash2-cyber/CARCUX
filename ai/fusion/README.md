@@ -1,6 +1,6 @@
 # 3 · Fusion: evidence under conflict
 
-**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), the calibration study (RQ5), and an LLM baseline (B6, local through Ollama or any OpenAI-compatible server); checked on simulated data only. real-data runs are next.
+**Role:** ⭐ **research core (Q1 paper)** · **Spec:** §5.1 (RQ2–RQ5), §7 · **Status:** evaluation harness, contamination simulator, copy detection, baselines B3–B5, a dependence-aware reliability model (RQ2, RQ4), detail-level conflict detection with the six-label assessment (RQ3), the calibration study (RQ5), an LLM baseline (B6, local through Ollama or any OpenAI-compatible server), and the closest prior work, social-sensing truth discovery (B7); checked on simulated data only. Real-data runs are next.
 
 Given an event and its observations, decides **which sources are really independent, where they conflict, and how certain the assessment is**, and keeps those answers calibrated as the information gets noisier.
 
@@ -230,14 +230,48 @@ What this supports, on simulated data:
 
 **Caveats.** One 7B model, 4-bit, one seed per level, 60 seed events: indicative, not a full comparison (a stronger or larger model, few-shot examples, or source track records in the prompt may close part of the gap, and are worth testing). The simulated reports are templated, and the injected rumours are social-heavy by design of the simulator; real rumours may look different. The model answers are kept in `results/b6-qwen2.5-7b/llm-cache.jsonl`, so these tables can be reproduced without a GPU (below).
 
+### B7: the closest prior work, social-sensing truth discovery
+
+The research gap note (October 2026) found that truth discovery in social sensing (Wang et al.) is the closest prior work. It treats people posting during crises as sensors and models which sources copy which. B7 (`social.py`) implements it:
+
+- **`socialsensing` (B7a):** Wang, Kaplan, Le and Abdelzaher, IPSN 2012. Expectation-maximisation estimates, without labels, how each source behaves when an event is real and when it is not. A source that says nothing about an event counts as silent on it. Denials are added as a third outcome next to supports and silence.
+- **`socialsensing-dep`:** adds the dependence model of Wang et al., IPSN 2014. A copy whose origin is in view says nothing about the truth, so it drops out. Copies come from the same detected dependences as the proposed method's.
+- **`-nosilence`:** only sources that spoke about an event count.
+- **`-sup`:** the same model given the outcomes of the training events, which is what the proposed method gets.
+
+**Disclosed design choice.** The faithful version ranks events worse than chance on clean data (AUC 0.35–0.51, seed 1). Its silence term assumes every source observes every claim. In a stream of many events, most sources simply never saw a given event, so their silence carries no information. The `-nosilence` variant was added after seeing this, so both are reported. The comparison below treats the stronger one as *the* B7.
+
+Pooled over 5 seeds per level (600 events each, 5-fold CV), with a paired bootstrap over events (`python -m carcux_fusion.versus`, output in `results/b7-socialsensing/`). The table gives Brier at the final checkpoint; the proposed method minus the rival, so negative favours the proposed method:
+
+| Contamination | proposed | B7 (`-dep-nosilence`) | difference, p | B7 with training labels (`-sup`) | difference, p |
+|---|---|---|---|---|---|
+| 0 % | 0.071 | 0.076 | −0.005, p = 0.44 | 0.062 | +0.009, p = 0.10 |
+| 10 % | 0.093 | 0.092 | +0.001, p = 0.95 | 0.095 | −0.002, p = 0.78 |
+| 20 % | 0.080 | 0.087 | −0.007, p = 0.28 | 0.099 | −0.019, p = 0.003 |
+| 30 % | 0.077 | 0.089 | −0.012, p = 0.09 | 0.102 | −0.025, p < 0.001 |
+| 40 % | 0.060 | 0.087 | −0.027, p < 0.001 | 0.101 | −0.042, p < 0.001 |
+| 50 % | 0.043 | 0.085 | −0.042, p < 0.001 | 0.095 | −0.052, p < 0.001 |
+| 60 % | 0.036 | 0.087 | −0.051, p < 0.001 | 0.093 | −0.056, p < 0.001 |
+
+At T+6h the picture is the same, with one exception: at 10 % unsupervised B7 is slightly *better* (+0.014, p = 0.045).
+
+What this supports, on simulated data:
+
+- **With little contamination, the proposed method is no better than the strongest prior work.** The two are statistically tied from 0 % to 30 %, and given the same labels, B7 is slightly ahead on clean data (not significant). The paper must not claim superiority there.
+- **The advantage is robustness.** From 40 % contamination on, the proposed method is better at both checkpoints (p ≤ 0.05), and the gap grows with contamination: from 0.087 to 0.036 Brier at 60 %.
+- **It is not because the proposed method sees labels.** B7 given the same training labels does no better, and under contamination it does worse, so the difference comes from the model: the copy channel and source-type priors.
+
+**Caveats.** These are simulated data from our own generator, whose injected rumours are social-heavy by design. B7 is our implementation from the papers, not the authors' code. Real data is the next test: PHEME veracity and RumourEval 2019, then CARCUX-BD.
+
 ## Baselines
 
-Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`; results above).
+Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`), and social-sensing truth discovery with source dependence (B7, `social.py`); results above.
 
 ## Still to do
 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
 - **B6, next steps:** more seeds; a larger model (e.g. on Colab); few-shot examples or source track records in the prompt (an LLM-plus-reliability hybrid); real data on a local model.
+- **Real-data runs on public sets:** PHEME veracity (9 crisis events, true/false/unverified) and RumourEval 2019 (gold stances), leave-one-event-out, against B3–B7.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: done as assessment suggestions (`backend/app/services/assess.py`) with copy detection (`backend/app/services/copies.py`; stricter thresholds than here, and copies dropped rather than a second channel until real data can learn its weight); see the backend README.
