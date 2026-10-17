@@ -22,12 +22,23 @@ OFF_TOPIC = """<html lang="bn"><head><title>SYNTHETIC: cricket</title></head>
 <body><p>A match report.</p></body></html>"""
 
 
+# SYNTHETIC captures: three in the week of 15 July (two of them the same article), a tag
+# page, and one in August.
+CAPTURES = [
+    ["20240718120000", "http://www.paper.example/national/101"],
+    ["20240718130000", "https://paper.example/national/101/amp"],
+    ["20240720090000", "https://paper.example/national/tag/x"],
+    ["20240801100000", "https://paper.example/national/202?utm=1"],
+]
+
+
 class FakeArchive:
     """Answers CDX queries in two pages (with a resume key) and serves captured pages."""
 
     def __init__(self, robots="User-agent: *\nAllow: /\n"):
         self.robots = robots
         self.calls: list[str] = []
+        self.queries: list[tuple[str, str]] = []
 
     def __call__(self, url, headers):
         self.calls.append(url)
@@ -36,19 +47,17 @@ class FakeArchive:
             return Response(200, {}, self.robots.encode())
         if parts.path == "/cdx/search/cdx":
             q = parse_qs(parts.query)
-            assert q["from"] == ["20240701000000"] and q["to"] == ["20240815235959"]
+            lo, hi = q["from"][0], q["to"][0]
+            assert "20240701000000" <= lo <= hi <= "20240815235959"
             assert "collapse" in q and q["matchType"] == ["prefix"]
-            if "resumeKey" not in q:
-                rows = [["timestamp", "original"],
-                        ["20240718120000", "http://www.paper.example/national/101"],
-                        ["20240718130000", "https://paper.example/national/101/amp"],
-                        ["20240720090000", "https://paper.example/national/tag/x"],
-                        [], ["KEY1"]]  # fmt: skip
+            self.queries.append((lo, hi))
+            inside = [r for r in CAPTURES if lo <= r[0] <= hi]
+            if len(inside) > 2 and "resumeKey" not in q:  # two pages, like the real index
+                rows = [["timestamp", "original"], *inside[:2], [], ["KEY1"]]
+            elif "resumeKey" in q:
+                rows = [["timestamp", "original"], *inside[2:]]
             else:
-                rows = [
-                    ["timestamp", "original"],
-                    ["20240801100000", "https://paper.example/national/202?utm=1"],
-                ]
+                rows = [["timestamp", "original"], *inside]
             return Response(200, {}, json.dumps(rows).encode())
         if "/web/" in parts.path:
             if parts.path.endswith("/101"):
@@ -80,10 +89,13 @@ def test_addresses_are_normalised(url, expected):
     assert news.normalise(url) == expected
 
 
-def test_listing_follows_resume_keys_and_keeps_the_first_capture(tmp_path):
+def test_listing_goes_week_by_week_follows_resume_keys_and_keeps_the_first_capture(tmp_path):
     web = FakeArchive()
     first = news.list_outlet(fetcher(tmp_path, web), OUTLET, "2024-07-01", "2024-08-15",
                              log=lambda m: None)  # fmt: skip
+    weeks = sorted(set(web.queries))
+    assert len(weeks) == 7 and weeks[0] == ("20240701000000", "20240707235959")
+    assert weeks[-1] == ("20240812000000", "20240815235959")
     assert first == {
         "https://paper.example/national/101": "20240718120000",
         "https://paper.example/national/202": "20240801100000",
@@ -196,3 +208,24 @@ def test_an_index_that_never_answers_skips_the_outlet_without_crashing(tmp_path)
 def test_fetch_before_listing_says_what_to_do(tmp_path, capsys):
     assert main(["news-fetch", "--out", str(tmp_path)]) == 2
     assert "run news-list first" in capsys.readouterr().err
+
+
+class CutOff(FakeArchive):
+    """The first index answer is cut off halfway, as the real archive sometimes does."""
+
+    def __init__(self):
+        super().__init__()
+        self.cut = True
+
+    def __call__(self, url, headers):
+        import http.client
+
+        if "/cdx/" in url and self.cut:
+            self.cut = False
+            raise http.client.IncompleteRead(b"partial")
+        return super().__call__(url, headers)
+
+
+def test_an_answer_cut_off_halfway_is_retried(tmp_path):
+    f = Fetcher(tmp_path / "c", opener=CutOff(), sleep=lambda s: None, log=lambda m: None)
+    assert len(news.list_outlet(f, OUTLET, "2024-07-01", "2024-08-15", log=lambda m: None)) == 2
