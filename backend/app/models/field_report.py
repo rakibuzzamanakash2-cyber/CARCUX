@@ -99,6 +99,17 @@ class FieldReportMedia(Base):
     sha256: Mapped[str] = mapped_column(String(64), index=True)
     # 64-bit difference hash (hex): near-identical images have close hashes.
     dhash: Mapped[str] = mapped_column(String(16))
+    # From ai/media (app/media_features): a DCT hash, and both hashes of the mirror
+    # image (a flipped repost). Empty for photos stored before they were added, until
+    # the worker fills them in.
+    phash: Mapped[str | None] = mapped_column(String(16))
+    dhash_mirrored: Mapped[str | None] = mapped_column(String(16))
+    phash_mirrored: Mapped[str | None] = mapped_column(String(16))
+    # Text read in the photo (Bangla and English), by the worker after submission.
+    # ocr_status: None (waiting), "done", or "failed".
+    ocr_text: Mapped[str | None] = mapped_column(Text)
+    ocr_confidence: Mapped[float | None] = mapped_column(Float)
+    ocr_status: Mapped[str | None] = mapped_column(String(10), index=True)
     # Relative path under the media directory. Never derived from user input.
     storage_key: Mapped[str] = mapped_column(String(200))
 

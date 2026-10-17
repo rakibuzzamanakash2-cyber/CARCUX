@@ -18,6 +18,7 @@ Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
 
 Second opinions away from the console (an Excel sheet of an annotator's blind queue):
 
+    python -m app.cli process-photos       # hashes and text in photos, all waiting now
     python -m app.cli export-label-sheet annotator@example.org sheet.xlsx
     python -m app.cli import-label-sheet annotator@example.org filled.xlsx          # check
     python -m app.cli import-label-sheet annotator@example.org filled.xlsx --save   # record
@@ -248,6 +249,30 @@ def evaluate_stance() -> int:
         engine.dispose()
 
 
+def process_photos() -> int:
+    from app.media_features import ocr
+    from app.services import photo_text
+
+    settings = get_settings()
+    if not ocr.available():
+        print("The tesseract program is not installed: filling in hashes only.")
+    engine = make_engine(settings.database_url)
+    total = photo_text.Pass()
+    try:
+        with make_session_factory(engine)() as db:
+            while True:
+                done = photo_text.process(db, settings)
+                total.hashed += done.hashed
+                total.read += done.read
+                total.failed += done.failed
+                if not (done.hashed or done.read or done.failed):
+                    break
+            print(f"Hashed {total.hashed}, read text in {total.read}, failed {total.failed}.")
+            return 0
+    finally:
+        engine.dispose()
+
+
 def evaluate_priority() -> int:
     from app.services import briefing
 
@@ -339,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("train-suggestions", help="train the event suggestion model from links")
     sub.add_parser("train-assessment", help="train the assessment model on resolved events")
     sub.add_parser("evaluate-stance", help="compare stance suggestions with analysts' labels")
+    sub.add_parser("process-photos", help="hashes and text in field-report photos, now")
     sub.add_parser("evaluate-priority", help="compare suggested priorities with analysts' choices")
     p = sub.add_parser("export-label-sheet", help="an annotator's blind queue as an Excel sheet")
     p.add_argument("email", help="the annotator's account")
@@ -363,6 +389,8 @@ def main(argv: list[str] | None = None) -> int:
         return train_assessment()
     if args.command == "evaluate-stance":
         return evaluate_stance()
+    if args.command == "process-photos":
+        return process_photos()
     if args.command == "evaluate-priority":
         return evaluate_priority()
     if args.command == "export-label-sheet":

@@ -1,6 +1,6 @@
 # 2 · Media: images, video, audio
 
-**Role:** engineered with existing models · **Spec:** §6, §9.2 · **Status:** perceptual hashing (photos and video frames), Bangla and English OCR, video and audio probing, speech recognition (Whisper) and image classification (CLIP) built, with an evaluation for each. Hashing and OCR are measured here; Whisper and CLIP run where there is a GPU and are measured on your own files. Not yet wired into the backend.
+**Role:** engineered with existing models · **Spec:** §6, §9.2 · **Status:** perceptual hashing (photos and video frames), Bangla and English OCR, video and audio probing, speech recognition (Whisper) and image classification (CLIP) built, with an evaluation for each. Hashing and OCR are measured here; Whisper and CLIP run where there is a GPU and are measured on your own files. Hashing and OCR are in the product for field report photos (`backend/app/media_features`); speech recognition and image classification are not yet.
 
 Turns attached media into features the rest of the pipeline can use. **Media files are never stored in the dataset, only derived features** (`media[]`: `kind`, `phash`, `ocr_text`, `transcript`, `duration_s`).
 
@@ -80,7 +80,7 @@ On Windows, if scikit-image is not installed, give `--hashes` a folder of your o
 
 ## Next
 
-1. **Into the product:** OCR and pHash for field report photos at submission (Tesseract in the backend image), shown with the report and exported as `ocr_text`; reused-photo checks across reports and signals with the rule above.
+1. **In the product (done for field report photos):** both hashes and their mirrored forms at submission; the reused-photo flag and copy detection use the rule above, with the backend's old 6-bit dHash rule for photos stored before. The ingest worker reads the text in each photo (Tesseract in the backend image), shows it with the report, and exports a redacted excerpt as `ocr_text`. Still to do: voice notes and video in field reports (Whisper needs a decision about where it runs), and images in public signals.
 2. Real measurements: CARCUX photos for hashing and OCR, voice notes for Whisper, labelled photos for CLIP.
 3. Heavy crops and screenshots: keypoint matching (ORB) as a second stage when hashes miss.
 4. **Out of scope until after the paper:** deepfake and manipulation detection as research.

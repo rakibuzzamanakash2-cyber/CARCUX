@@ -39,6 +39,10 @@ class MediaRead(BaseModel):
     width: int
     height: int
     sha256: str
+    # Text read in the photo after submission; status None while waiting.
+    ocr_text: str | None = None
+    ocr_confidence: float | None = None
+    ocr_status: str | None = None
 
 
 class ReporterRead(BaseModel):

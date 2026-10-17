@@ -11,7 +11,7 @@ Six modules, one per area in Spec v1.0 §6. Two of them, `correlation` and `fusi
 | 5 | [`integrity/`](integrity/) | Secure field systems (AI side) | Engineered | — |
 | 6 | [`decision_support/`](decision_support/) | Human–AI decision support | Engineered, evaluated after deployment | Candidate 2nd paper |
 
-**Status (17 October 2026):** `correlation` and `fusion` are built and evaluated (real news benchmark; simulated contamination). `extraction` is built and in the product (details, language, places, times). `integrity` is built and in the product (two new report checks and a per-account risk score for admins), evaluated on simulated misuse only. `decision_support` and `media` are next. Each module's README has its own status line.
+**Status (17 October 2026):** `correlation` and `fusion` are built and evaluated (real news benchmark; simulated contamination). `extraction` is built and in the product (details, language, places, times). `integrity` is built and in the product (two new report checks and a per-account risk score for admins), evaluated on simulated misuse only. `decision_support` is built and in the product (suggested priority, evidence-cited briefings). `media` is built; its hashing and OCR are in the product for field report photos, and speech recognition and image classification are not yet. Each module's README has its own status line.
 
 ## How they connect
 

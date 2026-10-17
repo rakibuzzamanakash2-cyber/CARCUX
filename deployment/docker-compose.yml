@@ -67,8 +67,12 @@ services:
     environment:
       CARCUX_ENVIRONMENT: development
       CARCUX_DATABASE_URL: postgresql+psycopg://carcux:carcux@db:5432/carcux
+      CARCUX_MEDIA_DIR: /app/media
       # Optional: an approved ReliefWeb app name, then enable ReliefWeb on the Sources page.
       CARCUX_RELIEFWEB_APPNAME: ${CARCUX_RELIEFWEB_APPNAME:-}
+    # Reads field-report photos to hash them and read the text in them; never writes.
+    volumes:
+      - media_data:/app/media:ro
     depends_on:
       backend:
         condition: service_started

@@ -152,6 +152,9 @@ def submit(
                     height=photo.height,
                     sha256=photo.sha256,
                     dhash=photo.dhash,
+                    phash=photo.phash,
+                    dhash_mirrored=photo.dhash_mirrored,
+                    phash_mirrored=photo.phash_mirrored,
                     storage_key=key,
                 )
             )

@@ -8,6 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Tesseract with its Bangla and English models: the worker reads text in field-report
+# photos (app/services/photo_text.py). About 40 MB.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-ben \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml ./
 COPY app ./app
 # Slow or flaky connections: long timeout and retries above, so a dropped download

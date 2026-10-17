@@ -61,7 +61,9 @@ AUTOMATIC = "ANN-000"  # CARCUX's own checks (e.g. photo hashes)
 EVENT_PRECISION_M = 1_000.0
 FIELD_PRECISION_M = 50.0
 
-_PHONE = re.compile(r"(?:\+?88)?01[3-9]\d{8}")
+# Bangladeshi mobile numbers, also written with spaces or dashes ("01711-234567",
+# "+880 1711 234 567"), as on signboards in photos.
+_PHONE = re.compile(r"(?<![\d+])(?:\+?88[-\s]?0?[-\s]?|0)1[3-9]\d{2}[-\s]?\d{3}[-\s]?\d{3}(?!\d)")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
@@ -438,6 +440,17 @@ def build(db: Session, *, include_unlinked: bool = False, now: datetime | None =
     return Export(files=files, manifest=manifest, id_map=id_map, problems=problems)
 
 
+def _photo(m) -> dict:
+    """A photo's derived features: its perceptual hash (the DCT hash once the worker has
+    computed it, else the difference hash) and an excerpt of the text read in it,
+    redacted like report text."""
+    out = {"kind": "image", "phash": (m.phash or m.dhash).lower()}
+    text = " ".join(_redact(m.ocr_text or "").split())
+    if text:
+        out["ocr_text"] = text if len(text) <= EXCERPT_MAX else text[: EXCERPT_MAX - 1] + "…"
+    return out
+
+
 def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
     text = _redact(r.text)
     lat, lon = r.latitude, r.longitude
@@ -470,7 +483,7 @@ def _report_observation(oid: str, r: FieldReport, source_ids: _Ids) -> dict:
     if mentions:
         ob["location_mentions"] = mentions
     if r.media:
-        ob["media"] = [{"kind": "image", "phash": m.dhash.lower()} for m in r.media]
+        ob["media"] = [_photo(m) for m in r.media]
     return ob
 
 
