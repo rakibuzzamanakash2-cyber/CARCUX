@@ -123,20 +123,24 @@ From `D:\CARCUX` in PowerShell. The output goes to `D:\CARCUX-J24`, outside the
 repository, so nothing collected can be committed by mistake.
 
 ```powershell
-# Once: a private salt for hashing social media links (64 random hex characters).
-# Save it in a password manager; never share it. In a new PowerShell window, set it
-# again with:  $env:CARCUX_J24_SALT = "<the saved value>"
-$env:CARCUX_J24_SALT = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")
-$env:CARCUX_J24_SALT   # shows it once, to save
+# Once: make a private salt for hashing social media links and save it to a file.
+# It is never printed. Keep the file (back it up); never paste its contents anywhere.
+([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")) |
+  Set-Content -NoNewline D:\CARCUX-J24-salt.txt
 
-docker run --rm -v "${PWD}:/repo" -v "D:\CARCUX-J24:/out" -e CARCUX_J24_SALT `
-  -w /repo/data/tools python:3.12-slim `
-  sh -c "pip install -q -e . && python -m carcux_data.j24 index --out /out && python -m carcux_data.j24 recurrence --out /out && python -m carcux_data.j24 claim-sheet --out /out"
+# Each run (the repository is mounted read-only; output goes to D:\CARCUX-J24):
+$env:CARCUX_J24_SALT = Get-Content -Raw D:\CARCUX-J24-salt.txt
+docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e CARCUX_J24_SALT `
+  -e PYTHONPATH=/repo/data/tools -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
+  sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 index --out /out && python -m carcux_data.j24 recurrence --out /out && python -m carcux_data.j24 claim-sheet --out /out"
 ```
 
-The salt must be the same in every later run, or social links will hash differently:
-save it in a password manager.
+The salt must be the same in every later run, or social links will hash differently. A
+salt that has been shown in a chat or a screenshot is no longer private: make a new one
+and index again.
 
 ## Changes
 
-None yet.
+- 17 October 2026: the Docker command runs the tool from the read-only source folder
+  (no install into the repository, which Windows refused) and keeps the salt in a file.
+  Procedure only; nothing in the design changed.
