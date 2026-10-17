@@ -40,7 +40,8 @@ SITES = (
 FACT_CHECKER_DOMAINS = frozenset(
     d for s in SITES for d in s.domains
 ) | {"factcheckbangla.afp.com", "factcheck.afp.com", "boombd.com", "altnews.in",
-     "factcrescendo.com"}  # fmt: skip
+     "factcrescendo.com", "snopes.com", "boomlive.in", "check4spam.com", "factly.in",
+     "newschecker.in", "vishvasnews.com", "newsmeter.in", "dfrac.org"}  # fmt: skip
 
 
 def by_key(key: str) -> Site:

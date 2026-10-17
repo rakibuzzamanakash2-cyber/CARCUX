@@ -26,7 +26,8 @@ SOCIAL = {
     "t.me": "telegram", "whatsapp.com": "whatsapp", "linkedin.com": "linkedin",
 }  # fmt: skip
 ARCHIVES = {"perma.cc", "archive.ph", "archive.today", "archive.is", "archive.org",
-            "web.archive.org", "ghostarchive.org"}  # fmt: skip
+            "web.archive.org", "ghostarchive.org", "archive.md", "archive.vn",
+            "archive.li"}  # fmt: skip
 TOOLS = {"google.com", "bing.com", "yandex.com", "tineye.com", "invid-project.eu",
          "maps.google.com", "goo.gl", "bit.ly", "infogram.com", "wikipedia.org"}  # fmt: skip
 
@@ -169,6 +170,46 @@ SCOPE_TERMS = (
 def scope_terms(title: str, text: str) -> list[str]:
     low = f"{title} {text}".lower()
     return sorted({t for t in SCOPE_TERMS if t.lower() in low})
+
+
+# First path segments that are not an account name.
+_NOT_ACCOUNTS = {
+    "facebook": {"photo.php", "photo", "photos", "permalink.php", "story.php", "watch", "share",
+                 "reel", "reels", "videos", "video.php", "events", "hashtag", "login",
+                 "profile.php", "plugins", "sharer", "l.php"},
+    "x": {"i", "home", "search", "hashtag", "intent", "share"},
+    "instagram": {"p", "reel", "reels", "tv", "stories", "explore"},
+}  # fmt: skip
+
+
+def account_of(url: str, platform: str) -> str | None:
+    """The account a social media link belongs to, read from the link itself, or None
+    when the link does not say (a bare video or photo id). Only ever stored hashed."""
+    parts = urlsplit(url)
+    segs = [s for s in parts.path.split("/") if s]
+    query = dict(q.split("=", 1) for q in parts.query.split("&") if "=" in q)
+    if platform == "facebook":
+        if segs[:1] == ["groups"] and len(segs) > 1:
+            return f"groups/{segs[1]}"
+        if segs and segs[0] in ("permalink.php", "story.php", "profile.php") and query.get("id"):
+            return query["id"]
+    if platform == "youtube":
+        if segs and segs[0].startswith("@"):
+            return segs[0]
+        if len(segs) > 1 and segs[0] in ("channel", "c", "user"):
+            return f"{segs[0]}/{segs[1]}"
+        return None
+    if platform == "tiktok":
+        return segs[0] if segs and segs[0].startswith("@") else None
+    if platform in _NOT_ACCOUNTS and segs and segs[0].lower() not in _NOT_ACCOUNTS[platform]:
+        return segs[0]
+    return None
+
+
+def account_ref(salt: str, platform: str, account: str) -> str:
+    """Salted SHA-256 of an account (dataset source.account_ref): the same account is
+    recognisable across fact-checks without anyone being named."""
+    return hashlib.sha256(f"{salt}|account|{platform}:{account.lower()}".encode()).hexdigest()
 
 
 def url_ref(salt: str, url: str) -> str:
