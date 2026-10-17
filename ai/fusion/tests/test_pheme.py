@@ -90,3 +90,63 @@ def test_leave_one_crisis_out_runs(corpus):
     r = evaluate.run(data, parts=pheme.by_crisis(crisis_of), copy_threshold=pheme.COPY_THRESHOLD)
     assert r["folds"] == 3 and r["events"] == 6
     assert "majority" in r["checkpoints"]["final"]["methods"]
+
+
+def test_replies_are_linked_to_their_conversation(corpus):
+    root, re_dir = corpus
+    data, _, _ = pheme.build(pheme.load_threads(root), pheme.load_stance(re_dir))
+    assert data.structure and all(kind == "reply" for _, kind in data.structure.values())
+    origins = {origin for origin, _ in data.structure.values()}
+    assert origins <= set(data.observations)  # each conversation starts at a source tweet
+
+
+def test_only_the_test_fold_is_judged(corpus):
+    root, re_dir = corpus
+    data, crisis_of, _ = pheme.build(pheme.load_threads(root), pheme.load_stance(re_dir))
+    parts = pheme.by_crisis(crisis_of)
+    r = evaluate.run(data, parts=parts, test_folds=[2], copy_threshold=pheme.COPY_THRESHOLD)
+    assert r["judged"] == len(parts[2]) == 2
+
+
+def test_supervised_calibration_is_cross_fitted():
+    from carcux_fusion import methods as M
+
+    assert M.Reliability("detected").supervised and not M.Majority().supervised
+    assert M.Reliability("detected", structure=False).ignore_structure
+
+
+@pytest.fixture
+def test_set(tmp_path: Path):
+    base = tmp_path / "re" / "test" / "twitter-en-test-data" / "topic"
+    key = {"subtaskaenglish": {}, "subtaskbenglish": {}}
+    for k, label in enumerate(["true", "false", "true", "false", "unverified"]):
+        tid = str(9000 + 10 * k)
+        d = base / tid
+        (d / "source-tweet").mkdir(parents=True)
+        (d / "replies").mkdir()
+        (d / "source-tweet" / f"{tid}.json").write_text(json.dumps(_tweet(tid, 50 + k, 0, "news")))
+        key["subtaskbenglish"][tid] = label
+        key["subtaskaenglish"][tid] = "support"
+        for r, text in enumerate(SUPPORT if label == "true" else DENY):
+            rid = str(int(tid) + r + 1)
+            (d / "replies" / f"{rid}.json").write_text(
+                json.dumps(_tweet(rid, 200 + r, r + 1, text))
+            )
+            key["subtaskaenglish"][rid] = "support" if label == "true" else "deny"
+    (tmp_path / "re" / "final-eval-key.json").write_text(json.dumps(key))
+    return tmp_path / "re"
+
+
+def test_final_test_runner_on_made_up_data(corpus, test_set):
+    from carcux_fusion import rumoureval_test
+
+    root, re_dir = corpus
+    # The made-up training labels live in corpus's RumourEval folder; the test key here.
+    (test_set / "train-key.json").write_text((re_dir / "train-key.json").read_text())
+    threads = rumoureval_test.load_test_threads(test_set)
+    assert len(threads) == 5 and threads[0].crisis == rumoureval_test.TEST_GROUP
+    out = rumoureval_test.run(root, test_set)
+    for name in ("predicted-stance", "gold-stance"):
+        assert out[name]["judged"] == 4  # the unverified thread is left out
+        assert out[name]["test"]["unverified threads"] == 1
+        assert "reliability-dep" in out[name]["checkpoints"]["final"]["methods"]

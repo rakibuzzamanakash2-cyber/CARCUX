@@ -87,6 +87,8 @@ def _logit(p: float) -> float:
 class Method:
     name = "method"
     uses_deps: str | None = None  # None, "detected" or "gold"
+    supervised = False  # learns from training events' outcomes (then cross-fitted)
+    ignore_structure = False  # True: does not see observed links such as replies
 
     def fit(self, data: Dataset, train: list[str], cutoffs: dict[str, datetime], deps: Deps):
         return self
@@ -167,16 +169,31 @@ class Reliability(Method):
       fitted on training events, which learns how much copies should count.
     """
 
-    def __init__(self, deps: str | None = "detected", channels: str = "two", strength: float = 3.0):
+    supervised = True
+
+    def __init__(
+        self,
+        deps: str | None = "detected",
+        channels: str = "two",
+        strength: float = 3.0,
+        aggregate: str = "sum",
+        structure: bool = True,
+    ):
         self.uses_deps = deps
         self.channels = channels if deps else "all"
         self.strength = strength
+        self.aggregate = aggregate
         self.name = {
             ("all", None): "reliability",
             ("dedup", "detected"): "reliability-dedup",
             ("two", "detected"): "reliability-dep",
             ("two", "gold"): "reliability-oracle",
         }[(self.channels, deps)]
+        if aggregate == "mean":
+            self.name += "-mean"
+        self.ignore_structure = not structure
+        if not structure:
+            self.name += "-nolinks"
 
     def fit(self, data, train, cutoffs, deps):
         # Training events are over: learn from all of their evidence.
@@ -219,11 +236,19 @@ class Reliability(Method):
                 out[eid] = origin_score
                 continue
             kept = {v.obs_id for v in origins}
-            copy_score = sum(
-                v.vote * _logit(self.rate(v.source_id, copy=True))
-                for v in vs
-                if v.obs_id not in kept
-            )
+            copies = [v for v in vs if v.obs_id not in kept]
+            copy_score = sum(v.vote * _logit(self.rate(v.source_id, copy=True)) for v in copies)
+            if self.aggregate == "mean":
+                # Bounded: the average weight of evidence in each channel, and how much
+                # of it there is on a log scale, so volume alone cannot push a
+                # probability to 0 or 1 (the first real-data run, README).
+                out[eid] = (
+                    origin_score / max(len(origins), 1),
+                    copy_score / max(len(copies), 1),
+                    math.log1p(len(origins)),
+                    math.log1p(len(copies)),
+                )
+                continue
             out[eid] = (origin_score, copy_score)
         return out
 
@@ -249,6 +274,7 @@ def methods() -> list[Method]:
         Reliability("detected", channels="dedup"),
         Reliability("detected"),
         Reliability("gold"),
+        Reliability("detected", aggregate="mean"),
     ]
 
 

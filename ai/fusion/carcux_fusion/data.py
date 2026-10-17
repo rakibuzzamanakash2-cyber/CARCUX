@@ -60,6 +60,9 @@ class Dataset:
     source_type: dict[str, str]
     dependences: dict[str, tuple[str, str]]  # obs_id -> (origin_obs_id, type)
     name: str = ""
+    # Observed links between items, such as a reply and the post that started its
+    # conversation: facts, not inferences, so every dependence-aware method sees them.
+    structure: dict[str, tuple[str, str]] = field(default_factory=dict)
 
     def first_seen(self, event: Event) -> datetime | None:
         times = [self.observations[e.obs_id].published for e in event.evidence]
