@@ -44,6 +44,7 @@ class SiteResult:
     in_scope_hint: int = 0
     problem: str | None = None
     pages: int = 0
+    template_links: int = 0  # accounts or links dropped as the site's own template
 
 
 @dataclass
@@ -154,12 +155,33 @@ def index_site(
         if page >= total_pages or len(data) < PER_PAGE:
             break
     categories = _categories(fetcher, site, {c for p in posts for c in p.get("categories", [])})
-    for post in posts:
-        public, restricted = record_for(post, site, categories, outlets, salt)
+    records = [record_for(post, site, categories, outlets, salt) for post in posts]
+    template = template_links(records)
+    result.template_links = len(template)
+    for public, restricted in records:
+        public["social_links"] = [s for s in public["social_links"] if _key(s) not in template]
+        restricted = [s for s in restricted if _key(s) not in template]
         write(public, restricted)
         result.posts += 1
         result.in_scope_hint += public["scope_hint"]
     return result
+
+
+# A link to the same account (or the same post) in this share of one fact-checker's
+# articles is part of its template ("follow us on …"), not evidence about a claim.
+TEMPLATE_SHARE = 0.3
+TEMPLATE_MIN_POSTS = 10
+
+
+def _key(link: dict) -> str:
+    return link.get("account_ref") or link["url_ref"]
+
+
+def template_links(records: list[tuple[dict, list[dict]]]) -> set[str]:
+    if len(records) < TEMPLATE_MIN_POSTS:
+        return set()
+    seen = Counter(k for public, _ in records for k in {_key(s) for s in public["social_links"]})
+    return {k for k, n in seen.items() if n >= TEMPLATE_SHARE * len(records)}
 
 
 def run(
@@ -197,6 +219,7 @@ def run(
             log(f"{site.key}: indexing {since} to {until} …")
             r = index_site(fetcher, site, since, until, outlets, salt, write)
             log(f"{site.key}: {r.posts} fact-checks, {r.in_scope_hint} likely about the uprising"
+                + (f"; {r.template_links} template links left out" if r.template_links else "")
                 + (f" — {r.problem}" if r.problem else ""))  # fmt: skip
             result.sites.append(r)
     return result
