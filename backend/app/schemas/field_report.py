@@ -52,6 +52,16 @@ class ReporterRead(BaseModel):
     full_name: str
 
 
+class RequestBrief(BaseModel):
+    """The request for evidence a report answers."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    event_id: uuid.UUID
+    question: str
+
+
 class FieldReportRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -73,6 +83,7 @@ class FieldReportRead(BaseModel):
     reviewed_by: ReporterRead | None = None
     reviewed_at: datetime | None = None
     review_note: str | None = None
+    request: RequestBrief | None = None
 
     @computed_field
     @property

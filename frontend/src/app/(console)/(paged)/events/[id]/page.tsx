@@ -33,14 +33,17 @@ import {
   type CarcuxEvent,
   type EventStatus,
   type Evidence,
+  type EvidenceRequest,
   type EvidenceRelation,
   type HistoryEntry,
   type Statement,
   type Priority,
+  type EventQueueItem,
 } from "@/lib/types";
 
 import { AssessmentSuggestionPanel } from "./assessment-suggestion";
 import { BriefingPanel, PrioritySuggestionPanel } from "./briefing";
+import { CheckPanel } from "./check-panel";
 import { GroundTruthPanel } from "./ground-truth-panel";
 import { ManagePanel } from "./manage-panel";
 
@@ -170,6 +173,12 @@ function describe(entry: HistoryEntry): React.ReactNode {
           unlinked {reportLink} ({showValue("relation", d.relation)})
         </>
       );
+    case "event.evidence_requested":
+      return <>asked field workers to check: “{String(d.question ?? "")}”</>;
+    case "event.evidence_request_closed": {
+      const n = Number(d.responses ?? 0);
+      return `${d.status === "answered" ? "closed the request as answered" : "cancelled the request"} (${n} ${n === 1 ? "answer" : "answers"})`;
+    }
     default:
       return entry.action;
   }
@@ -229,7 +238,7 @@ export default async function EventPage({
   const tab =
     reviewer && (tabParam === "evidence" || tabParam === "history") ? tabParam : "overview";
   const open = event.status !== "dismissed";
-  const [evidence, candidates, candidateSignals, history, suggestion] = reviewer
+  const [evidence, candidates, candidateSignals, history, suggestion, check, requests] = reviewer
     ? await Promise.all([
         api<Evidence[]>(`/events/${id}/evidence`),
         open
@@ -240,6 +249,8 @@ export default async function EventPage({
           : Promise.resolve([] as CandidateSignal[]),
         api<HistoryEntry[]>(`/events/${id}/history`),
         api<AssessmentSuggestion>(`/events/${id}/assessment-suggestion`),
+        api<EventQueueItem>(`/review-queue/${id}`),
+        api<EvidenceRequest[]>(`/events/${id}/evidence-requests`),
       ])
     : [
         [] as Evidence[],
@@ -247,6 +258,8 @@ export default async function EventPage({
         [] as CandidateSignal[],
         [] as HistoryEntry[],
         null,
+        null,
+        [] as EvidenceRequest[],
       ];
 
   const [statements, opinions, briefing] = await Promise.all([
@@ -431,6 +444,15 @@ export default async function EventPage({
                     description="From operational factors only."
                   >
                     <PrioritySuggestionPanel event={event} briefing={briefing} />
+                  </Panel>
+                )}
+                {check && (
+                  <Panel
+                    id="check"
+                    title="Check on the ground"
+                    description="What one more field report would do, and asking field workers to go and look."
+                  >
+                    <CheckPanel event={event} value={check.value} requests={requests} />
                   </Panel>
                 )}
                 <Panel id="manage" title="Analyst decision">

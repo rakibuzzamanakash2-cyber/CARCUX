@@ -338,6 +338,7 @@ export interface FieldReport {
   reviewed_at: string | null;
   review_note: string | null;
   details: Detail[];
+  request: { id: string; event_id: string; question: string } | null;
 }
 
 export type ReportStatus = FieldReport["status"];
@@ -941,4 +942,76 @@ export interface Briefing {
   priority: PrioritySuggestion;
   summary: CitedSentence[];
   changes: CitedSentence[];
+}
+
+/** Requests for more evidence and the review queue (backend schemas/evidence_request.py). */
+export type RequestStatus = "open" | "answered" | "cancelled";
+
+export interface EvidenceRequest {
+  id: string;
+  event_id: string;
+  question: string;
+  status: RequestStatus;
+  created_by: { id: string; full_name: string };
+  created_at: string;
+  closed_by: { id: string; full_name: string } | null;
+  closed_at: string | null;
+  close_note: string | null;
+  responses: {
+    id: string;
+    reporter: { id: string; full_name: string };
+    text: string;
+    observed_at: string;
+    received_at: string;
+    latitude: number;
+    longitude: number;
+  }[];
+}
+
+/** An open request as field workers see it: what to check and where, nothing more. */
+export interface RequestForWorkers {
+  id: string;
+  question: string;
+  event_type: string;
+  place_name: string | null;
+  latitude: number;
+  longitude: number;
+  created_at: string;
+  answered_by_me: number;
+}
+
+export interface CheckValue {
+  probability: number | null;
+  if_supported: number;
+  if_denied: number;
+  chance_supported: number;
+  changes: number;
+  uncertainty: number;
+}
+
+export interface EventQueueItem {
+  event: {
+    id: string;
+    title: string;
+    event_type: string;
+    place_name: string | null;
+    status: EventStatus;
+    priority: Priority;
+    assessment: Assessment;
+    started_at: string;
+  };
+  suggested: Assessment;
+  differs: boolean;
+  value: CheckValue;
+  impact: number;
+  need: number;
+  score: number;
+  reasons: string[];
+  open_request: { id: string; question: string; created_at: string; responses: number } | null;
+  last_evidence_at: string | null;
+}
+
+export interface EventQueuePage {
+  items: EventQueueItem[];
+  total: number;
 }

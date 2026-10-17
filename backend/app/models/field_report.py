@@ -55,6 +55,10 @@ class FieldReport(Base):
     latitude: Mapped[float] = mapped_column(Float)
     longitude: Mapped[float] = mapped_column(Float)
     location_accuracy_m: Mapped[float | None] = mapped_column(Float)
+    # Sent in answer to an analyst's request for more evidence (models/evidence_request.py).
+    request_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("evidence_requests.id"), index=True
+    )
 
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     received_at: Mapped[datetime] = mapped_column(
@@ -84,6 +88,7 @@ class FieldReport(Base):
     )
     reporter = relationship("User", lazy="joined", foreign_keys=[reporter_id])
     reviewed_by = relationship("User", lazy="joined", foreign_keys=[reviewed_by_id])
+    request = relationship("EvidenceRequest", lazy="joined", foreign_keys=[request_id])
 
 
 class FieldReportMedia(Base):

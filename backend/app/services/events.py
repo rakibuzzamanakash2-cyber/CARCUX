@@ -29,6 +29,7 @@ from app.models.event import (
     EvidenceRelation,
     Priority,
 )
+from app.models.evidence_request import EvidenceRequest
 from app.models.field_report import FieldReport, ReportStatus
 from app.models.public import IncidentOpinion
 from app.models.signal import Signal, SignalStatus
@@ -225,6 +226,10 @@ def update_event(
             details["priority_suggestion"] = briefing.for_audit(
                 priority_suggestion, diff["priority"][1]
             )
+        if "status" in diff and event.status in (EventStatus.RESOLVED, EventStatus.DISMISSED):
+            from app.services import evidence_requests
+
+            evidence_requests.close_with_event(db, event, actor)
         audit.record(
             db,
             audit.AuditAction.EVENT_UPDATED,
@@ -634,7 +639,27 @@ def candidate_reports(
             continue
         hours = _hours_outside(report.observed_at, event.started_at, end)
         matches.append((report, Match(round(km, 2), round(hours, 1))))
-    matches.sort(key=lambda m: (m[0].event_type != event.event_type, m[1].distance_km))
+    # Reports sent in answer to this event's requests for evidence are candidates
+    # wherever and whenever they were made: someone was asked to look.
+    seen = {r.id for r, _ in matches}
+    answers = db.scalars(
+        select(FieldReport)
+        .join(EvidenceRequest, EvidenceRequest.id == FieldReport.request_id)
+        .where(
+            EvidenceRequest.event_id == event.id,
+            FieldReport.status != ReportStatus.DISMISSED,
+            FieldReport.id.not_in(linked),
+        )
+    ).all()
+    for report in answers:
+        if report.id not in seen:
+            km = haversine_km(report.latitude, report.longitude, event.latitude, event.longitude)
+            hours = _hours_outside(report.observed_at, event.started_at, end)
+            matches.append((report, Match(round(km, 2), round(hours, 1))))
+    matches.sort(
+        key=lambda m: (m[0].request_id is None, m[0].event_type != event.event_type,
+                       m[1].distance_km)
+    )  # fmt: skip
     return matches[:limit]
 
 

@@ -33,9 +33,11 @@ function geoErrorMessage(error: GeolocationPositionError): string {
 export function ReportForm({
   clientReportId,
   defaultObservedAt,
+  requestId,
 }: {
   clientReportId: string;
   defaultObservedAt: string;
+  requestId?: string;
 }) {
   // Controlled fields: nothing typed is lost if the send fails.
   const [text, setText] = useState("");
@@ -141,6 +143,7 @@ export function ReportForm({
     if (eventType) body.set("event_type", eventType);
     if (placeName.trim()) body.set("place_name", placeName.trim());
     if (accuracy !== null && accuracy > 0) body.set("location_accuracy_m", String(accuracy));
+    if (requestId) body.set("request_id", requestId);
     for (const p of photos) body.append("photos", p.file, p.file.name);
 
     startTransition(() => action(body));

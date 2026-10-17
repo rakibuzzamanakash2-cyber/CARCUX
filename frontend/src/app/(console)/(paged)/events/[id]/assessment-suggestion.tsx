@@ -8,6 +8,7 @@ import { detailLabel, detailValue } from "@/components/detail-list";
 import { AssessmentText } from "@/components/event-badges";
 import { FormMessage } from "@/components/form";
 import { assessmentLabel, claimLabel } from "@/lib/events";
+import { percent } from "@/lib/format";
 import type { ActionState, AssessmentSuggestion, CarcuxEvent } from "@/lib/types";
 
 const KIND: Record<string, string> = {
@@ -18,13 +19,6 @@ const KIND: Record<string, string> = {
   video_platform: "video channel",
   other: "other source",
 };
-
-/** Never "100%" or "0%": the model is never certain. */
-function percent(p: number): string {
-  if (p >= 0.995) return ">99%";
-  if (p <= 0.005) return "<1%";
-  return `${Math.round(p * 100)}%`;
-}
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;

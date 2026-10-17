@@ -22,6 +22,7 @@ const TEXT_FIELDS = [
   "event_type",
   "place_name",
   "location_accuracy_m",
+  "request_id",
 ] as const;
 
 export async function submitReport(_prev: ActionState, formData: FormData): Promise<ActionState> {

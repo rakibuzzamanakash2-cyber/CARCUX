@@ -1,4 +1,14 @@
-import { Ban, CalendarDays, Clock, Flag, Hourglass, Inbox, MapPin, Plus } from "lucide-react";
+import {
+  Ban,
+  CalendarDays,
+  Clock,
+  Crosshair,
+  Flag,
+  Hourglass,
+  Inbox,
+  MapPin,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Initials, Pill } from "@/components/data-table";
@@ -12,6 +22,7 @@ import {
   Panel,
   StatTile,
   StatTiles,
+  Tabs,
 } from "@/components/page-header";
 import { Pager } from "@/components/pager";
 import { ReviewControls } from "@/components/review-controls";
@@ -88,6 +99,19 @@ export default async function ReviewPage({
         description="Field reports nobody has looked at yet, oldest first. Place each against an event, mark it reviewed, or dismiss it with a reason."
       />
       <PageBody>
+        <Tabs
+          active="reports"
+          items={[
+            {
+              key: "reports",
+              label: "Field reports",
+              href: "/review",
+              icon: Inbox,
+              count: oldest.total,
+            },
+            { key: "events", label: "Events to check", href: "/review/events", icon: Crosshair },
+          ]}
+        />
         <StatTiles>
           <StatTile
             icon={Inbox}

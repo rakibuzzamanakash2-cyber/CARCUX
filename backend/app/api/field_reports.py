@@ -74,6 +74,9 @@ async def submit_report(
     event_type: Annotated[str | None, Form()] = None,
     place_name: Annotated[str | None, Form(max_length=200)] = None,
     location_accuracy_m: Annotated[float | None, Form(gt=0, le=100_000)] = None,
+    request_id: Annotated[
+        uuid.UUID | None, Form(description="The request for evidence this report answers")
+    ] = None,
     photos: Annotated[list[UploadFile], File()] = [],  # noqa: B006 (FastAPI form default)
 ):
     limit(db, throttle.FIELD_REPORT, key=throttle.key_for(settings, f"staff:{reporter.id}"))
@@ -102,6 +105,7 @@ async def submit_report(
         longitude=longitude,
         location_accuracy_m=location_accuracy_m,
         observed_at=observed_at,
+        request_id=request_id,
     )
     try:
         report, created = service.submit(
@@ -112,6 +116,10 @@ async def submit_report(
             photos=checked,
             ip_address=client_ip(request),
         )
+    except service.RequestNotOpenError:
+        raise _unprocessable(
+            "That request for evidence is closed. Send the report without it."
+        ) from None
     except service.ClientIdConflictError:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
