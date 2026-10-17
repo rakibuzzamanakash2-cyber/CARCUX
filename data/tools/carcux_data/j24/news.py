@@ -35,7 +35,7 @@ from carcux_data.j24.fetch import Disallowed, Fetcher
 
 CDX = "https://web.archive.org/cdx/search/cdx"
 WAYBACK = "https://web.archive.org/web"
-PAGE_SIZE = 5000
+PAGE_SIZE = 2000
 
 # Addresses that are listings, media or tools, not articles.
 NOT_ARTICLE = re.compile(
@@ -109,7 +109,12 @@ def list_outlet(
                 params.append(("filter", f"original:.*({outlet.url_regex}).*"))
             if resume:
                 params.append(("resumeKey", resume))
-            status, _, data = fetcher.get_json(f"{CDX}?{urlencode(params)}")
+            try:
+                status, _, data = fetcher.get_json(f"{CDX}?{urlencode(params)}")
+            except OSError as exc:
+                log(f"  {outlet.key}: the archive index did not answer for {prefix} ({exc}); "
+                    "kept what was listed; run news-list again later to continue")  # fmt: skip
+                break
             if status != 200 or not isinstance(data, list):
                 log(f"  {outlet.key}: the archive index did not answer for {prefix} "
                     f"(HTTP {status})")  # fmt: skip
@@ -271,6 +276,7 @@ def fetch_articles(
     lo, hi = _stamp(since), _stamp(until, end=True)
     urls = [u for u in load_urls(out) if u["outlet"] in keys and lo <= u["capture"] <= hi]
     path = out / "news" / "articles.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
     done: dict[str, dict] = {}
     if path.exists():
         for line in path.read_text("utf-8").splitlines():

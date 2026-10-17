@@ -28,12 +28,16 @@ class Response:
 Opener = Callable[[str, dict[str, str]], Response]
 
 
+TIMEOUT = 120  # seconds; the Internet Archive's index can take a minute on large queries
+RETRY_WAITS = (15, 60, 180)  # seconds before each retry of a request that failed to connect
+
+
 def urllib_opener(url: str, headers: dict[str, str]) -> Response:
     request = urllib.request.Request(url, headers=headers)  # noqa: S310 (http(s) only, below)
     if urlsplit(url).scheme not in ("http", "https"):
         raise ValueError(f"not an http(s) address: {url}")
     try:
-        with urllib.request.urlopen(request, timeout=30) as r:  # noqa: S310
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as r:  # noqa: S310
             return Response(r.status, {k.lower(): v for k, v in r.headers.items()}, r.read())
     except urllib.error.HTTPError as e:
         return Response(e.code, {k.lower(): v for k, v in (e.headers or {}).items()}, e.read())
@@ -68,10 +72,27 @@ class Fetcher:
         return self.cache_dir / (hashlib.sha256(url.encode()).hexdigest() + ".json")
 
     def _request(self, url: str, accept: str = "application/json") -> Response:
-        if self.requests:
-            self.sleep(self.delay)
-        self.requests += 1
-        return self.opener(url, {"User-Agent": self.agent, "Accept": accept})
+        """One request, retried after a pause when the connection fails or times out, or the
+        server is busy (429, 5xx). Raises OSError when every attempt failed."""
+        for attempt, wait in enumerate((*RETRY_WAITS, None)):
+            if self.requests:
+                self.sleep(self.delay)
+            self.requests += 1
+            try:
+                r = self.opener(url, {"User-Agent": self.agent, "Accept": accept})
+            except OSError as exc:  # includes timeouts and connection resets
+                if wait is None:
+                    raise
+                self.log(f"  no answer ({exc.__class__.__name__}); trying again in {wait} s "
+                         f"(attempt {attempt + 2})")  # fmt: skip
+                self.sleep(wait)
+                continue
+            if (r.status == 429 or r.status >= 500) and wait is not None:
+                self.log(f"  busy (HTTP {r.status}); trying again in {wait} s")
+                self.sleep(wait)
+                continue
+            return r
+        raise OSError("unreachable")  # pragma: no cover
 
     def allowed(self, url: str) -> bool:
         parts = urlsplit(url)

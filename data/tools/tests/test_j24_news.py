@@ -162,3 +162,37 @@ def test_outlet_list_is_well_formed():
 def test_cli_rejects_unknown_outlets(tmp_path, capsys):
     assert main(["news-list", "--out", str(tmp_path), "--outlets", "nope"]) == 2
     assert "Unknown outlets" in capsys.readouterr().err
+
+
+class Flaky(FakeArchive):
+    """Times out on the first `failures` requests to the index, then answers."""
+
+    def __init__(self, failures):
+        super().__init__()
+        self.failures = failures
+
+    def __call__(self, url, headers):
+        if "/cdx/" in url and self.failures:
+            self.failures -= 1
+            raise TimeoutError("The read operation timed out")
+        return super().__call__(url, headers)
+
+
+def test_a_slow_index_is_retried(tmp_path):
+    waits = []
+    f = Fetcher(tmp_path / "c", opener=Flaky(2), sleep=waits.append, log=lambda m: None)
+    first = news.list_outlet(f, OUTLET, "2024-07-01", "2024-08-15", log=lambda m: None)
+    assert len(first) == 2
+    assert 15 in waits and 60 in waits  # waited before each retry
+
+
+def test_an_index_that_never_answers_skips_the_outlet_without_crashing(tmp_path):
+    messages = []
+    f = Fetcher(tmp_path / "c", opener=Flaky(99), sleep=lambda s: None, log=lambda m: None)
+    first = news.list_outlet(f, OUTLET, "2024-07-01", "2024-08-15", log=messages.append)
+    assert first == {} and "run news-list again" in messages[-1]
+
+
+def test_fetch_before_listing_says_what_to_do(tmp_path, capsys):
+    assert main(["news-fetch", "--out", str(tmp_path)]) == 2
+    assert "run news-list first" in capsys.readouterr().err

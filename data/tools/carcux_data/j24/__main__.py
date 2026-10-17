@@ -135,6 +135,9 @@ def _news(args) -> int:
         print(f"\n{total} article addresses listed in {args.out / 'news' / 'urls.jsonl'} "
               f"({fetcher.requests} requests).")  # fmt: skip
         return 0
+    if not news.load_urls(args.out):
+        print("No article list yet: run news-list first.", file=sys.stderr)
+        return 2
     results = news.fetch_articles(
         fetcher, args.out, outlets, keys=keys, since=args.since, until=args.until,
         limit=args.limit, text_from=args.text_from,
