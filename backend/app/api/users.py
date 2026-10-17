@@ -1,6 +1,7 @@
 """Account management. Admin only."""
 
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -11,8 +12,8 @@ from app.core.security import hash_password
 from app.models.official import OfficialPage
 from app.models.user import Role, User
 from app.schemas.auth import PasswordReset
-from app.schemas.user import UserCreate, UserRead, UserUpdate
-from app.services import audit
+from app.schemas.user import AccountRiskRead, UserCreate, UserRead, UserUpdate
+from app.services import audit, integrity
 from app.services.users import EmailAlreadyRegisteredError, count_admins, create_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -23,6 +24,23 @@ AdminUser = Annotated[User, Depends(require_roles(Role.ADMIN))]
 @router.get("", response_model=list[UserRead])
 def list_users(db: DbSession, _admin: AdminUser):
     return db.scalars(select(User).order_by(User.created_at)).all()
+
+
+@router.get("/risk", response_model=list[AccountRiskRead])
+def account_risk(db: DbSession, _admin: AdminUser):
+    """Active field workers, the ones whose last day looks least like their history first."""
+    return [
+        AccountRiskRead(
+            user_id=u.id,
+            full_name=u.full_name,
+            score=r.score,
+            parts=r.parts,
+            reasons=r.reasons,
+            recent=r.recent,
+            baseline=r.baseline,
+        )
+        for u, r in integrity.account_risks(db, datetime.now(UTC))
+    ]
 
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)

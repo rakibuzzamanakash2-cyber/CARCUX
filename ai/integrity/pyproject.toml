@@ -1,0 +1,32 @@
+[project]
+name = "carcux-integrity"
+version = "0.1.0"
+description = "CARCUX module 5: field reports and accounts that look wrong even when the login is valid"
+requires-python = ">=3.12"
+# Standard library and the extraction module (place names), so the backend can copy it.
+dependencies = ["carcux-extraction"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["carcux_integrity*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101", "S311", "RUF001", "RUF002", "RUF003"]  # S311: the simulator's random numbers are not secrets
+
+[tool.ruff.lint.isort]
+known-first-party = ["carcux_integrity", "carcux_extraction"]

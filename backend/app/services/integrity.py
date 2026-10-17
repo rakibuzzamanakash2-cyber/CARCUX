@@ -1,7 +1,8 @@
-"""Rule-based integrity checks on field reports.
+"""Integrity checks on field reports, and a risk score per field-worker account.
 
-Flags mark a report for human review; they never block it. Learned checks come
-later from ai/integrity/. Thresholds are deliberately conservative.
+Flags mark a report for human review; they never block it. The rules here read the
+database; `location_text_mismatch`, `copied_text` and the account score come from
+ai/integrity (copied into app/integrity). Thresholds are deliberately conservative.
 """
 
 import math
@@ -11,7 +12,10 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.integrity import account, checks
 from app.models.field_report import FieldReport, FieldReportMedia
+from app.models.signal import Signal
+from app.models.user import Role, User
 from app.services.media import CheckedPhoto, hamming
 
 MAX_PLAUSIBLE_SPEED_KMH = 150.0  # faster than this between two reports is suspicious
@@ -22,6 +26,9 @@ BURST_WINDOW = timedelta(minutes=10)
 BURST_COUNT = 10
 POOR_ACCURACY_M = 1000.0
 NEAR_DUPLICATE_BITS = 6  # dhash distance treated as "same photo"
+COPY_LOOKBACK = timedelta(days=7)  # public posts and reports to compare a report's words with
+COPY_LIMIT = 2000  # newest of each; enough at pilot scale
+ACCOUNT_LOOKBACK = timedelta(days=30)  # history the account score compares the last day with
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -36,6 +43,7 @@ def evaluate(
     db: Session,
     *,
     reporter_id: uuid.UUID,
+    text: str,
     latitude: float,
     longitude: float,
     accuracy_m: float | None,
@@ -104,4 +112,66 @@ def evaluate(
                         }
                     )
                     break
+
+    # From ai/integrity: the text against the GPS, and words copied from elsewhere.
+    this = checks.Report(
+        "new", str(reporter_id), text, latitude, longitude, observed_at, now, accuracy_m
+    )
+    found = checks.location_text_mismatch(this) + checks.copied_text(
+        this, _texts_to_compare(db, now)
+    )
+    flags += [{"code": f.code, "detail": f.detail} for f in found]
     return flags
+
+
+def _texts_to_compare(db: Session, now: datetime) -> list[checks.Text]:
+    since = now - COPY_LOOKBACK
+    posts = db.execute(
+        select(Signal.id, Signal.title, Signal.text)
+        .where(Signal.collected_at > since)
+        .order_by(Signal.collected_at.desc())
+        .limit(COPY_LIMIT)
+    ).all()
+    reports = db.execute(
+        select(FieldReport.id, FieldReport.text, FieldReport.reporter_id)
+        .where(FieldReport.received_at > since)
+        .order_by(FieldReport.received_at.desc())
+        .limit(COPY_LIMIT)
+    ).all()
+    texts = [
+        checks.Text(str(i), f"{title} {body or ''}".strip(), "public post")
+        for i, title, body in posts
+    ]
+    texts += [checks.Text(str(i), t, "report", str(who)) for i, t, who in reports]
+    return texts
+
+
+def _as_check(r: FieldReport) -> checks.Report:
+    return checks.Report(
+        str(r.id), str(r.reporter_id), r.text, r.latitude, r.longitude,
+        r.observed_at, r.received_at, r.location_accuracy_m,
+    )  # fmt: skip
+
+
+def account_risks(db: Session, now: datetime) -> list[tuple[User, account.AccountRisk]]:
+    """Each active field worker's risk now, highest first. Account-level only, for
+    CARCUX's own field workers; it marks an account for a conversation, never blocks it."""
+    workers = db.scalars(
+        select(User).where(User.role == Role.FIELD_WORKER, User.is_active.is_(True))
+    ).all()
+    if not workers:
+        return []
+    reports = db.scalars(
+        select(FieldReport).where(
+            FieldReport.reporter_id.in_([w.id for w in workers]),
+            FieldReport.received_at > now - ACCOUNT_LOOKBACK,
+            FieldReport.received_at <= now,
+        )
+    ).all()
+    as_checks = [_as_check(r) for r in reports]
+    flags = {
+        str(r.id): [checks.Flag(f["code"], f.get("detail", "")) for f in r.integrity_flags or []]
+        for r in reports
+    }
+    out = [(w, account.score(str(w.id), as_checks, flags, now)) for w in workers]
+    return sorted(out, key=lambda x: (-x[1].score, x[0].full_name))

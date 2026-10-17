@@ -1,0 +1,31 @@
+[project]
+name = "carcux-decision-support"
+version = "0.1.0"
+description = "CARCUX module 6: suggested priority, evidence-cited summaries and what changed"
+requires-python = ">=3.12"
+dependencies = []  # standard library only, so the backend can use it as is
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["carcux_decision_support*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["carcux_decision_support"]

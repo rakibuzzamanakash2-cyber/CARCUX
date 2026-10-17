@@ -199,6 +199,12 @@ def update_event(
     suggestion = None
     if "assessment" in changes and changes["assessment"] != event.assessment:
         suggestion = assess.suggest(db, event)
+    # Likewise the suggested priority (decision support), when the priority changes.
+    priority_suggestion = None
+    if "priority" in changes and changes["priority"] != event.priority:
+        from app.services import briefing
+
+        priority_suggestion = briefing.priority(db, event, datetime.now(UTC))
 
     diff: dict[str, list[Any]] = {}
     for field, new in changes.items():
@@ -213,6 +219,12 @@ def update_event(
         details: dict[str, Any] = {"changes": diff}
         if suggestion is not None and "assessment" in diff:
             details["suggestion"] = assess.for_audit(suggestion, diff["assessment"][1])
+        if priority_suggestion is not None and "priority" in diff:
+            from app.services import briefing
+
+            details["priority_suggestion"] = briefing.for_audit(
+                priority_suggestion, diff["priority"][1]
+            )
         audit.record(
             db,
             audit.AuditAction.EVENT_UPDATED,

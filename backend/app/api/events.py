@@ -1,6 +1,7 @@
 """Events: everyone signed in can read them; analysts and admins manage them and their evidence."""
 
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -18,6 +19,7 @@ from app.schemas.assessment import (
     DetailSummaryRead,
     StatedValue,
 )
+from app.schemas.briefing import BriefingRead
 from app.schemas.event import (
     CandidateReport,
     CandidateSignal,
@@ -37,7 +39,7 @@ from app.schemas.event import (
 )
 from app.schemas.field_report import FieldReportRead, ReporterRead
 from app.schemas.signal import SignalRead
-from app.services import assess
+from app.services import assess, briefing
 from app.services import copies as copy_detection
 from app.services import events as service
 from app.services import stance as stance_service
@@ -146,6 +148,20 @@ def update_event(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "ended_at must not be before started_at"
         ) from None
+
+
+@router.get("/{event_id}/briefing", response_model=BriefingRead)
+def event_briefing(
+    event_id: uuid.UUID,
+    db: DbSession,
+    _user: Reviewer,
+    hours: Annotated[int, Query(ge=1, le=24 * 30)] = 24,
+):
+    """Decision support: a suggested priority with its reasons, a summary whose every
+    sentence cites the evidence it rests on, and what changed in the last `hours`."""
+    now = datetime.now(UTC)
+    event = _event_or_404(db, event_id)
+    return briefing.briefing(db, event, now, now - timedelta(hours=hours))
 
 
 @router.get("/{event_id}/assessment-suggestion", response_model=AssessmentSuggestionRead)

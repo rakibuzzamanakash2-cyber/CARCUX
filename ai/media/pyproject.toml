@@ -1,0 +1,38 @@
+[project]
+name = "carcux-media"
+version = "0.1.0"
+description = "CARCUX module 2: features from images, video and audio (hashes for reused media, OCR, ASR, what an image shows)"
+requires-python = ">=3.12"
+# Pillow and numpy only; OCR needs the tesseract program (with Bangla), video the ffmpeg
+# program. The heavy models are optional extras, run where there is a GPU.
+dependencies = ["pillow>=10.4", "numpy>=1.26"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+asr = ["faster-whisper>=1.0"]  # Whisper speech recognition (Bangla and English)
+vision = ["open_clip_torch>=2.24", "torch>=2.2"]  # CLIP: what an image shows
+
+[project.scripts]
+carcux-media = "carcux_media.extract:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["carcux_media*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003", "S603", "S607"]  # Bangla text; ffmpeg and tesseract are called by name, with no shell
+
+[tool.ruff.lint.isort]
+known-first-party = ["carcux_media"]

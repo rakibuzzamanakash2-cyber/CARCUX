@@ -248,6 +248,18 @@ def evaluate_stance() -> int:
         engine.dispose()
 
 
+def evaluate_priority() -> int:
+    from app.services import briefing
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            print(briefing.table(briefing.evaluate(db)))
+            return 0
+    finally:
+        engine.dispose()
+
+
 def export_label_sheet(email: str, path: str) -> int:
     from app.services import label_sheet
 
@@ -327,6 +339,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("train-suggestions", help="train the event suggestion model from links")
     sub.add_parser("train-assessment", help="train the assessment model on resolved events")
     sub.add_parser("evaluate-stance", help="compare stance suggestions with analysts' labels")
+    sub.add_parser("evaluate-priority", help="compare suggested priorities with analysts' choices")
     p = sub.add_parser("export-label-sheet", help="an annotator's blind queue as an Excel sheet")
     p.add_argument("email", help="the annotator's account")
     p.add_argument("file", help="where to write the .xlsx")
@@ -350,6 +363,8 @@ def main(argv: list[str] | None = None) -> int:
         return train_assessment()
     if args.command == "evaluate-stance":
         return evaluate_stance()
+    if args.command == "evaluate-priority":
+        return evaluate_priority()
     if args.command == "export-label-sheet":
         return export_label_sheet(args.email, args.file)
     if args.command == "import-label-sheet":
