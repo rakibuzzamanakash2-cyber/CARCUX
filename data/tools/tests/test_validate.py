@@ -42,7 +42,7 @@ def errors_of(directory: Path) -> str:
 
 def test_worked_example_is_valid(capsys):
     assert main([str(EXAMPLE)]) == 0
-    assert "valid CARCUX-BD v1.2" in capsys.readouterr().out
+    assert "valid CARCUX-BD v1.3" in capsys.readouterr().out
 
 
 # --- Schema-level mistakes -------------------------------------------------------------
@@ -73,7 +73,7 @@ SCHEMA_CASES = [
     ("relations", _delete(7, ["gold", "conflicts"]), "'conflicts' is a required property"),
     ("events", _set(0, ["start"], "2026-07-14T07:30:00"), "does not match"),
     ("events", _set(0, ["location", "geometry", "coordinates"], [151.2, -33.8]), "location"),
-    ("events", _set(0, ["family"], "political"), "is not one of"),
+    ("events", _set(0, ["family"], "political"), "is not valid under any of the given schemas"),
     ("observations", _set(1, ["text"], "x" * 301), "is too long"),
     ("observations", _set(1, ["content_policy"], "reference_only"), "should not be valid"),
     ("observations", _delete(0, ["simulation"]), "'simulation' is a required property"),
@@ -213,7 +213,8 @@ def test_every_schema_type_has_exactly_one_family():
     from carcux_data.validate import SCHEMA_DIR, TYPE_FAMILY
 
     common = json.loads((SCHEMA_DIR / "common.schema.json").read_text(encoding="utf-8"))
-    assert set(common["$defs"]["event_type"]["enum"]) == set(TYPE_FAMILY)
+    types = common["$defs"]["event_type"]["enum"] + common["$defs"]["unrest_event_type"]["enum"]
+    assert set(types) == set(TYPE_FAMILY)
 
 
 @pytest.mark.parametrize(
@@ -241,3 +242,27 @@ def test_v1_1_types_need_the_right_family(ds, family, event_type, expected):
 
     mutate(ds, "events", fn)
     assert expected in errors_of(ds)
+
+
+# --- Schema v1.3 (CARCUX-J24) ----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("family", "event_type"),
+    [("civil_unrest", "communications_shutdown"), ("information", "publication")],
+)
+def test_v1_3_types_are_accepted(ds, family, event_type):
+    def fn(rows):
+        rows[0]["family"], rows[0]["type"] = family, event_type
+        rows[0]["ground_truth"]["sources"][0]["kind"] = "fact_check"
+
+    mutate(ds, "events", fn)
+    assert validate_dir(ds).ok
+
+
+def test_v1_3_types_need_the_right_family(ds):
+    def fn(rows):
+        rows[0]["family"], rows[0]["type"] = "natural_calamity", "arson"
+
+    mutate(ds, "events", fn)
+    assert "belongs to civil_unrest" in errors_of(ds)

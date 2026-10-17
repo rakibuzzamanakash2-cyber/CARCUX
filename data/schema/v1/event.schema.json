@@ -14,8 +14,8 @@
       "description": "Larger event this one belongs to (e.g. a road blockage caused by a cyclone).",
       "$ref": "common.schema.json#/$defs/event_id"
     },
-    "family": { "$ref": "common.schema.json#/$defs/event_family" },
-    "type": { "$ref": "common.schema.json#/$defs/event_type" },
+    "family": { "anyOf": [{ "$ref": "common.schema.json#/$defs/event_family" }, { "$ref": "common.schema.json#/$defs/unrest_event_family" }] },
+    "type": { "anyOf": [{ "$ref": "common.schema.json#/$defs/event_type" }, { "$ref": "common.schema.json#/$defs/unrest_event_type" }] },
     "title": {
       "description": "Neutral, factual English title. No names of private individuals, no political framing.",
       "type": "string",
@@ -52,7 +52,7 @@
             "properties": {
               "reference": { "type": "string", "format": "uri" },
               "published_at": { "$ref": "common.schema.json#/$defs/datetime" },
-              "kind": { "enum": ["official", "news_followup", "humanitarian_report", "other"] }
+              "kind": { "enum": ["official", "news_followup", "humanitarian_report", "fact_check", "investigation", "other"] }
             },
             "additionalProperties": false
           }

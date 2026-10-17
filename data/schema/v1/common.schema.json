@@ -68,6 +68,28 @@
         "explosion"
       ]
     },
+    "unrest_event_family": {
+      "description": "v1.3, CARCUX-J24 only (not used by the CARCUX platform): events during civil unrest, and claims that something was published or stated. No political attribute of anyone is recorded.",
+      "enum": [
+        "civil_unrest",
+        "information"
+      ]
+    },
+    "unrest_event_type": {
+      "description": "v1.3, CARCUX-J24 only. The family of each type is fixed by the validator.",
+      "enum": [
+        "protest",
+        "armed_violence",
+        "mob_violence",
+        "arson",
+        "attack_on_place_of_worship",
+        "communications_shutdown",
+        "curfew",
+        "mass_arrest",
+        "publication",
+        "official_statement"
+      ]
+    },
     "language": {
       "description": "bn = Bangla script, bn-Latn = Banglish (Romanized Bangla), en = English, mixed = code-mixed.",
       "enum": [
