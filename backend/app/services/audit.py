@@ -11,6 +11,7 @@ from app.models.audit import AuditLog
 class AuditAction:
     LOGIN_SUCCEEDED = "auth.login_succeeded"
     LOGIN_FAILED = "auth.login_failed"
+    LOGIN_THROTTLED = "auth.login_throttled"
     USER_CREATED = "user.created"
     USER_UPDATED = "user.updated"
     USER_BOOTSTRAPPED = "user.bootstrapped"

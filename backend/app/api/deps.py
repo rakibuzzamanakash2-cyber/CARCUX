@@ -1,5 +1,6 @@
 """Shared request dependencies: database session, current user, role checks."""
 
+import ipaddress
 from collections.abc import Callable
 from typing import Annotated
 
@@ -11,6 +12,8 @@ from app.core.config import Settings, app_settings
 from app.core.security import InvalidTokenError, decode_access_token
 from app.db.session import get_db
 from app.models.user import Role, User
+from app.services import throttle
+from app.services.throttle import TooManyAttemptsError
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -77,4 +80,36 @@ def require_roles(*roles: Role) -> Callable[[User], User]:
 
 
 def client_ip(request: Request) -> str | None:
-    return request.client.host if request.client else None
+    """The browser's address. Requests from the frontend server carry it in
+    X-Forwarded-For; the last entry is the one that server added, so it is used (earlier
+    entries can be anything a browser sent)."""
+    peer = request.client.host if request.client else None
+    forwarded = request.headers.get("x-forwarded-for")
+    if peer and forwarded and app_settings(request).trust_forwarded_from_private:
+        try:
+            trusted = ipaddress.ip_address(peer)
+            last = forwarded.split(",")[-1].strip()
+            if (trusted.is_private or trusted.is_loopback) and last:
+                return str(ipaddress.ip_address(last))
+        except ValueError:
+            pass
+    return peer
+
+
+def too_many(exc: TooManyAttemptsError) -> HTTPException:
+    """429 with Retry-After, for a rate limit that was reached (app/services/throttle)."""
+    return HTTPException(
+        status.HTTP_429_TOO_MANY_REQUESTS, str(exc), headers={"Retry-After": str(exc.retry_after)}
+    )
+
+
+def limit(
+    db: Session, kind: str, *, key: str | None = None, ip: str | None = None, count: bool = True
+) -> None:
+    """Refuse with 429 when the limit is reached; otherwise count this attempt."""
+    try:
+        throttle.check(db, kind, key=key, ip=ip)
+    except TooManyAttemptsError as exc:
+        raise too_many(exc) from None
+    if count:
+        throttle.record(db, kind, key=key, ip=ip)

@@ -5,11 +5,11 @@ staff endpoints."""
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 
-from app.api.deps import AppSettings, DbSession
+from app.api.deps import AppSettings, DbSession, client_ip, limit
 from app.core.security import InvalidTokenError, create_public_token, decode_public_token
 from app.models.official import OfficialPage, PageStatus
 from app.models.public import AccountStatus, IncidentOpinion, PublicAccount, StatementComment
@@ -33,6 +33,7 @@ from app.schemas.public import (
 )
 from app.schemas.statement import EventLite, PageLite
 from app.services import public as service
+from app.services import throttle
 from app.services.statements import superseded_by
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -196,7 +197,10 @@ def _opinion(o: IncidentOpinion, account) -> PublicOpinion:
 
 
 @router.post("/auth/signup", status_code=status.HTTP_202_ACCEPTED)
-def signup(body: Signup, db: DbSession, settings: AppSettings) -> dict:
+def signup(body: Signup, request: Request, db: DbSession, settings: AppSettings) -> dict:
+    key = throttle.key_for(settings, body.email)
+    limit(db, throttle.SIGNUP, key=key, ip=client_ip(request))
+    db.commit()  # counted even when the sign-up is refused below
     try:
         service.signup(
             db, settings, email=body.email, display_name=body.display_name, password=body.password
@@ -219,12 +223,16 @@ def verify(body: VerifyEmail, db: DbSession, settings: AppSettings):
 
 
 @router.post("/auth/login", response_model=PublicToken)
-def login(body: Login, db: DbSession, settings: AppSettings):
+def login(body: Login, request: Request, db: DbSession, settings: AppSettings):
+    ip, key = client_ip(request), throttle.key_for(settings, body.email)
+    limit(db, throttle.PUBLIC_LOGIN, key=key, ip=ip, count=False)
     try:
         account = service.authenticate(db, body.email, body.password)
     except ValueError as exc:
+        throttle.record(db, throttle.PUBLIC_LOGIN, key=key, ip=ip)
         db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from None
+    throttle.clear(db, throttle.PUBLIC_LOGIN, key=key, ip=ip)
     db.commit()
     token, expires = create_public_token(settings, account.id, account.token_version)
     return PublicToken(access_token=token, expires_in=expires)
@@ -237,11 +245,16 @@ def me(account: Viewer):
 
 
 @router.post("/auth/delete", status_code=status.HTTP_204_NO_CONTENT)
-def delete_me(body: PasswordConfirm, db: DbSession, account: Viewer):
+def delete_me(body: PasswordConfirm, db: DbSession, settings: AppSettings, account: Viewer):
     """Delete the account with its likes, comments and reports."""
+    a = _required(account)
+    key = throttle.key_for(settings, f"public:{a.id}")
+    limit(db, throttle.PASSWORD_CHECK, key=key, count=False)
     try:
-        service.delete_account(db, _required(account), body.password)
+        service.delete_account(db, a, body.password)
     except ValueError as exc:
+        throttle.record(db, throttle.PASSWORD_CHECK, key=key)
+        db.commit()
         raise _rule(exc) from None
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

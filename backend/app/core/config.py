@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # Field report media (photos). Stored on disk, outside the database.
     media_dir: Path = Path("media")
     max_photos_per_report: int = 4
+    # The frontend calls the API on behalf of browsers and passes the browser's address
+    # in X-Forwarded-For. It is believed only from loopback and private-network
+    # addresses (the frontend container); set false if the API port is exposed to a
+    # network you do not trust.
+    trust_forwarded_from_private: bool = True
     max_photo_bytes: int = 8 * 1024 * 1024
 
     # Public signals: reading outside sources (GDACS, news feeds, ReliefWeb).
