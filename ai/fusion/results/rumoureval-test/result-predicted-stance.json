@@ -1,0 +1,2581 @@
+{
+  "dataset": "pheme+rumoureval-test",
+  "events": 179,
+  "happened": 104,
+  "observations": 5721,
+  "gold_copies": 0,
+  "folds": 2,
+  "seed": 0,
+  "judged": 52,
+  "judged_happened": 22,
+  "detection": {
+    "precision": 0.0,
+    "recall": 1.0,
+    "f1": 0.0,
+    "threshold": 0.8,
+    "origin_in_cascade": null
+  },
+  "checkpoints": {
+    "T+1h": {
+      "methods": {
+        "majority": {
+          "brier": 0.277281398045776,
+          "log_loss": 0.7485921411896108,
+          "ece": 0.18862282180930975,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5969696969696969,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 10,
+              "predicted": 0.5673273838987564,
+              "observed": 0.5
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 42,
+              "predicted": 0.6222645927403939,
+              "observed": 0.40476190476190477
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "truthfinder": {
+          "brier": 0.26196221402431114,
+          "log_loss": 0.7171714277549247,
+          "ece": 0.13982615345086963,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5984848484848486,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5629030765277927,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence": {
+          "brier": 0.2653162107110935,
+          "log_loss": 0.72400625121174,
+          "ece": 0.14505113557568777,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.4606060606060606,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5681280586526108,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "brier": 0.26951117078036896,
+          "log_loss": 0.7325934034923057,
+          "ece": 0.15947005988520985,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.4939393939393939,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5825469829621329,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep-nolinks": {
+          "brier": 0.26513559321890345,
+          "log_loss": 0.723639869889233,
+          "ece": 0.1467490549552885,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.587121212121212,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5698259780322116,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep": {
+          "brier": 0.26611783078062506,
+          "log_loss": 0.7256215299320463,
+          "ece": 0.16910145679479016,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.6416666666666666,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 51,
+              "predicted": 0.5764147726365414,
+              "observed": 0.4117647058823529
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 1,
+              "predicted": 0.6038776511345247,
+              "observed": 1.0
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        }
+      },
+      "brier_vs_proposed": {
+        "majority": {
+          "diff": -0.01116356726515087,
+          "ci_low": -0.02152432292696305,
+          "ci_high": -0.00039420118926996857,
+          "p_value": 0.042
+        },
+        "truthfinder": {
+          "diff": 0.004155616756313923,
+          "ci_low": 0.00016592323827918258,
+          "ci_high": 0.00781332465959396,
+          "p_value": 0.043
+        },
+        "socialsensing-dep-nosilence": {
+          "diff": 0.000801620069531549,
+          "ci_low": -0.002145699183764132,
+          "ci_high": 0.003618880705921882,
+          "p_value": 0.554
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "diff": -0.003393339999743794,
+          "ci_low": -0.005578694738422214,
+          "ci_high": -0.0011727574014478543,
+          "p_value": 0.004
+        },
+        "reliability-dep-nolinks": {
+          "diff": 0.0009822375617216427,
+          "ci_low": -0.0013378328483136187,
+          "ci_high": 0.0032038369672859053,
+          "p_value": 0.374
+        }
+      },
+      "clean_events": null
+    },
+    "T+6h": {
+      "methods": {
+        "majority": {
+          "brier": 0.28211382364080284,
+          "log_loss": 0.7590020960454347,
+          "ece": 0.2025253978525848,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5840909090909091,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 5,
+              "predicted": 0.5829552856922959,
+              "observed": 0.2
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 47,
+              "predicted": 0.6301392395717644,
+              "observed": 0.44680851063829785
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "truthfinder": {
+          "brier": 0.2636543060112214,
+          "log_loss": 0.7206201533063864,
+          "ece": 0.1442836595949049,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.6151515151515152,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.567360582671828,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence": {
+          "brier": 0.26391846086054027,
+          "log_loss": 0.7211599581869337,
+          "ece": 0.14062425205553802,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.4666666666666667,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5637011751324611,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "brier": 0.27043025197302756,
+          "log_loss": 0.7344842704470431,
+          "ece": 0.16153873303944638,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.40909090909090906,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5846156561163695,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep-nolinks": {
+          "brier": 0.267566524423027,
+          "log_loss": 0.7286075261938365,
+          "ece": 0.15377919244167243,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5075757575757576,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5768561155185955,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep": {
+          "brier": 0.26911960121987705,
+          "log_loss": 0.7317895746196134,
+          "ece": 0.16085049759235054,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.618939393939394,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.5839274206692736,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        }
+      },
+      "brier_vs_proposed": {
+        "majority": {
+          "diff": -0.012994222420925815,
+          "ci_low": -0.024689162958214193,
+          "ci_high": -0.0010507609387540554,
+          "p_value": 0.035
+        },
+        "truthfinder": {
+          "diff": 0.0054652952086555705,
+          "ci_low": 0.00084959477248853,
+          "ci_high": 0.009758267598286562,
+          "p_value": 0.028
+        },
+        "socialsensing-dep-nosilence": {
+          "diff": 0.005201140359336767,
+          "ci_low": -0.0004215929830534122,
+          "ci_high": 0.010601362967839372,
+          "p_value": 0.07
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "diff": -0.0013106507531505352,
+          "ci_low": -0.0024175417952689315,
+          "ci_high": -0.0002711264451380875,
+          "p_value": 0.013
+        },
+        "reliability-dep-nolinks": {
+          "diff": 0.0015530767968500597,
+          "ci_low": -0.00056240813691413,
+          "ci_high": 0.003498892086124697,
+          "p_value": 0.138
+        }
+      },
+      "clean_events": null
+    },
+    "T+24h": {
+      "methods": {
+        "majority": {
+          "brier": 0.2809071423137095,
+          "log_loss": 0.7564420918621413,
+          "ece": 0.19932985305019774,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5803030303030303,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 8,
+              "predicted": 0.5870850212912724,
+              "observed": 0.375
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 44,
+              "predicted": 0.6288289133700024,
+              "observed": 0.4318181818181818
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "truthfinder": {
+          "brier": 0.272501737742413,
+          "log_loss": 0.7387608998772309,
+          "ece": 0.2010808881411988,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5886363636363636,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 50,
+              "predicted": 0.5932097284393733,
+              "observed": 0.4
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 2,
+              "predicted": 0.6021401193131621,
+              "observed": 1.0
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence": {
+          "brier": 0.2854033648168498,
+          "log_loss": 0.7658797912913922,
+          "ece": 0.2032476914466383,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.4666666666666667,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6263246145235614,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "brier": 0.29656410001824873,
+          "log_loss": 0.7900936591471139,
+          "ece": 0.22913353041197054,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5909090909090908,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6522104534888936,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep-nolinks": {
+          "brier": 0.2799519013649475,
+          "log_loss": 0.754316444238513,
+          "ece": 0.18958401920505547,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5340909090909091,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6126609422819785,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep": {
+          "brier": 0.2817685517432203,
+          "log_loss": 0.7581494985722743,
+          "ece": 0.19732715017791896,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5727272727272728,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.620404073254842,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        }
+      },
+      "brier_vs_proposed": {
+        "majority": {
+          "diff": 0.0008614094295107677,
+          "ci_low": -0.004062709459911404,
+          "ci_high": 0.005460576631404383,
+          "p_value": 0.754
+        },
+        "truthfinder": {
+          "diff": 0.00926681400080733,
+          "ci_low": 0.0017623409996316629,
+          "ci_high": 0.01611263600457768,
+          "p_value": 0.018
+        },
+        "socialsensing-dep-nosilence": {
+          "diff": -0.003634813073629509,
+          "ci_low": -0.00596523377634394,
+          "ci_high": -0.0013930238295608464,
+          "p_value": 0.001
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "diff": -0.014795548275028427,
+          "ci_low": -0.02310922186770637,
+          "ci_high": -0.005702796483903382,
+          "p_value": 0.001
+        },
+        "reliability-dep-nolinks": {
+          "diff": 0.0018166503782727718,
+          "ci_low": -0.0006042902436143168,
+          "ci_high": 0.004300682930570546,
+          "p_value": 0.127
+        }
+      },
+      "clean_events": null
+    },
+    "final": {
+      "methods": {
+        "majority": {
+          "brier": 0.2759442691035546,
+          "log_loss": 0.7461019086052165,
+          "ece": 0.19013364832936513,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5893939393939395,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 20,
+              "predicted": 0.5782508547361078,
+              "observed": 0.35
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 32,
+              "predicted": 0.6350603943251509,
+              "observed": 0.46875
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "truthfinder": {
+          "brier": 0.27241099730408636,
+          "log_loss": 0.7385736318907613,
+          "ece": 0.20099012027579793,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.6060606060606061,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 50,
+              "predicted": 0.5931109764934432,
+              "observed": 0.4
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 2,
+              "predicted": 0.6020312851653347,
+              "observed": 1.0
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence": {
+          "brier": 0.2835258031062985,
+          "log_loss": 0.7618784421158991,
+          "ece": 0.19856913108530222,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.4666666666666667,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6216460541622253,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "brier": 0.29434426227389154,
+          "log_loss": 0.7852166060916487,
+          "ece": 0.2242016132278168,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5909090909090908,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6472785363047399,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep-nolinks": {
+          "brier": 0.27945414761014786,
+          "log_loss": 0.7532685717609939,
+          "ece": 0.18827592482591277,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5371212121212121,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6113528479028358,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        },
+        "reliability-dep": {
+          "brier": 0.2825078228279559,
+          "log_loss": 0.7597186932321609,
+          "ece": 0.19923880086518414,
+          "accuracy": 0.4230769230769231,
+          "auc": 0.5727272727272728,
+          "n": 52,
+          "reliability": [
+            {
+              "bin": [
+                0.0,
+                0.1
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.1,
+                0.2
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.2,
+                0.30000000000000004
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.30000000000000004,
+                0.4
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.4,
+                0.5
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.5,
+                0.6000000000000001
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.6000000000000001,
+                0.7000000000000001
+              ],
+              "n": 52,
+              "predicted": 0.6223157239421072,
+              "observed": 0.4230769230769231
+            },
+            {
+              "bin": [
+                0.7000000000000001,
+                0.8
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.8,
+                0.9
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            },
+            {
+              "bin": [
+                0.9,
+                1.0
+              ],
+              "n": 0,
+              "predicted": null,
+              "observed": null
+            }
+          ]
+        }
+      },
+      "brier_vs_proposed": {
+        "majority": {
+          "diff": 0.006563553724401346,
+          "ci_low": -0.0013200072468855272,
+          "ci_high": 0.01429749886311399,
+          "p_value": 0.106
+        },
+        "truthfinder": {
+          "diff": 0.010096825523869531,
+          "ci_low": 0.0019929986741831812,
+          "ci_high": 0.017394084255336055,
+          "p_value": 0.017
+        },
+        "socialsensing-dep-nosilence": {
+          "diff": -0.0010179802783425761,
+          "ci_low": -0.0027544330283631314,
+          "ci_high": 0.0006263783590023291,
+          "p_value": 0.242
+        },
+        "socialsensing-dep-nosilence-sup": {
+          "diff": -0.011836439445935662,
+          "ci_low": -0.018672992343082406,
+          "ci_high": -0.004581501366026631,
+          "p_value": 0.001
+        },
+        "reliability-dep-nolinks": {
+          "diff": 0.0030536752178080473,
+          "ci_low": -0.00022440729345176206,
+          "ci_high": 0.006259470596973812,
+          "p_value": 0.063
+        }
+      },
+      "clean_events": null
+    }
+  },
+  "test": {
+    "stories": 52,
+    "true": 22,
+    "false": 30,
+    "observations": 141,
+    "sources": 125,
+    "sources_in_2plus_stories": 3,
+    "crises": {
+      "rumoureval-2019-test": 52
+    },
+    "unverified threads": 4
+  },
+  "commit": "51600f27d12e4bd7c9fcc18533e81f55fdc87060"
+}
