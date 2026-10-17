@@ -216,3 +216,37 @@ def test_cli_will_not_overwrite_a_sheet(tmp_path):
     assert main(["claim-sheet", "--out", str(tmp_path)]) == 0
     assert main(["claim-sheet", "--out", str(tmp_path)]) == 2
     assert Path(tmp_path / "claim_sheet.xlsx").exists()
+
+
+@pytest.mark.parametrize(
+    ("url", "platform", "expected"),
+    [
+        ("https://www.facebook.com/somepage/posts/999", "facebook", "somepage"),
+        ("https://www.facebook.com/groups/12345/permalink/678", "facebook", "groups/12345"),
+        ("https://www.facebook.com/permalink.php?story_fbid=1&id=4242", "facebook", "4242"),
+        ("https://www.facebook.com/photo.php?fbid=1", "facebook", None),
+        ("https://www.facebook.com/watch/?v=1", "facebook", None),
+        ("https://x.com/someone/status/1", "x", "someone"),
+        ("https://www.youtube.com/@channel/videos", "youtube", "@channel"),
+        ("https://www.youtube.com/watch?v=abc", "youtube", None),
+        ("https://www.tiktok.com/@user/video/1", "tiktok", "@user"),
+        ("https://www.instagram.com/p/abc/", "instagram", None),
+    ],
+)
+def test_accounts_are_read_from_links(url, platform, expected):
+    from carcux_data.j24.extract import account_of
+
+    assert account_of(url, platform) == expected
+
+
+def test_accounts_are_hashed_and_counted_never_named(tmp_path):
+    records = _records(tmp_path)
+    link = next(r for r in records if r["factcheck_id"].endswith(":101"))["social_links"][0]
+    assert len(link["account_ref"]) == 64 and link["account_ref"] != link["url_ref"]
+    assert "somepage" not in (tmp_path / "factchecks.jsonl").read_text("utf-8")
+    s = summarise(records)
+    assert s["social_accounts"] == 1 and s["social_accounts_recurring"] == 0
+    # Same account, different case: one account.
+    from carcux_data.j24.extract import account_ref
+
+    assert account_ref(SALT, "x", "Someone") == account_ref(SALT, "x", "someone")

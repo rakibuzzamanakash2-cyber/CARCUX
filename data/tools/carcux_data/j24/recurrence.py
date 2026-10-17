@@ -44,6 +44,12 @@ def summarise(records: list[dict], *, in_scope_only: bool = True) -> dict:
         sum(1 for c in r["cited"] if c["kind"] not in ("archive", "tool", "other")) for r in rows
     ]
     social = sum(len(r["social_links"]) for r in rows)
+    accounts: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for r in rows:
+        for link in r["social_links"]:
+            if link.get("account_ref"):
+                accounts[(link["platform"], link["account_ref"])].add(r["factcheck_id"])
+    account_counts = sorted((len(v) for v in accounts.values()), reverse=True)
     sites = Counter(r["site"] for r in rows)
     verdicts = Counter(r["verdict_hint"] or "none found" for r in rows)
     return {
@@ -55,6 +61,11 @@ def summarise(records: list[dict], *, in_scope_only: bool = True) -> dict:
         "recurring_sources": len(recurring),
         "sources_per_factcheck_median": sorted(per_claim)[len(per_claim) // 2] if per_claim else 0,
         "social_links": social,
+        "social_accounts": len(accounts),
+        "social_accounts_recurring": sum(1 for n in account_counts if n >= 2),
+        "social_accounts_5plus": sum(1 for n in account_counts if n >= 5),
+        "social_accounts_by_platform": dict(Counter(p for p, _ in accounts)),
+        "social_account_top_counts": account_counts[:20],
         "top_sources": [
             {
                 "domain": d,
@@ -81,6 +92,10 @@ def report(s: dict) -> str:
         f"Cited by {GO['min_claims_per_source']} or more fact-checks: {s['recurring_sources']}",
         f"Median outlets cited per fact-check: {s['sources_per_factcheck_median']}",
         f"Links to social media posts (kept in restricted/): {s['social_links']}",
+        f"Social accounts behind them (hashed, never named): {s['social_accounts']}; in 2 or "
+        f"more fact-checks: {s['social_accounts_recurring']}; in 5 or more: "
+        f"{s['social_accounts_5plus']}",
+        "  Fact-checks per account, top 20: " + ", ".join(map(str, s["social_account_top_counts"])),
         "",
         "Go / no-go (claims are counted after the claim sheet removes duplicates; this is "
         "an upper bound):",

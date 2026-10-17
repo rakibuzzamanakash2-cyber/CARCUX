@@ -20,6 +20,8 @@ from urllib.parse import urlencode
 
 from carcux_data.j24 import WINDOW
 from carcux_data.j24.extract import (
+    account_of,
+    account_ref,
     classify,
     clean_title,
     load_outlets,
@@ -81,7 +83,11 @@ def record_for(post: dict, site: Site, categories: dict[int, str], outlets, salt
         if link is None or link.kind == "fact_checker":
             continue
         if link.kind == "social":
-            social.append({"platform": link.platform, "url": href, "url_ref": url_ref(salt, href)})
+            account = account_of(href, link.platform)
+            social.append({
+                "platform": link.platform, "url": href, "url_ref": url_ref(salt, href),
+                "account_ref": account_ref(salt, link.platform, account) if account else None,
+            })  # fmt: skip
             continue
         key = (link.kind, link.domain)
         cited[key] += 1
@@ -107,7 +113,10 @@ def record_for(post: dict, site: Site, categories: dict[int, str], outlets, salt
         "scope_hint": bool(terms),
         "scope_terms": terms,
         "cited": [{**info[k], "links": n} for k, n in sorted(cited.items())],
-        "social_links": [{"platform": s["platform"], "url_ref": s["url_ref"]} for s in social],
+        "social_links": [
+            {"platform": s["platform"], "url_ref": s["url_ref"], "account_ref": s["account_ref"]}
+            for s in social
+        ],
     }
     restricted = [{"factcheck_id": fid, **s} for s in social]
     return public, restricted
