@@ -54,6 +54,30 @@ def test_credible_sources_disagreeing_is_a_detected_dispute():
     )
 
 
+def test_a_count_that_rose_over_days_is_not_a_dispute():
+    # Guideline v0.4: counts are compared only when said within 12 hours of each other,
+    # and the estimate is the count as it stands now.
+    deaths = lambda n: Claim("casualty_count", n, "deaths", f"{n} killed")  # noqa: E731
+
+    def at(vote, hours):
+        return assess.Vote(*[getattr(vote, f) for f in ("source_key", "source_type",
+                           "source_name", "vote", "relation", "conflicts")],
+                           NOW + timedelta(hours=hours), vote.details)  # fmt: skip
+
+    vs = [
+        at(_with(_v("a"), deaths(23)), 0),
+        at(_with(_v("b"), deaths(52)), 72),
+        at(_with(_v("c"), deaths(54)), 80),
+    ]
+    (d,), detected = assess.summarise_details(vs, assess.STARTING)
+    assert detected == [] and not d.disputed
+    assert d.estimate in (52, 54) and {s.value for s in d.statements} == {23, 52, 54}
+    # The same two counts said on the same day are a dispute.
+    vs.append(at(_with(_v("d"), deaths(20)), 79))
+    _, detected = assess.summarise_details(vs, assess.STARTING)
+    assert detected == ["casualty_count"]
+
+
 def test_an_unreliable_source_stating_otherwise_is_not_a_dispute():
     w = assess.Weights(rates={"bad": 0.2})
     depth = lambda v: Claim("magnitude", v, None, v)  # noqa: E731

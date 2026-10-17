@@ -232,7 +232,8 @@ def list_evidence(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
         item = EvidenceRead.model_validate(link)
         item.stance = stance_read(
             stance_service.suggest(db, event, _item_text(link), item_type=_item_type(link),
-                                   exclude=link.id)
+                                   exclude=link.id,
+                                   at=stance_service.time_of(link.field_report or link.signal))
         )  # fmt: skip
         c = found.get(link.id)
         if c is not None:
@@ -385,7 +386,9 @@ def candidate_reports(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
             hours_apart=m.hours_apart,
             same_type=report.event_type == event.event_type,
             stance=stance_read(
-                stance_service.suggest(db, event, report.text, item_type=report.event_type)
+                stance_service.suggest(
+                    db, event, report.text, item_type=report.event_type, at=report.received_at
+                )
             ),
         )
         for report, m in service.candidate_reports(db, event)
@@ -408,6 +411,7 @@ def candidate_signals(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
                     event,
                     headline_and_text(signal.title, signal.text),
                     item_type=signal.event_type,
+                    at=signal.published_at,
                 )
             ),
         )
@@ -445,6 +449,7 @@ def public_opinions(event_id: uuid.UUID, db: DbSession, _user: Reviewer):
                     event,
                     headline_and_text(signal.title, signal.text),
                     item_type=signal.event_type,
+                    at=signal.published_at,
                 )
             ),
         )  # fmt: skip

@@ -254,7 +254,7 @@ def candidate_events(report_id: uuid.UUID, db: DbSession, _user: Reviewer):
     if report is None:
         raise _NOT_FOUND
     return [
-        as_candidate(s, db, report.text, report.event_type)
+        as_candidate(s, db, report.text, report.event_type, report.received_at)
         for s in suggest_service.for_report(db, report)
     ]
 

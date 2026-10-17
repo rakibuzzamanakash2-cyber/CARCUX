@@ -220,3 +220,21 @@ def test_scores_when_a_label_is_never_suggested():
     out = stance.table({"blind_second_opinions": r, "working_labels": r,
                         "followed": {"shown": 0, "followed": 0}})  # fmt: skip
     assert "macro-F1 0.000" in out and "suggested    2" in out
+
+
+def test_a_rising_count_is_judged_against_what_was_said_at_the_time(client, db, people):
+    # Guideline v0.4: "3 dead" on the first day and "20 dead" two days later can both be
+    # right; only a count that disagrees with what was said around the same time conflicts.
+    a, (w1, w2, w3) = people["analyst"], people["workers"]
+    e = _event(db, a)
+    _report(db, e, w1, a, text=THREE_DEAD)
+    _report(db, e, w2, a, text=THREE_DEAD, minutes=5)
+    _report(db, e, w3, a, text=TWENTY_DEAD, minutes=2 * 24 * 60)
+    db.commit()
+    items = client.get(f"/api/v1/events/{e.id}/evidence", headers=people["analyst_headers"]).json()
+    later = next(i for i in items if i["field_report"]["text"] == TWENTY_DEAD)
+    assert later["stance"]["relation"] == "supports"
+    # The same "20 dead" on the first day disagrees with the two "3 dead" reports.
+    r = _unlinked_report(db, w3, TWENTY_DEAD)
+    s = stance.suggest(db, e, r.text, item_type=r.event_type, at=stance.time_of(r))
+    assert (s.relation.value, s.conflicts) == ("partially_supports", ["casualty_count"])

@@ -22,13 +22,17 @@ Admin = Annotated[User, Depends(require_roles(Role.ADMIN))]
 
 
 def as_candidate(
-    s: service.Suggestion, db=None, text: str | None = None, item_type: str | None = None
+    s: service.Suggestion,
+    db=None,
+    text: str | None = None,
+    item_type: str | None = None,
+    at=None,
 ) -> CandidateEvent:
     """A suggested event; with `db` and the item's `text`, also how the item reads
     toward it (stance suggestion)."""
     stance = None
     if db is not None and text:
-        stance = stance_read(stance_service.suggest(db, s.event, text, item_type=item_type))
+        stance = stance_read(stance_service.suggest(db, s.event, text, item_type=item_type, at=at))
     return CandidateEvent(
         stance=stance,
         event=EventRead.model_validate(s.event),

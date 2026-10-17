@@ -1,6 +1,6 @@
 # CARCUX-BD Annotation Guideline
 
-**Version 0.3** · Schema v1.1 · Status: draft for the first annotation round
+**Version 0.4** · Schema v1.1 · Status: draft for the first annotation round
 
 This guideline tells annotators how to turn news, posts, videos and field reports about Bangladesh disaster and disruption events into CARCUX-BD records. Two annotators following it should reach the same labels. When they don't, that is a signal to improve the guideline, not to argue.
 
@@ -89,7 +89,8 @@ Ground truth comes from **sources published after the event**: official statemen
 
 - `occurred`: `true` or `false`. **Rumoured events that did not happen are valuable; include them** with `occurred: false`.
 - `facts`: the verified values: occurrence, magnitude, status at the end, cause, counts. These are what observations are judged against.
-- If sources disagree after the event, record only what is well established and say so in `notes`.
+- If sources disagree after the event, record only what is well established and say so in `notes`. **A disputed cause** (for example, whether a dam release added to a flood) is recorded as disputed, and annotators do not mark `cause` as wrong.
+- **Counts that changed while the event went on** (a death toll that rose over days): record the final figure in `facts`, and in `notes` how the official figure rose, with dates (e.g. "23 in Feni, then 52, 54, 59, 71 by 3 Sep"). Annotators judge each item's count against the figure known when it was published (5.2).
 
 ### 3.5 Assessments (verification over time)
 
@@ -170,8 +171,9 @@ Answer the questions in order and stop at the first "yes":
 | `location` | Same named locality, or within the event's `precision_m` |
 | `start_time` | Within 1 hour (event precision `hour`) or same day (`day`) |
 | `magnitude` | Same category. Knee-deep vs waist-deep **conflicts**. |
-| counts | Within ±20 % of the ground-truth figure |
+| counts | Within ±20 % of the official figure **known when the item was published** (3.4 notes). A toll that was right that day agrees, even if it rose later. A count the officials never gave, or above the final figure by more than 20 %, conflicts. |
 | `status` | Matches the true status **at the item's publication time** |
+| `cause` | Same cause. If the ground truth records the cause as disputed, cause is not judged. |
 
 ### 5.3 Stale items
 
@@ -210,6 +212,7 @@ Rules:
 2. Agreement is measured per label set with **Cohen's κ** (two annotators) or **Krippendorff's α** (more). Target: **κ ≥ 0.70** for relation labels before scaling up.
 3. Disagreements are discussed and resolved into the `gold` field. If the disagreement came from an unclear rule, **update this guideline** and bump its version.
 4. Annotators are identified only by code. The mapping to real people is kept outside the dataset.
+5. **Blindness is enforced, not requested.** A second annotator works either in the console with an **Annotator** account, which can open only the blind queue (no one's label, no CARCUX suggestion, no agreement figures), or away from the console with a **blind label sheet** (an Excel export of that queue, read back with `import-label-sheet`). Either way they never see the first label.
 
 ---
 
@@ -243,6 +246,7 @@ Rules:
 
 | Version | Schema | Changes |
 |---|---|---|
+| 0.4 | v1.1 | Counts are judged against the official figure known when the item was published, not the final figure: a rising death toll reported correctly at the time agrees (5.2). Ground truth notes record how counts rose, and a disputed cause is not judged (3.4). Second opinions are blind by construction: the Annotator role and blind label sheets (7). Found in the real-data pilot (flood N07), before any second-opinion labels. No schema change. |
 | 0.3 | v1.1 | Clarified that `casualty_count` counts deaths, not injuries (the CARCUX console had labelled it "deaths or injuries"). Details that CARCUX finds in item text automatically go into `claims` with their words in `surface`; the export manifest says which claims are automatic. No schema change. |
 | 0.2 | v1.1 | Added event types `earthquake` (natural_calamity) and `rail_accident` (road_infrastructure), needed by shortlist events such as the November 2025 Narsingdi earthquake and the October 2023 Bhairab train collision. Additive only: every v1.0 dataset is still valid. |
 | 0.1 | v1.0 | First version. |
@@ -251,9 +255,10 @@ Annotations record the guideline version they were made under (`guideline_versio
 
 ---
 
-## 11. Open questions for v0.3
+## 11. Open questions for v0.5
 
 - Exact checkpoint set: is `T+24h` needed for fast urban events?
 - Magnitude vocabularies for non-water events (fire size, outage extent).
 - How to annotate video segments when only part of a video is about the event.
 - Whether to add a `retracted` dependence type for items later deleted or corrected.
+- How close in time two counts must be to be compared. CARCUX uses 12 hours; daily official updates may need a day.
