@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import http.client
 import json
 import time
 import urllib.error
@@ -80,9 +81,11 @@ class Fetcher:
             self.requests += 1
             try:
                 r = self.opener(url, {"User-Agent": self.agent, "Accept": accept})
-            except OSError as exc:  # includes timeouts and connection resets
+            except (OSError, http.client.HTTPException) as exc:  # timeouts, resets, cut answers
                 if wait is None:
-                    raise
+                    raise OSError(
+                        f"no answer after {len(RETRY_WAITS) + 1} attempts: {exc}"
+                    ) from exc
                 self.log(f"  no answer ({exc.__class__.__name__}); trying again in {wait} s "
                          f"(attempt {attempt + 2})")  # fmt: skip
                 self.sleep(wait)

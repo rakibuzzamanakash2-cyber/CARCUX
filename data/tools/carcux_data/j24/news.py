@@ -23,7 +23,7 @@ import json
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from importlib import resources
 from pathlib import Path
@@ -35,7 +35,7 @@ from carcux_data.j24.fetch import Disallowed, Fetcher
 
 CDX = "https://web.archive.org/cdx/search/cdx"
 WAYBACK = "https://web.archive.org/web"
-PAGE_SIZE = 2000
+PAGE_SIZE = 1000
 
 # Addresses that are listings, media or tools, not articles.
 NOT_ARTICLE = re.compile(
@@ -90,49 +90,65 @@ def _stamp(day: str, end: bool = False) -> str:
     return day.replace("-", "") + ("235959" if end else "000000")
 
 
+CHUNK_DAYS = 7  # one index query per week of the window: small answers, kind to the archive
+
+
+def _chunks(since: str, until: str) -> list[tuple[str, str]]:
+    start = date.fromisoformat(since)
+    last = date.fromisoformat(until)
+    out = []
+    while start <= last:
+        stop = min(start + timedelta(days=CHUNK_DAYS - 1), last)
+        out.append((start.isoformat(), stop.isoformat()))
+        start = stop + timedelta(days=1)
+    return out
+
+
 def list_outlet(
     fetcher: Fetcher, outlet: NewsOutlet, since: str, until: str, log: Callable = print
 ) -> dict[str, str]:
-    """{normalised address: first capture timestamp in the window}."""
+    """{normalised address: first capture timestamp in the window}. Queried week by week and
+    page by page; a part the archive does not answer is reported and skipped, and a re-run
+    fills it in (answered parts come from the cache)."""
     first: dict[str, str] = {}
     for prefix in outlet.prefixes:
-        resume = None
-        while True:
-            params = [
-                ("url", prefix), ("matchType", "prefix"), ("from", _stamp(since)),
-                ("to", _stamp(until, end=True)), ("output", "json"),
-                ("fl", "timestamp,original"), ("filter", "statuscode:200"),
-                ("filter", "mimetype:text/html"), ("collapse", "urlkey"),
-                ("limit", str(PAGE_SIZE)), ("showResumeKey", "true"),
-            ]  # fmt: skip
-            if outlet.url_regex:
-                params.append(("filter", f"original:.*({outlet.url_regex}).*"))
-            if resume:
-                params.append(("resumeKey", resume))
-            try:
-                status, _, data = fetcher.get_json(f"{CDX}?{urlencode(params)}")
-            except OSError as exc:
-                log(f"  {outlet.key}: the archive index did not answer for {prefix} ({exc}); "
-                    "kept what was listed; run news-list again later to continue")  # fmt: skip
-                break
-            if status != 200 or not isinstance(data, list):
-                log(f"  {outlet.key}: the archive index did not answer for {prefix} "
-                    f"(HTTP {status})")  # fmt: skip
-                break
-            rows = data[1:] if data and data[0] == ["timestamp", "original"] else data
+        for lo, hi in _chunks(since, until):
             resume = None
-            for row in rows:
-                if not row:
-                    continue
-                if len(row) == 1:  # the resume key, after an empty row
-                    resume = row[0]
-                    continue
-                ts, original = row[0], row[1]
-                url = normalise(original)
-                if url and (url not in first or ts < first[url]):
-                    first[url] = ts
-            if not resume:
-                break
+            while True:
+                params = [
+                    ("url", prefix), ("matchType", "prefix"), ("from", _stamp(lo)),
+                    ("to", _stamp(hi, end=True)), ("output", "json"),
+                    ("fl", "timestamp,original"), ("filter", "statuscode:200"),
+                    ("filter", "mimetype:text/html"), ("collapse", "urlkey"),
+                    ("limit", str(PAGE_SIZE)), ("showResumeKey", "true"),
+                ]  # fmt: skip
+                if outlet.url_regex:
+                    params.append(("filter", f"original:.*({outlet.url_regex}).*"))
+                if resume:
+                    params.append(("resumeKey", resume))
+                try:
+                    status, _, data = fetcher.get_json(f"{CDX}?{urlencode(params)}")
+                except OSError as exc:
+                    log(f"  {outlet.key}: no answer for {prefix} {lo} to {hi} ({exc}); "
+                        "run news-list again later to fill it in")  # fmt: skip
+                    break
+                if status != 200 or not isinstance(data, list):
+                    log(f"  {outlet.key}: no answer for {prefix} {lo} to {hi} (HTTP {status})")
+                    break
+                rows = data[1:] if data and data[0] == ["timestamp", "original"] else data
+                resume = None
+                for row in rows:
+                    if not row:
+                        continue
+                    if len(row) == 1:  # the resume key, after an empty row
+                        resume = row[0]
+                        continue
+                    ts, original = row[0], row[1]
+                    url = normalise(original)
+                    if url and (url not in first or ts < first[url]):
+                        first[url] = ts
+                if not resume:
+                    break
     return first
 
 
