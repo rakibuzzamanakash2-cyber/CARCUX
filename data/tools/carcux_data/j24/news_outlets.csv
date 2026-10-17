@@ -1,0 +1,43 @@
+key,name,country,language,prefixes,url_regex
+prothomalo,Prothom Alo,BD,bn,prothomalo.com/bangladesh/;prothomalo.com/politics/;en.prothomalo.com/bangladesh/,
+thedailystar,The Daily Star,BD,en,thedailystar.net/news/bangladesh/;thedailystar.net/bangla/,
+bdnews24,bdnews24.com,BD,bn,bdnews24.com/bangladesh/;bdnews24.com/politics/;bangla.bdnews24.com/,
+kalbela,Kalbela,BD,bn,kalbela.com/national/;kalbela.com/politics/;kalbela.com/country-news/,
+jugantor,Jugantor,BD,bn,jugantor.com/national/;jugantor.com/politics/;jugantor.com/country-news/,
+somoynews,Somoy TV,BD,bn,somoynews.tv/news/,
+ajkerpatrika,Ajker Patrika,BD,bn,ajkerpatrika.com/,
+samakal,Samakal,BD,bn,samakal.com/bangladesh/;samakal.com/politics/;samakal.com/whole-country/,
+ittefaq,The Daily Ittefaq,BD,bn,ittefaq.com.bd/,
+kalerkantho,Kaler Kantho,BD,bn,kalerkantho.com/online/national/;kalerkantho.com/online/politics/;kalerkantho.com/online/country-news/,
+jamuna,Jamuna TV,BD,bn,jamuna.tv/news/,
+rtv,RTV,BD,bn,rtvonline.com/bangladesh/;rtvonline.com/politics/,
+banglatribune,Bangla Tribune,BD,bn,banglatribune.com/national/;banglatribune.com/politics/;banglatribune.com/country/,
+mzamin,Manab Zamin,BD,bn,mzamin.com/news.php,
+dhakatribune,Dhaka Tribune,BD,en,dhakatribune.com/bangladesh/,
+dhakapost,Dhaka Post,BD,bn,dhakapost.com/national/;dhakapost.com/politics/;dhakapost.com/country/,
+inqilab,Daily Inqilab,BD,bn,dailyinqilab.com/article/,
+deshrupantor,Desh Rupantor,BD,bn,deshrupantor.com/,
+jagonews24,Jago News 24,BD,bn,jagonews24.com/national/;jagonews24.com/politics/;jagonews24.com/country/,
+itv,Independent TV,BD,bn,itvbd.com/,
+banglanews24,Banglanews24,BD,bn,banglanews24.com/national/;banglanews24.com/politics/;banglanews24.com/countrysides/,
+channel24,Channel 24,BD,bn,channel24bd.tv/national/;channel24bd.tv/politics/,
+dailycampus,The Daily Campus,BD,bn,thedailycampus.com/,
+risingbd,Risingbd,BD,bn,risingbd.com/national/;risingbd.com/politics/;risingbd.com/country/,
+newage,New Age,BD,en,newagebd.net/post/,
+dbcnews,DBC News,BD,bn,dbcnews.tv/articles/,
+bss,BSS (national news agency),BD,bn,bssnews.net/,
+bonikbarta,Bonik Barta,BD,bn,bonikbarta.com/;bonikbarta.net/,
+news24,News24,BD,bn,news24bd.tv/details/,
+dhakatimes,Dhaka Times,BD,bn,dhakatimes24.com/,
+bbc,BBC,GB,en,bbc.com/news/;bbc.com/bengali/,
+aljazeera,Al Jazeera,QA,en,aljazeera.com/news/;aljazeera.com/features/;aljazeera.com/opinions/,
+reuters,Reuters,GB,en,reuters.com/world/asia-pacific/,
+apnews,Associated Press,US,en,apnews.com/article/,bangladesh|dhaka|hasina
+dw,DW,DE,en,dw.com/en/;dw.com/bn/,bangladesh|dhaka|hasina|বাংলাদেশ
+theguardian,The Guardian,GB,en,theguardian.com/world/,bangladesh|dhaka|hasina
+nytimes,The New York Times,US,en,nytimes.com/2024/07/;nytimes.com/2024/08/,bangladesh|dhaka|hasina
+hindustantimes,Hindustan Times,IN,en,hindustantimes.com/world-news/;hindustantimes.com/india-news/,bangladesh|dhaka|hasina|hindu
+indiatoday,India Today,IN,en,indiatoday.in/world/;indiatoday.in/india/,bangladesh|dhaka|hasina
+aajtak,Aaj Tak,IN,hi,aajtak.in/world/;aajtak.in/india/,bangladesh|dhaka|hasina
+republic,Republic,IN,en,republicworld.com/world-news/;republicworld.com/india/,bangladesh|dhaka|hasina
+thequint,The Quint,IN,en,thequint.com/news/,bangladesh|dhaka|hasina
