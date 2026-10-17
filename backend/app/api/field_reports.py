@@ -18,7 +18,7 @@ from fastapi import (
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func, or_, select
 
-from app.api.deps import AppSettings, DbSession, client_ip, require_roles
+from app.api.deps import AppSettings, DbSession, client_ip, limit, require_roles
 from app.api.suggestions import as_candidate
 from app.core.event_types import BD_LAT, BD_LON, EVENT_TYPES
 from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
@@ -30,7 +30,7 @@ from app.schemas.field_report import (
     ReviewDecision,
     VerifyResult,
 )
-from app.services import audit
+from app.services import audit, throttle
 from app.services import events as event_service
 from app.services import field_reports as service
 from app.services import suggest as suggest_service
@@ -76,6 +76,7 @@ async def submit_report(
     location_accuracy_m: Annotated[float | None, Form(gt=0, le=100_000)] = None,
     photos: Annotated[list[UploadFile], File()] = [],  # noqa: B006 (FastAPI form default)
 ):
+    limit(db, throttle.FIELD_REPORT, key=throttle.key_for(settings, f"staff:{reporter.id}"))
     if observed_at.tzinfo is None:
         raise _unprocessable("observed_at must include a UTC offset, e.g. +06:00")
     if event_type is not None and event_type not in EVENT_TYPES:

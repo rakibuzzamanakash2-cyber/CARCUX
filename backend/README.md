@@ -272,6 +272,14 @@ Once a verified page has posted about an event, its public incident page also ca
 - **Review queue.** `GET /field-reports?status=submitted&order=oldest` lists what nobody has looked at, oldest first. Linking a report to an event, or `POST /field-reports/{id}/review`, takes it off the queue and records the reviewer and time; dismissing needs a reason.
 - **Audit log.** `GET /api/v1/audit` (admin): newest first, filter by `action` (exact, or a prefix ending in `.` such as `event.`), `actor_id`, `target_type`, `target_id`, `since`/`until`. The response also lists every action name seen, for filter menus.
 - **Passwords.** `POST /api/v1/auth/password` changes your own (current password required); it signs out your other sessions and returns a fresh token. `POST /api/v1/users/{id}/password` (admin) sets a temporary password and signs that person out everywhere. Both are audit-logged; passwords never are.
+- **Rate limits** (`app/services/throttle.py`). They answer `429` with `Retry-After`:
+  - **Sign-in, staff and public site:** 5 failures per email and address in 15 minutes, 20 per email in an hour, 30 per address in 15 minutes. Limits apply to unknown emails too, so a lock-out reveals nothing. A locked account is refused even with the right password, which is what stops guessing. A successful sign-in clears that email and address's failures.
+  - **Current-password checks** (change password, delete public account): 5 in 15 minutes.
+  - **Public sign-ups:** 5 per address and 3 per email an hour.
+  - **Field reports:** 60 per worker in 10 minutes.
+
+  Counts are keyed by a keyed hash of the email, never the email itself, and rows are kept for a day. Refused sign-ins are audit-logged as `auth.login_throttled`.
+- **Client addresses.** The frontend passes the browser's address in `X-Forwarded-For`. It is believed only from private and loopback addresses (`CARCUX_TRUST_FORWARDED_FROM_PRIVATE`, default true). Without a reverse proxy that overwrites the header, a browser can claim any address. In that case only the per-email limits hold, and audit-log addresses are what the browser claimed. Put nginx or Caddy in front for production (deployment hardening).
 
 ## Overview
 

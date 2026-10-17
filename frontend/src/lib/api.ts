@@ -1,5 +1,7 @@
 import "server-only";
 
+import { headers as requestHeaders } from "next/headers";
+
 import { getToken } from "@/lib/session";
 
 /** Backend base URL, read on the server only. Never exposed to the browser. */
@@ -44,6 +46,7 @@ export async function apiFetch(
   const { auth = true, headers, ...rest } = init;
   const token = auth ? await getToken() : undefined;
   const isForm = rest.body instanceof FormData;
+  const forwarded = await forwardedFor();
 
   let response: Response;
   try {
@@ -53,6 +56,7 @@ export async function apiFetch(
       headers: {
         ...(isForm ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(forwarded ? { "X-Forwarded-For": forwarded } : {}),
         ...headers,
       },
     });
@@ -65,6 +69,20 @@ export async function apiFetch(
     throw new ApiError(response.status, readableDetail(body, response.statusText));
   }
   return response;
+}
+
+/**
+ * The browser's address chain as this server received it, passed on so the backend can
+ * rate-limit sign-ins per address and record real addresses in the audit log. The
+ * backend believes only the last entry, which this server added. Empty outside a
+ * request (build time, background work).
+ */
+async function forwardedFor(): Promise<string | null> {
+  try {
+    return (await requestHeaders()).get("x-forwarded-for");
+  } catch {
+    return null;
+  }
 }
 
 /** Call the backend and parse the JSON body. See apiFetch. */

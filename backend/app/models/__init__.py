@@ -34,6 +34,7 @@ from app.models.signal import (
 )
 from app.models.statement import Finding, Statement
 from app.models.suggestion import SuggestionModel
+from app.models.throttle import ThrottleEvent
 from app.models.user import Role, User
 
 __all__ = [
@@ -56,6 +57,7 @@ __all__ = [
     "EvidenceRelation",
     "FieldReport",
     "FieldReportMedia",
+    "ThrottleEvent",
     "Finding",
     "IngestRun",
     "OfficialPage",

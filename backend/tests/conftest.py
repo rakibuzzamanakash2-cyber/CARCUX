@@ -67,7 +67,7 @@ def _clean_tables(request) -> None:
                 "signals, ingest_runs, sources, suggestion_models, assessment_models, "
                 "audit_log, opinion_reports, incident_opinions, comment_reports, "
                 "statement_comments, statement_likes, "
-                "public_accounts, statements, official_pages, users "
+                "public_accounts, statements, official_pages, users, throttle_events "
                 "RESTART IDENTITY CASCADE"
             )
         )
