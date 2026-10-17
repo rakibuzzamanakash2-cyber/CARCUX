@@ -151,3 +151,31 @@ def reset_password(
     )
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{user_id}/two-factor/reset", status_code=status.HTTP_204_NO_CONTENT)
+def reset_two_factor(user_id: uuid.UUID, request: Request, db: DbSession, admin: AdminUser):
+    """Turn off someone's two-factor sign-in (a lost phone). Signs them out everywhere;
+    if their role must use it, they set it up again when they next sign in."""
+    from app.api.auth import clear_two_factor
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    if user.id == admin.id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Use your account page for your own two-factor sign-in; another admin can reset it.",
+        )
+    clear_two_factor(user)
+    user.token_version += 1
+    audit.record(
+        db,
+        audit.AuditAction.TWO_FACTOR_RESET,
+        actor_id=admin.id,
+        target_type="user",
+        target_id=user.id,
+        ip_address=client_ip(request),
+    )
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

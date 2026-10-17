@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { resetPassword } from "@/app/actions/review";
+import { resetTwoFactor } from "@/app/actions/two-factor";
 import { updateUser } from "@/app/actions/users";
 import { STAFF_ROLES, type ActionState, type Role, type User } from "@/lib/types";
 
@@ -30,7 +31,14 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
         {user.full_name}
         {isSelf && <span className="ml-2 text-xs text-steel">(you)</span>}
       </td>
-      <td className="py-3 pr-4 text-steel">{user.email}</td>
+      <td className="py-3 pr-4 text-steel">
+        {user.email}
+        {user.two_factor_enabled && (
+          <span className="ml-2 rounded bg-ok/15 px-1.5 py-0.5 text-xs font-semibold text-ok">
+            2FA
+          </span>
+        )}
+      </td>
       <td className="py-3 pr-4">
         {user.role === "official" ? (
           <span>
@@ -111,6 +119,24 @@ export function UserRow({ user, isSelf }: { user: User; isSelf: boolean }) {
           >
             Reset password
           </button>
+          {user.two_factor_enabled && !isSelf && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Turn off two-factor sign-in for ${user.full_name}? Do this only after checking it is really them (a lost phone). They will be signed out.`,
+                  )
+                )
+                  return;
+                startTransition(async () => setResult(await resetTwoFactor(user.id)));
+              }}
+              className="rounded-md border border-line px-2.5 py-1 text-steel transition-colors hover:border-alert hover:text-bone disabled:opacity-60"
+            >
+              Reset two-factor
+            </button>
+          )}
           {resetting && (
             <form
               className="flex w-full flex-wrap items-center gap-2"

@@ -19,6 +19,8 @@ dependencies = [
     "defusedxml>=0.7",
     "numpy>=1.26",  # event suggestions: features and logistic regression
     "openpyxl>=3.1",  # blind label sheets for remote annotators
+    "cryptography>=43",  # two-factor secrets encrypted at rest (AES-GCM)
+    "segno>=1.6",  # QR code for adding CARCUX to an authenticator app
 ]
 
 [project.optional-dependencies]

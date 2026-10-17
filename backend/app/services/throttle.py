@@ -48,6 +48,7 @@ STAFF_LOGIN = "staff_login_failed"
 PUBLIC_LOGIN = "public_login_failed"
 PASSWORD_CHECK = "password_check_failed"  # noqa: S105 (a name, not a password)
 SIGNUP = "public_signup"
+TWO_FACTOR = "two_factor_failed"
 FIELD_REPORT = "field_report"
 
 _SIGN_IN = (
@@ -60,6 +61,9 @@ LIMITS: dict[str, tuple[Limit, ...]] = {
     PUBLIC_LOGIN: _SIGN_IN,
     # The current password, asked again by a signed-in session (change password, delete).
     PASSWORD_CHECK: (Limit("key", 5, timedelta(minutes=15)),),
+    # Wrong authenticator or recovery codes, per account: a million codes cannot be
+    # tried five at a time.
+    TWO_FACTOR: (Limit("key", 5, timedelta(minutes=15)),),
     # Each sign-up may send an email.
     SIGNUP: (Limit("ip", 5, timedelta(hours=1)), Limit("key", 3, timedelta(hours=1))),
     # Far above a real worker's pace; the submission_burst flag catches less.
