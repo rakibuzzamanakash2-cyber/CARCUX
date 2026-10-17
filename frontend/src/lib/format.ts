@@ -92,3 +92,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export function isUuid(value: string): boolean {
   return UUID_RE.test(value);
 }
+
+/** A model probability as a percentage. Never "100%" or "0%": the model is never certain. */
+export function percent(p: number): string {
+  if (p >= 0.995) return ">99%";
+  if (p <= 0.005) return "<1%";
+  return `${Math.round(p * 100)}%`;
+}

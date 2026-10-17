@@ -12,6 +12,7 @@ from app.models.event import (
     EvidenceRelation,
     Priority,
 )
+from app.models.evidence_request import EvidenceRequest, RequestStatus
 from app.models.field_report import FieldReport, FieldReportMedia, ReportStatus
 from app.models.official import OfficialPage, PageKind, PageStatus, VerificationMethod
 from app.models.public import (
@@ -54,6 +55,7 @@ __all__ = [
     "EventEvidence",
     "EventStatus",
     "EvidenceJudgement",
+    "EvidenceRequest",
     "EvidenceRelation",
     "FieldReport",
     "FieldReportMedia",
@@ -65,6 +67,7 @@ __all__ = [
     "PageStatus",
     "Priority",
     "ReportStatus",
+    "RequestStatus",
     "Severity",
     "Signal",
     "SignalStatus",

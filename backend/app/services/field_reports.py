@@ -10,6 +10,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.models.evidence_request import EvidenceRequest, RequestStatus
 from app.models.field_report import FieldReport, FieldReportMedia
 from app.models.user import Role, User
 from app.services import audit, integrity
@@ -22,6 +23,10 @@ class ClientIdConflictError(Exception):
     """The same client_report_id was reused for different content."""
 
 
+class RequestNotOpenError(Exception):
+    """The request for evidence a report answers does not exist or is closed."""
+
+
 @dataclass(frozen=True)
 class ReportInput:
     client_report_id: uuid.UUID
@@ -32,6 +37,7 @@ class ReportInput:
     longitude: float
     location_accuracy_m: float | None
     observed_at: datetime
+    request_id: uuid.UUID | None = None  # answering an analyst's request for evidence
 
 
 def content_hash(
@@ -44,6 +50,8 @@ def content_hash(
 
     Canonical: sorted keys, no spaces, UTC times, fixed float precision, photos in
     submission order. Any change to text, place, time, location or a photo changes it.
+    The request a report answers is included when there is one, so reports sent without
+    one hash exactly as they always did.
     """
     canonical = {
         "v": HASH_VERSION,
@@ -60,6 +68,8 @@ def content_hash(
         "observed_at": data.observed_at.astimezone(UTC).isoformat(),
         "photos": photo_sha256s,
     }
+    if data.request_id is not None:
+        canonical["request_id"] = str(data.request_id)
     blob = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
@@ -74,6 +84,7 @@ def _input_from(report: FieldReport) -> ReportInput:
         longitude=report.longitude,
         location_accuracy_m=report.location_accuracy_m,
         observed_at=report.observed_at,
+        request_id=report.request_id,
     )
 
 
@@ -101,6 +112,10 @@ def submit(
         if existing.content_hash != digest:
             raise ClientIdConflictError
         return existing, False
+    if data.request_id is not None:
+        request = db.get(EvidenceRequest, data.request_id)
+        if request is None or request.status != RequestStatus.OPEN:
+            raise RequestNotOpenError
 
     now = datetime.now(UTC)
     flags = integrity.evaluate(
@@ -126,6 +141,7 @@ def submit(
         longitude=data.longitude,
         location_accuracy_m=data.location_accuracy_m,
         observed_at=data.observed_at,
+        request_id=data.request_id,
         content_hash=digest,
         hash_version=HASH_VERSION,
         integrity_flags=flags,
@@ -169,6 +185,7 @@ def submit(
                 "client_report_id": str(data.client_report_id),
                 "photos": len(photos),
                 "flags": [f["code"] for f in flags],
+                **({"request_id": str(data.request_id)} if data.request_id else {}),
             },
         )
         db.commit()

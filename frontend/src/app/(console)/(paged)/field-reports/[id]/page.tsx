@@ -154,6 +154,22 @@ export default async function FieldReportPage({
             <div className="flex min-w-0 flex-col gap-6">
               <Panel id="report" title="What they saw">
                 <p className="text-[17px] leading-relaxed whitespace-pre-wrap">{report.text}</p>
+                {report.request && (
+                  <p className="mt-3 rounded-md border border-water/40 bg-water/5 px-3 py-2 text-sm">
+                    Sent in answer to a request to check: “{report.request.question}”
+                    {reviewer && (
+                      <>
+                        {" "}
+                        <Link
+                          href={`/events/${report.request.event_id}#check`}
+                          className="font-semibold text-brand hover:underline"
+                        >
+                          Open the event
+                        </Link>
+                      </>
+                    )}
+                  </p>
+                )}
               </Panel>
               <Panel id="text-details" title="Details in the text">
                 <DetailList details={report.details} />

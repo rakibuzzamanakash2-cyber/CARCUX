@@ -34,7 +34,10 @@ import {
   REPORT_SUBMITTERS,
   type FieldReportPage,
   type Overview,
+  type RequestForWorkers,
 } from "@/lib/types";
+
+import { ChecksRequested } from "./checks-requested";
 
 export const metadata = { title: "Field reports" };
 
@@ -74,14 +77,17 @@ export default async function FieldReportsPage({
   });
   if (flagged) query.set("flagged", "true");
   if (q) query.set("q", q);
-  const [data, all, overview] = await Promise.all([
+  const canSubmit = REPORT_SUBMITTERS.includes(user.role);
+  const [data, all, overview, checks] = await Promise.all([
     api<FieldReportPage>(`/field-reports?${query}`),
     api<FieldReportPage>("/field-reports?limit=1"),
     api<Overview>("/overview"),
+    canSubmit
+      ? api<RequestForWorkers[]>("/evidence-requests/open")
+      : Promise.resolve([] as RequestForWorkers[]),
   ]);
 
   const ownOnly = user.role === "field_worker";
-  const canSubmit = REPORT_SUBMITTERS.includes(user.role);
   const lastPage = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
   const current: Params = { flagged: flagged ? "1" : "", q };
 
@@ -106,6 +112,7 @@ export default async function FieldReportsPage({
         }
       />
       <PageBody>
+        <ChecksRequested requests={checks} />
         <StatTiles>
           <StatTile
             icon={ClipboardList}

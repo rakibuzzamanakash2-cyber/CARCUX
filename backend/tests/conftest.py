@@ -63,7 +63,7 @@ def _clean_tables(request) -> None:
         conn.execute(
             text(
                 "TRUNCATE copy_decisions, event_evidence, events, field_report_media, "
-                "field_reports, "
+                "field_reports, evidence_requests, "
                 "signals, ingest_runs, sources, suggestion_models, assessment_models, "
                 "audit_log, opinion_reports, incident_opinions, comment_reports, "
                 "statement_comments, statement_likes, "
