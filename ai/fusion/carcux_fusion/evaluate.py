@@ -58,11 +58,21 @@ def run(
     method_list=None,
     keep: dict | None = None,
     checkpoints=None,
+    parts: list[list[str]] | None = None,
+    copy_threshold: float | None = None,
 ) -> dict:
+    """`parts`: explicit folds (for example one per crisis) instead of `k` seeded ones.
+    `copy_threshold`: a fixed copy-detection threshold, for data without gold copies
+    to tune one on."""
     events = [eid for eid, e in data.events.items() if e.evidence]
+    if parts is not None:
+        keep_ids = set(events)
+        parts = [[e for e in p if e in keep_ids] for p in parts]
+        parts = [p for p in parts if p]
+        k = len(parts)
     if len(events) < k or len({data.events[e].occurred for e in events}) < 2:
         raise ValueError("need events that happened and events that did not, at least one per fold")
-    parts = folds(events, k, seed)
+    parts = parts if parts is not None else folds(events, k, seed)
     detector = dependence.Detector(data)
     first = {eid: data.first_seen(data.events[eid]) for eid in events}
     truth = {eid: int(data.events[eid].occurred) for eid in events}
@@ -71,7 +81,7 @@ def run(
     detected_by_fold, detection = [], []
     for f, test in enumerate(parts):
         train = [e for p, part in enumerate(parts) if p != f for e in part]
-        threshold = detector.tune(train)
+        threshold = copy_threshold if copy_threshold is not None else detector.tune(train)
         detected_by_fold.append(detector.detect(events, threshold))
         detection.append(
             {"threshold": threshold, **dependence.score(detected_by_fold[-1], data, test)}

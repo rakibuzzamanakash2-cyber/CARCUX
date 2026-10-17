@@ -263,6 +263,54 @@ What this supports, on simulated data:
 
 **Caveats.** These are simulated data from our own generator, whose injected rumours are social-heavy by design. B7 is our implementation from the papers, not the authors' code. Real data is the next test: PHEME veracity and RumourEval 2019, then CARCUX-BD.
 
+### Real data, first run: PHEME rumour stories (October 2026)
+
+The first test on real data (`pheme.py`), recorded as it came out, before any change. The results are in `results/pheme-first-run/`.
+
+- **Data.**
+  - PHEME (Kochkina, Liakata and Zubiaga 2018): Twitter rumour threads from 9 crises, which journalists grouped into stories and labelled true, false or unverified.
+  - A story is an event, every tweet is an observation, and its author is the source. Twitter's `verified` flag is the source type.
+  - Unverified stories are left out of the true-or-false test.
+  - Stances (support +1, deny −1, query and comment no vote) come from RumourEval 2019 (Gorrell et al. 2019).
+- **Evaluation.**
+  - Leave one crisis out: each crisis's stories are judged by methods that learned only from the other crises.
+  - The copy-detection threshold is fixed at 0.8 before any run, since PHEME has no copy labels to tune it on.
+  - Tweet text stays in memory; nothing writes tweets to disk.
+
+**Gold stances** (`--stance gold`): 91 stories (61 true), 821 voting tweets, 674 sources, only 36 of them in two or more stories. No method beats majority voting.
+
+| Final checkpoint | Brier | ECE | AUC |
+|---|---|---|---|
+| majority | 0.207 | 0.080 | 0.672 |
+| B7 (`socialsensing-dep-nosilence`) | 0.227 | 0.056 | 0.339 |
+| proposed (`reliability-dep`) | 0.231 | 0.224 | 0.691 |
+
+At T+1h majority is significantly better than the proposed method (p = 0.029); at other checkpoints the difference is not significant.
+
+**Predicted stances** (`--stance model`): every tweet of every story, with stance from a TF-IDF logistic regression. Each crisis's tweets get stances from a classifier that never saw that crisis's labels, and veracity is never used. The classifier's cross-crisis macro-F1 is 0.46 on 5,067 gold tweets, but F1 for denials is only 0.15. That gives 127 stories (82 true), 5,470 voting tweets, 3,854 sources, of which 350 appear in two or more stories.
+
+| Final checkpoint | Brier | ECE | AUC |
+|---|---|---|---|
+| majority | **0.227** | 0.075 | 0.560 |
+| B7 (`socialsensing-dep-nosilence`) | 0.236 | 0.067 | 0.449 |
+| B7 with training labels (`-sup`) | 0.340 | 0.336 | 0.514 |
+| proposed (`reliability-dep`) | 0.315 | 0.302 | 0.572 |
+
+The proposed method is significantly worse than majority voting in Brier score at every checkpoint (p ≤ 0.01), with about the same AUC.
+
+What this says, plainly:
+
+- **On real rumour data, the simulator's advantage did not carry over.** No method ranks true above false stories much better than chance (AUC 0.45–0.69). The proposed method's probabilities are the worst calibrated.
+- **Why it is overconfident.** 65 % of its probabilities fall below 0.05 or above 0.95. It sums every vote as if each were an independent witness. PHEME stories carry about 40 votes each (about 6 in the simulator), and replies in one conversation are not independent of each other. So the scores grow with volume, and a calibration fitted on other crises cannot correct them.
+- **Why the signal is weak.** True stories get 83 % supporting votes and false stories 77 %. The predicted stances miss most denials, which are the informative ones.
+- **Track records need repeat sources.** Only 9 % of sources speak in two or more stories, so per-source reliability has little to learn from.
+
+What follows (each change developed on PHEME, which is now development data, and tested once on data not yet used: the RumourEval 2019 Twitter test set):
+
+1. Treat replies in a conversation as dependent, like copies, rather than as independent witnesses.
+2. Bound how far volume alone can push the probability.
+3. Use a stronger stance model, especially for denials.
+
 ## Baselines
 
 Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), an LLM given all observations (B6, `llm.py`), and social-sensing truth discovery with source dependence (B7, `social.py`); results above.
@@ -272,6 +320,6 @@ Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
 - **B6, next steps:** more seeds; a larger model (e.g. on Colab); few-shot examples or source track records in the prompt (an LLM-plus-reliability hybrid); real data on a local model.
-- **Real-data runs on public sets:** PHEME veracity (9 crisis events, true/false/unverified) and RumourEval 2019 (gold stances), leave-one-event-out, against B3–B7.
+- **Real data:** first PHEME run done (above). Next, the three changes listed there, developed on PHEME and tested once on the RumourEval 2019 Twitter test set.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: done as assessment suggestions (`backend/app/services/assess.py`) with copy detection (`backend/app/services/copies.py`; stricter thresholds than here, and copies dropped rather than a second channel until real data can learn its weight); see the backend README.
