@@ -25,6 +25,7 @@ from carcux_fusion.data import Dataset, load
 
 CHECKPOINTS = [("T+1h", 1), ("T+6h", 6), ("T+24h", 24), ("final", 24 * 7)]
 PROPOSED = "reliability-dep"
+INNER_FOLDS = 5
 REPORTED = ["brier", "ece", "accuracy", "auc"]
 
 
@@ -58,11 +59,25 @@ def run(
     method_list=None,
     keep: dict | None = None,
     checkpoints=None,
+    parts: list[list[str]] | None = None,
+    copy_threshold: float | None = None,
+    test_folds: list[int] | None = None,
 ) -> dict:
+    """`parts`: explicit folds (for example one per crisis) instead of `k` seeded ones.
+    `copy_threshold`: a fixed copy-detection threshold, for data without gold copies
+    to tune one on. `test_folds`: only these folds are judged (for a held-out test set:
+    the other folds are training data only); scores cover their events alone."""
     events = [eid for eid, e in data.events.items() if e.evidence]
+    if parts is not None:
+        keep_ids = set(events)
+        parts = [[e for e in p if e in keep_ids] for p in parts]
+        parts = [p for p in parts if p]
+        k = len(parts)
     if len(events) < k or len({data.events[e].occurred for e in events}) < 2:
         raise ValueError("need events that happened and events that did not, at least one per fold")
-    parts = folds(events, k, seed)
+    parts = parts if parts is not None else folds(events, k, seed)
+    tested = list(range(len(parts))) if test_folds is None else list(test_folds)
+    scored = [e for f in tested for e in parts[f]]
     detector = dependence.Detector(data)
     first = {eid: data.first_seen(data.events[eid]) for eid in events}
     truth = {eid: int(data.events[eid].occurred) for eid in events}
@@ -71,7 +86,7 @@ def run(
     detected_by_fold, detection = [], []
     for f, test in enumerate(parts):
         train = [e for p, part in enumerate(parts) if p != f for e in part]
-        threshold = detector.tune(train)
+        threshold = copy_threshold if copy_threshold is not None else detector.tune(train)
         detected_by_fold.append(detector.detect(events, threshold))
         detection.append(
             {"threshold": threshold, **dependence.score(detected_by_fold[-1], data, test)}
@@ -85,6 +100,8 @@ def run(
         "gold_copies": len(data.dependences),
         "folds": k,
         "seed": seed,
+        "judged": len(scored),
+        "judged_happened": sum(truth[e] for e in scored),
         "detection": _mean_detection(detection),
         "checkpoints": {},
     }
@@ -93,32 +110,38 @@ def run(
         preds = {m.name: {} for m in method_list}
         raws: dict[str, list[dict]] = {m.name: [] for m in method_list}
         for f, test in enumerate(parts):
+            if f not in tested:
+                continue
             train = [e for p, part in enumerate(parts) if p != f for e in part]
             for m in method_list:
-                deps = {"gold": data.dependences, "detected": detected_by_fold[f]}.get(
-                    m.uses_deps or "", {}
-                )
+                links = {} if m.ignore_structure else data.structure
+                deps = {
+                    "gold": {**links, **data.dependences},
+                    "detected": {**links, **detected_by_fold[f]},
+                }.get(m.uses_deps or "", {})
+                calib = _out_of_fold(m, data, train, events, cutoffs, deps, seed)
                 m.fit(data, train, cutoffs, deps)
                 raw = m.raw(data, events, cutoffs, deps)
                 raws[m.name].append(raw)
-                cal = M.Platt().fit([raw[e] for e in train], [truth[e] for e in train])
+                calib = calib or raw
+                cal = M.Platt().fit([calib[e] for e in train], [truth[e] for e in train])
                 for e, p in zip(test, cal.predict([raw[e] for e in test]), strict=True):
                     preds[m.name][e] = float(p)
-        y = [truth[e] for e in events]
+        y = [truth[e] for e in scored]
         table = {}
         for m in method_list:
-            p = [preds[m.name][e] for e in events]
+            p = [preds[m.name][e] for e in scored]
             table[m.name] = metrics.score(p, y).as_dict()
             table[m.name]["reliability"] = metrics.reliability(np.array(p), np.array(y))
-        clean = [e for e in events if not data.events[e].injected]
+        clean = [e for e in scored if not data.events[e].injected]
         clean_table = None
-        if len(clean) < len(events) and len({truth[e] for e in clean}) == 2:
+        if len(clean) < len(scored) and len({truth[e] for e in clean}) == 2:
             yc = [truth[e] for e in clean]
             clean_table = {
                 m.name: metrics.score([preds[m.name][e] for e in clean], yc).as_dict()
                 for m in method_list
             }
-        loss = {m: [(preds[m][e] - truth[e]) ** 2 for e in events] for m in preds}
+        loss = {m: [(preds[m][e] - truth[e]) ** 2 for e in scored] for m in preds}
         comparisons = {
             other: paired_bootstrap(loss[other], loss[PROPOSED], seed=seed)
             for other in preds
@@ -137,6 +160,26 @@ def run(
     if keep is not None:
         keep.update(folds=parts, detected=detected_by_fold, events=events)
     return result
+
+
+def _out_of_fold(m, data, train, events, cutoffs, deps, seed, k: int = INNER_FOLDS):
+    """For a method that learns from outcomes: each training event's score from a model
+    fitted without it (inner folds), so the calibration is fitted on scores like the
+    ones it will see on test events. Fitting it on in-sample scores makes it trust them
+    too much wherever the method can memorise its training events, which happens when
+    most sources speak about one event only (the first real-data run). None for
+    unsupervised methods, whose in-sample scores are already honest."""
+    if not m.supervised or len(train) < k:
+        return None
+    out: dict[str, object] = {}
+    for inner in folds(train, k, seed):
+        rest = [e for e in train if e not in set(inner)]
+        if len({data.events[e].occurred for e in rest}) < 2:
+            continue
+        m.fit(data, rest, cutoffs, deps)
+        raw = m.raw(data, events, cutoffs, deps)
+        out.update({e: raw[e] for e in inner})
+    return out if len(out) == len(train) else None
 
 
 def _mean_detection(rows: list[dict]) -> dict:

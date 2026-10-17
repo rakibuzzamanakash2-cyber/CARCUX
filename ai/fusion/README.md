@@ -96,6 +96,8 @@ The first version of the sweep made learned-reliability methods look *better* as
 
 ### RQ4: contamination 0–60 % (3 seeds, 120 seed events, 5-fold CV, generator 0.2)
 
+All simulated tables below were rerun in October 2026 with calibration fitted on out-of-fold scores for every method that learns from outcomes (see "Development on PHEME" below). Unsupervised methods are unchanged; the learned-reliability rows moved by at most 0.01.
+
 Final Brier score on the **clean events** (lower is better; 0.25 is a coin flip; seed-to-seed spread mostly ≤ 0.02):
 
 | Method | 0 % | 10 % | 20 % | 30 % | 40 % | 50 % | 60 % |
@@ -104,18 +106,20 @@ Final Brier score on the **clean events** (lower is better; 0.25 is a coin flip;
 | B4 equal | 0.131 | 0.141 | 0.170 | 0.216 | 0.270 | 0.335 | 0.391 |
 | B5 truthfinder | 0.128 | 0.139 | 0.167 | 0.214 | 0.269 | 0.329 | 0.326 |
 | truthfinder-dep | 0.069 | 0.074 | 0.089 | 0.111 | 0.143 | 0.178 | 0.328 |
-| reliability (copies counted) | 0.095 | 0.094 | 0.090 | 0.084 | 0.069 | 0.067 | 0.073 |
-| reliability-dedup (copies dropped) | 0.074 | 0.076 | 0.080 | 0.102 | 0.102 | 0.112 | 0.114 |
-| **reliability-dep (proposed)** | **0.077** | **0.079** | **0.083** | **0.090** | **0.078** | **0.071** | **0.083** |
-| reliability-oracle (gold copies) | 0.077 | 0.078 | 0.081 | 0.089 | 0.080 | 0.069 | 0.081 |
+| B7 social sensing (`-dep-nosilence`) | 0.077 | 0.087 | 0.091 | 0.107 | 0.124 | 0.147 | 0.177 |
+| B7 with training labels (`-sup`) | 0.063 | 0.074 | 0.084 | 0.117 | 0.136 | 0.167 | 0.205 |
+| reliability (copies counted) | 0.092 | 0.090 | 0.089 | 0.082 | 0.065 | 0.062 | 0.070 |
+| reliability-dedup (copies dropped) | 0.068 | 0.069 | 0.075 | 0.094 | 0.095 | 0.104 | 0.107 |
+| **reliability-dep (proposed)** | **0.071** | **0.070** | **0.078** | **0.085** | **0.069** | **0.064** | **0.066** |
+| reliability-oracle (gold copies) | 0.071 | 0.069 | 0.077 | 0.084 | 0.069 | 0.063 | 0.068 |
 
-At T+6h the picture is the same, with higher errors (B3 0.149 → 0.365; proposed 0.135 → 0.164). Copy detection F1 on held-out events: 0.99. Generator 0.1 gave the same rows for every method that ignores copies, and differences of at most 0.03 for the others: copies now also repeat their origin's details, which makes them slightly easier to spot.
+At T+6h the picture is the same, with higher errors (B3 0.149 → 0.365; proposed 0.121 → 0.153). Copy detection F1 on held-out events: 0.99. Generator 0.1 gave the same rows for every method that ignores copies, and differences of at most 0.03 for the others: copies now also repeat their origin's details, which makes them slightly easier to spot.
 
 What this supports, on simulated data:
 
-- **RQ4:** methods that treat every item as an independent, equally trustworthy vote degrade fast; by 40 % contamination they are worse than a coin flip on the very same events. Counting copies once (`truthfinder-dep`) roughly halves the error up to 50 % but collapses by 60 %. Learning which sources have been right before keeps the error below 0.11 across the whole range.
+- **RQ4:** methods that treat every item as an independent, equally trustworthy vote degrade fast; by 40 % contamination they are worse than a coin flip on the very same events. Counting copies once (`truthfinder-dep`) roughly halves the error up to 50 % but collapses by 60 %. Learning which sources have been right before keeps the error below 0.09 across the whole range.
 - **RQ2, without labels:** dependence modelling matters a lot (`truthfinder-dep` vs `truthfinder`).
-- **RQ2, with learned reliability:** the effect is mixed. Dropping copies helps on clean data (0.074 vs 0.095) but hurts under heavy contamination (0.112 vs 0.073), because who amplifies a claim is itself evidence. Keeping copies as a separate channel (the proposed model) gets most of both, but plain counting is still slightly better at 50–60 %. Detected dependences are as good as gold ones here.
+- **RQ2, with learned reliability:** the effect is mixed. Dropping copies helps on clean data (0.068 vs 0.092) but hurts under heavy contamination (0.107 vs 0.070), because who amplifies a claim is itself evidence. Keeping copies as a separate channel (the proposed model) gets most of both: close to dropping them on clean data, and the best of the three at 60 % (0.066), with plain counting slightly better at 50 % (0.062 vs 0.064). Detected dependences are as good as gold ones here.
 
 ### RQ3: does explicit conflict detection reduce wrong assessments?
 
@@ -123,16 +127,16 @@ Six-label assessment against the gold checkpoint labels (3 seeds, 120 seed event
 
 | Final checkpoint | 0 % | 30 % | 60 % |
 |---|---|---|---|
-| **Wrongly called verified**, probability only | 30.6 % | 20.1 % | 12.8 % |
-| **Wrongly called verified**, with conflict detection | **6.7 %** | **4.7 %** | **5.7 %** |
-| Wrongly called verified, annotated conflicts | 6.7 % | 4.7 % | 5.7 % |
-| Macro-F1, probability only | 0.434 | 0.406 | 0.301 |
-| Macro-F1, with conflict detection | **0.593** | **0.580** | **0.460** |
-| Macro-F1, annotated conflicts | 0.596 | 0.582 | 0.462 |
+| **Wrongly called verified**, probability only | 27.5 % | 19.3 % | 12.6 % |
+| **Wrongly called verified**, with conflict detection | **4.2 %** | **4.2 %** | **5.5 %** |
+| Wrongly called verified, annotated conflicts | 4.2 % | 4.2 % | 5.5 % |
+| Macro-F1, probability only | 0.427 | 0.429 | 0.348 |
+| Macro-F1, with conflict detection | **0.588** | **0.606** | **0.507** |
+| Macro-F1, annotated conflicts | 0.591 | 0.608 | 0.508 |
 | Macro-F1, majority vote, probability only | 0.229 | 0.202 | 0.219 |
-| F1 on "partially verified", with conflict detection | 0.848 | 0.891 | 0.843 |
+| F1 on "partially verified", with conflict detection | 0.852 | 0.910 | 0.829 |
 
-At T+6h: wrongly verified 24.2 % → 8.3 % at 0 %, 11.3 % → 7.8 % at 60 %.
+At T+6h: wrongly verified 23.1 % → 8.9 % at 0 %, 8.9 % → 7.7 % at 60 %.
 
 Details right (an estimate matching the truth; final checkpoint, all levels within 0.01):
 
@@ -145,7 +149,7 @@ Details right (an estimate matching the truth; final checkpoint, all levels with
 
 What this supports, on simulated data:
 
-- **RQ3: yes, for the costly error.** Without conflict detection, an event whose details credible sources dispute is called "verified"; with it, events wrongly called verified fall from 13–31 % to about 5–7 % at every contamination level. Detected disputes do as well as the annotated ones.
+- **RQ3: yes, for the costly error.** Without conflict detection, an event whose details credible sources dispute is called "verified"; with it, events wrongly called verified fall from 13–28 % to about 4–6 % at every contamination level. Detected disputes do as well as the annotated ones.
 - The macro-F1 gain is partly by construction: without conflict detection the system cannot say "partially verified" at all. The wrongly-verified rate is the fair comparison.
 - **Counting each copy cascade once gets details right more often** than trusting the first report or counting every item; weighting by source reliability does not add to that here (the reliability is learned on whether events happened, not on details).
 - Contamination in this simulator attacks whether events happened, not their details (injected items carry no details for real events), so detail accuracy does not move with contamination. Contaminated details are a gap to close.
@@ -171,13 +175,13 @@ What each assigned label meant (final checkpoint, proposed model with conflict d
 
 | Label | 0 % | 30 % | 60 % |
 |---|---|---|---|
-| verified | 139 / 0.99 / 0.97 | 145 / 0.98 / 0.95 | 172 / 0.99 / 0.95 |
-| partially verified | 108 / 1.00 / 1.00 | 87 / 1.00 / 1.00 | 73 / 0.99 / 1.00 |
-| conflicting | 38 / 0.55 / 0.61 | 47 / 0.49 / 0.70 | 26 / 0.41 / 0.69 |
-| unverified | 26 / 0.72 / 0.62 | 98 / 0.37 / 0.27 | 66 / 0.39 / 0.41 |
-| refuted | 49 / 0.04 / 0.22 | 153 / 0.01 / 0.06 | 587 / 0.00 / 0.02 |
+| verified | 124 / 0.98 / 0.97 | 138 / 0.96 / 0.95 | 172 / 0.98 / 0.96 |
+| partially verified | 105 / 0.99 / 1.00 | 88 / 0.98 / 1.00 | 75 / 0.98 / 1.00 |
+| conflicting | 58 / 0.65 / 0.62 | 61 / 0.49 / 0.64 | 35 / 0.38 / 0.57 |
+| unverified | 35 / 0.74 / 0.66 | 120 / 0.34 / 0.23 | 128 / 0.28 / 0.23 |
+| refuted | 38 / 0.09 / 0.24 | 123 / 0.02 / 0.07 | 514 / 0.01 / 0.01 |
 
-Predicting whether the event happened, held-out Brier at final, 0 / 30 / 60 %: the probability alone 0.076 / 0.081 / 0.042; plus "credible reports on both sides" 0.078 / 0.077 / 0.041; plus also the number of independent reports 0.073 / **0.056** / **0.032**.
+Predicting whether the event happened, held-out Brier at final, 0 / 30 / 60 %: the probability alone 0.079 / 0.080 / 0.037; plus "credible reports on both sides" 0.083 / 0.076 / 0.036; plus also the number of independent reports 0.080 / **0.056** / **0.026**.
 
 ![Reliability diagrams at the final checkpoint](figures/reliability-final.png)
 
@@ -189,7 +193,7 @@ What this supports, on simulated data:
 - **Platt is the right default.** Temperature is close; isotonic matches it on ECE but its steps give 0 % or 100 % on small training sets, so its log loss is two to three times worse.
 - **The real danger is drift.** A calibrator fitted before a contamination wave becomes overconfident when the wave arrives (bias up to +0.14, ECE doubled or worse). In operation, calibration has to be refitted on recent labelled events, and the bias watched.
 - **Calibrate per checkpoint.** One calibrator fitted on final evidence is underconfident early (bias about −0.05 at T+6h) and loses on log loss.
-- **The labels mostly mean what they say.** "Verified" happened 95–97 % of the time. There are two weak spots. "Conflicting" events happened more often than their probability says (61–70 % against 41–55 %). And at low contamination, "refuted" events still happened 22 % of the time, because there are few false events to learn refutation from.
+- **The labels mostly mean what they say.** "Verified" happened 95–97 % of the time. There are two weak spots. "Conflicting" events happened more often than their probability says under contamination (64 and 57 % against 49 and 38 % at 30 and 60 %). And at low contamination, "refuted" events still happened 24 % of the time, because there are few false events to learn refutation from.
 - **Six labels vs one number: the label logic adds little to predicting occurrence.** "Credible reports on both sides" barely moves the Brier score. The gain comes from the number of independent reports, which the reliability score under-uses. This suggests a feature for the fusion model, not an argument for labels. The case for the labels rests on RQ3, the costly "verified" mistakes they prevent, not on better occurrence probabilities.
 
 **Caveats.** All of RQ3's caveats apply. In addition:
@@ -204,11 +208,11 @@ What this supports, on simulated data:
 | | 0 % T+6h | 0 % final | 30 % T+6h | 30 % final | 60 % T+6h | 60 % final |
 |---|---|---|---|---|---|---|
 | majority | 0.144 | 0.114 | 0.253 | 0.253 | 0.200 | 0.208 |
-| **reliability-dep (proposed)** | **0.133** | 0.104 | **0.114** | **0.053** | **0.076** | **0.038** |
-| LLM, calibrated | 0.152 | **0.100** | 0.231 | 0.257 | 0.195 | 0.223 |
+| **reliability-dep (proposed)** | **0.100** | **0.059** | **0.111** | **0.052** | **0.074** | **0.039** |
+| LLM, calibrated | 0.152 | 0.100 | 0.231 | 0.257 | 0.195 | 0.223 |
 | LLM, as stated | 0.243 | 0.158 | 0.396 | 0.300 | 0.545 | 0.439 |
 
-Proposed vs calibrated LLM: no difference at 0 % (p = 0.59, 0.94); proposed better at 30 % and 60 % (p ≤ 0.001). Without stance (30 %): calibrated LLM 0.210 at T+6h, 0.253 at final, about the same.
+Proposed vs calibrated LLM: at 0 %, proposed better at T+6h (p = 0.019) and no significant difference at final (p = 0.22); proposed better at 30 % and 60 % (p ≤ 0.001). (Before the calibration correction the proposed model's 0 % numbers were 0.133 and 0.104, tied with the LLM.) Without stance (30 %): calibrated LLM 0.210 at T+6h, 0.253 at final, about the same.
 
 Its own six labels, wrongly called verified (final checkpoint): 20 % at 0 %, 29 % at 30 %, 44 % at 60 % (at T+1h: 47 %, 59 %, 71 %); macro-F1 0.22–0.24. With conflict detection, the same error is 5–7 % on the RQ3 sets.
 
@@ -225,7 +229,7 @@ At 60 %: injected rumours called verified 66 %, real events 31 %.
 What this supports, on simulated data:
 
 - **An LLM reading every report is fooled by rumour pile-ups.** Injected rumours arrive as several agreeing reports, almost all from social accounts, with almost no denials; the model calls most of them verified ("Multiple sources report consistent details…"), and it holds real events, which usually carry a denial or two, to a stricter standard. It counts heads and does not weigh who is speaking, although every report's source type is in the prompt. Its stated probabilities therefore rank events backwards under contamination (AUC 0.22–0.30 at T+6h); calibration on training folds flips the scale but recovers only majority-vote level.
-- **Without contamination it is as good as the proposed model**; the gap opens exactly where source reliability and copy cascades matter, which is the paper's argument.
+- **Without contamination it is close to the proposed model** (no significant difference at the final checkpoint); the gap opens where source reliability and copy cascades matter, which is the paper's argument.
 - The stated probabilities agree with its labels ("refuted" averages 0.07, "verified" 0.85), so this is not the model misreading the question; the prompt was not changed after seeing results.
 
 **Caveats.** One 7B model, 4-bit, one seed per level, 60 seed events: indicative, not a full comparison (a stronger or larger model, few-shot examples, or source track records in the prompt may close part of the gap, and are worth testing). The simulated reports are templated, and the injected rumours are social-heavy by design of the simulator; real rumours may look different. The model answers are kept in `results/b6-qwen2.5-7b/llm-cache.jsonl`, so these tables can be reproduced without a GPU (below).
@@ -245,23 +249,126 @@ Pooled over 5 seeds per level (600 events each, 5-fold CV), with a paired bootst
 
 | Contamination | proposed | B7 (`-dep-nosilence`) | difference, p | B7 with training labels (`-sup`) | difference, p |
 |---|---|---|---|---|---|
-| 0 % | 0.071 | 0.076 | −0.005, p = 0.44 | 0.062 | +0.009, p = 0.10 |
-| 10 % | 0.093 | 0.092 | +0.001, p = 0.95 | 0.095 | −0.002, p = 0.78 |
-| 20 % | 0.080 | 0.087 | −0.007, p = 0.28 | 0.099 | −0.019, p = 0.003 |
-| 30 % | 0.077 | 0.089 | −0.012, p = 0.09 | 0.102 | −0.025, p < 0.001 |
-| 40 % | 0.060 | 0.087 | −0.027, p < 0.001 | 0.101 | −0.042, p < 0.001 |
-| 50 % | 0.043 | 0.085 | −0.042, p < 0.001 | 0.095 | −0.052, p < 0.001 |
-| 60 % | 0.036 | 0.087 | −0.051, p < 0.001 | 0.093 | −0.056, p < 0.001 |
+| 0 % | 0.066 | 0.076 | −0.010, p = 0.07 | 0.059 | +0.007, p = 0.06 |
+| 10 % | 0.087 | 0.092 | −0.005, p = 0.46 | 0.088 | −0.001, p = 0.87 |
+| 20 % | 0.080 | 0.087 | −0.008, p = 0.20 | 0.094 | −0.015, p = 0.002 |
+| 30 % | 0.074 | 0.089 | −0.016, p = 0.014 | 0.105 | −0.031, p < 0.001 |
+| 40 % | 0.056 | 0.087 | −0.031, p < 0.001 | 0.106 | −0.050, p < 0.001 |
+| 50 % | 0.042 | 0.085 | −0.043, p < 0.001 | 0.101 | −0.059, p < 0.001 |
+| 60 % | 0.034 | 0.087 | −0.053, p < 0.001 | 0.097 | −0.063, p < 0.001 |
 
-At T+6h the picture is the same, with one exception: at 10 % unsupervised B7 is slightly *better* (+0.014, p = 0.045).
+At T+6h: tied with B7 from 0 to 30 % (p ≥ 0.23), better from 40 % (p ≤ 0.004). (Rerun with the calibration correction; before it, B7 was slightly better at T+6h with 10 % contamination, p = 0.045. That difference is gone.)
 
 What this supports, on simulated data:
 
-- **With little contamination, the proposed method is no better than the strongest prior work.** The two are statistically tied from 0 % to 30 %, and given the same labels, B7 is slightly ahead on clean data (not significant). The paper must not claim superiority there.
-- **The advantage is robustness.** From 40 % contamination on, the proposed method is better at both checkpoints (p ≤ 0.05), and the gap grows with contamination: from 0.087 to 0.036 Brier at 60 %.
+- **With little contamination, the proposed method is no better than the strongest prior work.** The two are statistically tied from 0 % to 20 % (final) and 0 % to 30 % (T+6h), and given the same labels, B7 is slightly ahead on clean data (p = 0.06). The paper must not claim superiority there.
+- **The advantage is robustness.** From 30 % contamination at the final checkpoint and 40 % at T+6h, the proposed method is better (p ≤ 0.014), and the gap grows with contamination: 0.034 against 0.087 Brier at 60 %.
 - **It is not because the proposed method sees labels.** B7 given the same training labels does no better, and under contamination it does worse, so the difference comes from the model: the copy channel and source-type priors.
 
 **Caveats.** These are simulated data from our own generator, whose injected rumours are social-heavy by design. B7 is our implementation from the papers, not the authors' code. Real data is the next test: PHEME veracity and RumourEval 2019, then CARCUX-BD.
+
+### Real data, first run: PHEME rumour stories (October 2026)
+
+The first test on real data (`pheme.py`), recorded as it came out, before any change. The results are in `results/pheme-first-run/`.
+
+- **Data.**
+  - PHEME (Kochkina, Liakata and Zubiaga 2018): Twitter rumour threads from 9 crises, which journalists grouped into stories and labelled true, false or unverified.
+  - A story is an event, every tweet is an observation, and its author is the source. Twitter's `verified` flag is the source type.
+  - Unverified stories are left out of the true-or-false test.
+  - Stances (support +1, deny −1, query and comment no vote) come from RumourEval 2019 (Gorrell et al. 2019).
+- **Evaluation.**
+  - Leave one crisis out: each crisis's stories are judged by methods that learned only from the other crises.
+  - The copy-detection threshold is fixed at 0.8 before any run, since PHEME has no copy labels to tune it on.
+  - Tweet text stays in memory; nothing writes tweets to disk.
+
+**Gold stances** (`--stance gold`): 91 stories (61 true), 821 voting tweets, 674 sources, only 36 of them in two or more stories. No method beats majority voting.
+
+| Final checkpoint | Brier | ECE | AUC |
+|---|---|---|---|
+| majority | 0.207 | 0.080 | 0.672 |
+| B7 (`socialsensing-dep-nosilence`) | 0.227 | 0.056 | 0.339 |
+| proposed (`reliability-dep`) | 0.231 | 0.224 | 0.691 |
+
+At T+1h majority is significantly better than the proposed method (p = 0.029); at other checkpoints the difference is not significant.
+
+**Predicted stances** (`--stance model`): every tweet of every story, with stance from a TF-IDF logistic regression. Each crisis's tweets get stances from a classifier that never saw that crisis's labels, and veracity is never used. The classifier's cross-crisis macro-F1 is 0.46 on 5,067 gold tweets, but F1 for denials is only 0.15. That gives 127 stories (82 true), 5,470 voting tweets, 3,854 sources, of which 350 appear in two or more stories.
+
+| Final checkpoint | Brier | ECE | AUC |
+|---|---|---|---|
+| majority | **0.227** | 0.075 | 0.560 |
+| B7 (`socialsensing-dep-nosilence`) | 0.236 | 0.067 | 0.449 |
+| B7 with training labels (`-sup`) | 0.340 | 0.336 | 0.514 |
+| proposed (`reliability-dep`) | 0.315 | 0.302 | 0.572 |
+
+The proposed method is significantly worse than majority voting in Brier score at every checkpoint (p ≤ 0.01), with about the same AUC.
+
+What this says, plainly:
+
+- **On real rumour data, the simulator's advantage did not carry over.** No method ranks true above false stories much better than chance (AUC 0.45–0.69). The proposed method's probabilities are the worst calibrated.
+- **Why it is overconfident.** 65 % of its probabilities fall below 0.05 or above 0.95. It sums every vote as if each were an independent witness. PHEME stories carry about 40 votes each (about 6 in the simulator), and replies in one conversation are not independent of each other. So the scores grow with volume, and a calibration fitted on other crises cannot correct them.
+- **Why the signal is weak.** True stories get 83 % supporting votes and false stories 77 %. The predicted stances miss most denials, which are the informative ones.
+- **Track records need repeat sources.** Only 9 % of sources speak in two or more stories, so per-source reliability has little to learn from.
+
+### Development on PHEME, then one final test (October 2026)
+
+The plan was committed before development: `results/rumoureval-test/PLAN.md`. Development used PHEME only, with leave-one-crisis-out evaluation. The test then ran once, on data not used before.
+
+**What changed, and why.**
+
+1. **Calibration fitted on honest scores (a correction to the evaluation protocol, for every method).**
+   - The calibration was fitted on training events' scores. Those scores came from source records learned on the same events.
+   - When most sources speak about one event only, a source's "reliability" memorises that event's answer, and the calibration learns to trust it completely. That caused the first run's overconfidence.
+   - Training events now get out-of-fold scores (5 inner folds) for every method that learns from outcomes: the proposed model, its variants, and B7 `-sup`.
+   - Unsupervised methods are unchanged.
+   - This also changes the simulated results: every table below was rerun under it.
+2. **Replies are dependent.** A reply depends on the post that started its conversation, an observed fact recorded in `Dataset.structure`. Every dependence-aware method sees it, baselines included.
+3. **A better stance model.** Cue features (negations, "fake", questions, links, the source tweet's words) raise cross-crisis macro-F1 from 0.477 to 0.509. F1 for denials rises from 0.14 to 0.18.
+4. **Tried and dropped:** bounded (mean) aggregation; it was worse on PHEME.
+
+**Development result** (PHEME, 127 stories, leave one crisis out, final checkpoint; `results/pheme-development/`):
+
+| | Brier | ECE | AUC |
+|---|---|---|---|
+| majority | 0.235 | 0.076 | 0.501 |
+| TruthFinder (B5) | 0.231 | 0.086 | 0.530 |
+| B7 (`socialsensing-dep-nosilence`) | 0.240 | 0.052 | 0.387 |
+| proposed, without reply links | 0.240 | – | 0.466 |
+| **proposed (revised)** | **0.222** | 0.072 | **0.563** |
+
+The revised model is better than B5 dep, B7 and B7 `-sup` (p ≤ 0.03), and borderline better than majority (p = 0.06). Reply links are the change that matters: without them the model is no better than majority.
+
+**Final test, run once** (code frozen at commit `51600f2` before the run; `results/rumoureval-test/`):
+
+- **Data:** RumourEval 2019 English Twitter test threads (2017–18), each thread one event.
+- **Size:** 52 threads are true or false (22 true); 4 unverified ones are left out.
+- **Training:** every method learned on PHEME.
+- **Overlap:** only 3 of 125 test sources appear in more than one thread.
+
+| Final checkpoint | Brier, predicted stance | AUC, predicted stance | Brier, gold stance | AUC, gold stance |
+|---|---|---|---|---|
+| majority | 0.276 | 0.589 | **0.266** | **0.684** |
+| TruthFinder (B5) | **0.272** | **0.606** | 0.272 | 0.664 |
+| B7 | 0.284 | 0.467 | 0.284 | 0.510 |
+| B7 with labels | 0.294 | 0.591 | 0.295 | 0.548 |
+| proposed, first version | 0.279 | 0.537 | 0.280 | 0.626 |
+| **proposed (revised)** | 0.283 | 0.573 | 0.281 | 0.649 |
+
+What the test says, plainly:
+
+- **No method gives useful probabilities on this test set.** Every method calls every thread true (accuracy 0.42, the share of true threads), and every Brier score is worse than a constant 0.5 (0.25). PHEME is 65 % true stories, while this set is 42 % true, so calibration learned on PHEME points the wrong way. This base-rate shift dominates the result.
+- **The revised model is not better than the simple baselines here.**
+  - With predicted stance, TruthFinder is better in Brier (p = 0.017) and majority is not significantly different (p = 0.11).
+  - With gold stance, majority is better (p = 0.009).
+  - It is better than B7 with labels (p ≤ 0.001 at every checkpoint).
+- **On ranking (AUC), the revised model is first early on.** With predicted stance it ranks best at T+1h (0.64) and second at T+6h (0.62), but not at final.
+- **Source track records cannot help when sources do not recur,** and in this test they almost never do. The proposed model's design assumes repeated sources: field workers and regular outlets, as in CARCUX's own setting, not one-off Twitter accounts.
+
+**What this means for the paper.**
+
+- The simulated advantage under heavy contamination stands as a simulation result.
+- On real public rumour data, the proposed model is not better than simple baselines, and the paper must say so.
+- The real test of its central assumption, repeated sources with track records, is CARCUX-BD, where field workers and outlets recur by design.
+- A recalibration step for base-rate shift between crises is the most useful next change. It must be developed on PHEME and tested on new data, not on this test set again.
 
 ## Baselines
 
@@ -272,6 +379,6 @@ Majority vote (B3), equal-weight fusion (B4), established truth discovery (B5), 
 - **RQ3, next steps:** place and time disputes; contamination that attacks details; detail reliability learned per source.
 - **RQ5, next steps:** report volume as a fusion feature; a drift monitor that triggers recalibration; evidential (uncertainty-aware) outputs; whether analysts act better on six labels than on one probability (a user study in the pilot).
 - **B6, next steps:** more seeds; a larger model (e.g. on Colab); few-shot examples or source track records in the prompt (an LLM-plus-reliability hybrid); real data on a local model.
-- **Real-data runs on public sets:** PHEME veracity (9 crisis events, true/false/unverified) and RumourEval 2019 (gold stances), leave-one-event-out, against B3–B7.
+- **Real data:** first PHEME run, development and the final RumourEval 2019 test are done (above). Next: recalibration for base-rate shift between crises, developed on PHEME and tested on a new held-out set; real CARCUX-BD runs, where sources recur.
 - Real CARCUX-BD runs once stances and dependences are annotated.
 - In the product: done as assessment suggestions (`backend/app/services/assess.py`) with copy detection (`backend/app/services/copies.py`; stricter thresholds than here, and copies dropped rather than a second channel until real data can learn its weight); see the backend README.

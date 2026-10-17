@@ -1,0 +1,85 @@
+Commit: 51600f27d12e4bd7c9fcc18533e81f55fdc87060
+
+== predicted-stance: {"stories": 52, "true": 22, "false": 30, "observations": 141, "sources": 125, "sources_in_2plus_stories": 3, "crises": {"rumoureval-2019-test": 52}, "unverified threads": 4}
+pheme+rumoureval-test: 179 events (104 happened), 5721 observations, 0 gold copies, 2-fold CV (seed 0)
+copy detection on held-out events: precision 0.000, recall 1.000, F1 0.000, origin in the right cascade 0.000
+
+T+1h                      brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.277      0.189      0.423      0.597         -0.011 [-0.022, -0.000] p=0.042
+truthfinder               0.262      0.140      0.423      0.598         +0.004 [+0.000, +0.008] p=0.043
+socialsensing-dep-nosilence      0.265      0.145      0.423      0.461         +0.001 [-0.002, +0.004] p=0.554
+socialsensing-dep-nosilence-sup      0.270      0.159      0.423      0.494         -0.003 [-0.006, -0.001] p=0.004
+reliability-dep-nolinks      0.265      0.147      0.423      0.587         +0.001 [-0.001, +0.003] p=0.374
+reliability-dep           0.266      0.169      0.423      0.642                              (proposed)
+
+T+6h                      brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.282      0.203      0.423      0.584         -0.013 [-0.025, -0.001] p=0.035
+truthfinder               0.264      0.144      0.423      0.615         +0.005 [+0.001, +0.010] p=0.028
+socialsensing-dep-nosilence      0.264      0.141      0.423      0.467         +0.005 [-0.000, +0.011] p=0.070
+socialsensing-dep-nosilence-sup      0.270      0.162      0.423      0.409         -0.001 [-0.002, -0.000] p=0.013
+reliability-dep-nolinks      0.268      0.154      0.423      0.508         +0.002 [-0.001, +0.003] p=0.138
+reliability-dep           0.269      0.161      0.423      0.619                              (proposed)
+
+T+24h                     brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.281      0.199      0.423      0.580         +0.001 [-0.004, +0.005] p=0.754
+truthfinder               0.273      0.201      0.423      0.589         +0.009 [+0.002, +0.016] p=0.018
+socialsensing-dep-nosilence      0.285      0.203      0.423      0.467         -0.004 [-0.006, -0.001] p=0.001
+socialsensing-dep-nosilence-sup      0.297      0.229      0.423      0.591         -0.015 [-0.023, -0.006] p=0.001
+reliability-dep-nolinks      0.280      0.190      0.423      0.534         +0.002 [-0.001, +0.004] p=0.127
+reliability-dep           0.282      0.197      0.423      0.573                              (proposed)
+
+final                     brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.276      0.190      0.423      0.589         +0.007 [-0.001, +0.014] p=0.106
+truthfinder               0.272      0.201      0.423      0.606         +0.010 [+0.002, +0.017] p=0.017
+socialsensing-dep-nosilence      0.284      0.199      0.423      0.467         -0.001 [-0.003, +0.001] p=0.242
+socialsensing-dep-nosilence-sup      0.294      0.224      0.423      0.591         -0.012 [-0.019, -0.005] p=0.001
+reliability-dep-nolinks      0.279      0.188      0.423      0.537         +0.003 [-0.000, +0.006] p=0.063
+reliability-dep           0.283      0.199      0.423      0.573                              (proposed)
+
+Brier vs reliability-dep: its Brier minus the other method's; negative favours it.
+
+== gold-stance: {"stories": 50, "true": 21, "false": 29, "observations": 184, "sources": 166, "sources_in_2plus_stories": 2, "crises": {"rumoureval-2019-test": 50}, "unverified threads": 4, "stories without votes": 2}
+pheme+rumoureval-test: 177 events (103 happened), 5764 observations, 0 gold copies, 2-fold CV (seed 0)
+copy detection on held-out events: precision 0.000, recall 1.000, F1 0.000, origin in the right cascade 0.000
+
+T+1h                      brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.270      0.191      0.420      0.688         -0.003 [-0.015, +0.008] p=0.549
+truthfinder               0.262      0.160      0.420      0.569         +0.004 [+0.000, +0.008] p=0.036
+socialsensing-dep-nosilence      0.266      0.148      0.420      0.507         +0.001 [-0.003, +0.004] p=0.688
+socialsensing-dep-nosilence-sup      0.270      0.163      0.420      0.541         -0.004 [-0.007, -0.001] p=0.004
+reliability-dep-nolinks      0.265      0.150      0.420      0.627         +0.002 [-0.001, +0.004] p=0.186
+reliability-dep           0.266      0.189      0.420      0.619                              (proposed)
+
+T+6h                      brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.276      0.206      0.420      0.709         -0.007 [-0.020, +0.006] p=0.255
+truthfinder               0.263      0.147      0.420      0.653         +0.006 [+0.002, +0.011] p=0.008
+socialsensing-dep-nosilence      0.264      0.144      0.420      0.510         +0.004 [-0.001, +0.010] p=0.136
+socialsensing-dep-nosilence-sup      0.271      0.165      0.420      0.452         -0.002 [-0.004, -0.001] p=0.000
+reliability-dep-nolinks      0.267      0.157      0.420      0.619         +0.002 [-0.000, +0.004] p=0.105
+reliability-dep           0.269      0.180      0.420      0.645                              (proposed)
+
+T+24h                     brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.274      0.203      0.420      0.683         +0.007 [-0.000, +0.013] p=0.055
+truthfinder               0.272      0.173      0.420      0.648         +0.009 [+0.002, +0.016] p=0.014
+socialsensing-dep-nosilence      0.286      0.206      0.420      0.510         -0.005 [-0.009, -0.002] p=0.001
+socialsensing-dep-nosilence-sup      0.297      0.232      0.420      0.548         -0.017 [-0.026, -0.008] p=0.000
+reliability-dep-nolinks      0.280      0.193      0.420      0.633         +0.001 [-0.002, +0.004] p=0.621
+reliability-dep           0.281      0.200      0.420      0.638                              (proposed)
+
+final                     brier        ece   accuracy        auc                Brier vs reliability-dep
+--------------------------------------------------------------------------------------------------------
+majority                  0.266      0.194      0.420      0.684         +0.016 [+0.005, +0.027] p=0.009
+truthfinder               0.272      0.173      0.420      0.664         +0.010 [+0.002, +0.018] p=0.013
+socialsensing-dep-nosilence      0.284      0.202      0.420      0.510         -0.003 [-0.006, +0.000] p=0.080
+socialsensing-dep-nosilence-sup      0.295      0.227      0.420      0.548         -0.014 [-0.022, -0.007] p=0.000
+reliability-dep-nolinks      0.280      0.191      0.420      0.626         +0.002 [-0.002, +0.006] p=0.343
+reliability-dep           0.281      0.202      0.420      0.649                              (proposed)
+
+Brier vs reliability-dep: its Brier minus the other method's; negative favours it.

@@ -54,7 +54,7 @@ class SocialSensing(Method):
         self.silence = silence
         self.iterations = iterations
         self.smoothing = smoothing
-        self.supervised = supervised
+        self.supervised = supervised  # Method.supervised: cross-fitted calibration
         self.known: dict[str, bool] = {}
         self.name = "socialsensing-dep" if dependence else "socialsensing"
         if not silence:
