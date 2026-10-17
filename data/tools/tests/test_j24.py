@@ -250,3 +250,35 @@ def test_accounts_are_hashed_and_counted_never_named(tmp_path):
     from carcux_data.j24.extract import account_ref
 
     assert account_ref(SALT, "x", "Someone") == account_ref(SALT, "x", "someone")
+
+
+def test_a_fact_checkers_own_follow_us_links_are_left_out(tmp_path):
+    # SYNTHETIC: 12 posts that all end with the same "follow us" link, and one real
+    # spreader linked from two of them.
+    posts = []
+    for i in range(12):
+        html = '<p>body</p><a href="https://www.facebook.com/OurFactCheckPage">Follow us</a>'
+        if i < 2:
+            html += '<a href="https://www.facebook.com/spreaderpage/posts/1">post</a>'
+        posts.append({"id": 200 + i, "date_gmt": f"2024-07-{10 + i}T00:00:00",
+                      "link": f"https://example.org/{i}", "title": {"rendered": f"কোটা {i}"},
+                      "categories": [], "content": {"rendered": html}})  # fmt: skip
+
+    class Web(FakeWeb):
+        def __call__(self, url, headers):
+            if "/posts?" in url:
+                return Response(200, {"x-wp-totalpages": "1"}, json.dumps(posts).encode())
+            return super().__call__(url, headers)
+
+    result = run(tmp_path, [by_key("factwatch")], SALT, fetcher=fetcher(tmp_path, Web()),
+                 log=lambda m: None)  # fmt: skip
+    assert result.sites[0].template_links == 1
+    s = summarise(_load(tmp_path))
+    assert s["social_accounts"] == 1 and s["social_accounts_recurring"] == 1
+    restricted = (tmp_path / "restricted" / "social_links.jsonl").read_text("utf-8")
+    assert "OurFactCheckPage" not in restricted and "spreaderpage" in restricted
+
+
+def _load(tmp_path):
+    path = tmp_path / "factchecks.jsonl"
+    return [json.loads(x) for x in path.read_text("utf-8").splitlines()]
