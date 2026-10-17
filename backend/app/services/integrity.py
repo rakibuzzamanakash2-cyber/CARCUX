@@ -16,7 +16,7 @@ from app.integrity import account, checks
 from app.models.field_report import FieldReport, FieldReportMedia
 from app.models.signal import Signal
 from app.models.user import Role, User
-from app.services.media import CheckedPhoto, hamming
+from app.services.media import CheckedPhoto, photo_hashes, photo_match
 
 MAX_PLAUSIBLE_SPEED_KMH = 150.0  # faster than this between two reports is suspicious
 MIN_DISTANCE_FOR_TRAVEL_KM = 2.0  # ignore GPS jitter
@@ -25,7 +25,6 @@ OLD_OBSERVATION = timedelta(hours=24)  # offline queues are fine; a day is worth
 BURST_WINDOW = timedelta(minutes=10)
 BURST_COUNT = 10
 POOR_ACCURACY_M = 1000.0
-NEAR_DUPLICATE_BITS = 6  # dhash distance treated as "same photo"
 COPY_LOOKBACK = timedelta(days=7)  # public posts and reports to compare a report's words with
 COPY_LIMIT = 2000  # newest of each; enough at pilot scale
 ACCOUNT_LOOKBACK = timedelta(days=30)  # history the account score compares the last day with
@@ -95,20 +94,23 @@ def evaluate(
     if recent >= BURST_COUNT:
         flags.append({"code": "submission_burst", "detail": f"{recent + 1} reports in 10 minutes."})
 
-    # Reused photos: exact copies or near-duplicates of any earlier report's photo.
-    # Linear scan is fine at pilot scale; replace with an index when volume grows.
+    # Reused photos: exact copies, near-duplicates or mirrored copies of any earlier
+    # report's photo. Linear scan is fine at pilot scale; index it when volume grows.
     if photos:
-        known = db.execute(
-            select(FieldReportMedia.report_id, FieldReportMedia.sha256, FieldReportMedia.dhash)
-        ).all()
+        known = db.scalars(select(FieldReportMedia)).all()
         for i, photo in enumerate(photos, start=1):
-            for report_id, sha, dh in known:
-                if sha == photo.sha256 or hamming(dh, photo.dhash) <= NEAR_DUPLICATE_BITS:
-                    kind = "identical to" if sha == photo.sha256 else "near-identical to"
+            for m in known:
+                kind = (
+                    "identical"
+                    if m.sha256 == photo.sha256
+                    else photo_match(photo_hashes(photo), photo_hashes(m))
+                )
+                if kind:
+                    shown = "a mirrored copy of" if kind == "mirrored" else f"{kind} to"
                     flags.append(
                         {
                             "code": "photo_reused",
-                            "detail": f"Photo {i} is {kind} a photo in report {report_id}.",
+                            "detail": f"Photo {i} is {shown} a photo in report {m.report_id}.",
                         }
                     )
                     break

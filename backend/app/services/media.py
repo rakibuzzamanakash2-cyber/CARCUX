@@ -8,6 +8,8 @@ from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 
+from app.media_features import hashing
+
 # Only these formats are accepted. The type is decided by decoding the bytes,
 # never by the file name or the browser's Content-Type header.
 ALLOWED_FORMATS = {
@@ -18,6 +20,9 @@ ALLOWED_FORMATS = {
 
 # Refuse images that would take huge memory to decode ("decompression bombs").
 MAX_PIXELS = 40_000_000
+# Photos stored before perceptual hashes existed have only a dhash: compared by it alone,
+# at the old, stricter threshold.
+DHASH_ONLY_BITS = 6
 
 
 class InvalidMediaError(ValueError):
@@ -33,22 +38,41 @@ class CheckedPhoto:
     height: int
     sha256: str
     dhash: str
+    phash: str | None = None
+    dhash_mirrored: str | None = None
+    phash_mirrored: str | None = None
+
+    @property
+    def hashes(self) -> dict[str, str | None]:
+        return photo_hashes(self)
 
 
-def dhash(image: Image.Image) -> str:
-    """64-bit difference hash: robust to resizing and recompression, not to cropping."""
-    small = image.convert("L").resize((9, 8), Image.Resampling.LANCZOS)
-    pixels = list(small.tobytes())  # one byte per pixel in mode "L"
-    bits = 0
-    for row in range(8):
-        for col in range(8):
-            left, right = pixels[row * 9 + col], pixels[row * 9 + col + 1]
-            bits = (bits << 1) | (1 if left > right else 0)
-    return f"{bits:016x}"
+dhash = hashing.dhash
+hamming = hashing.hamming
 
 
-def hamming(a: str, b: str) -> int:
-    return (int(a, 16) ^ int(b, 16)).bit_count()
+def photo_hashes(photo) -> dict[str, str | None]:
+    """The hashes of a CheckedPhoto or a stored FieldReportMedia row."""
+    return {k: getattr(photo, k) for k in ("dhash", "phash", "dhash_mirrored", "phash_mirrored")}
+
+
+def photo_match(a: dict[str, str | None], b: dict[str, str | None]) -> str | None:
+    """How photo `a` matches photo `b`: "near-identical", "mirrored", or None.
+
+    With all four hashes on both sides: ai/media's rule (either hash, as is or mirrored,
+    at most hashing.SAME_IMAGE_BITS apart; README there). Otherwise the dhashes alone, at
+    DHASH_ONLY_BITS."""
+    if all(a.values()) and all(b.values()):
+        straight = min(hamming(a["dhash"], b["dhash"]), hamming(a["phash"], b["phash"]))
+        if straight <= hashing.SAME_IMAGE_BITS:
+            return "near-identical"
+        flipped = min(
+            hamming(a["dhash_mirrored"], b["dhash"]), hamming(a["phash_mirrored"], b["phash"])
+        )
+        return "mirrored" if flipped <= hashing.SAME_IMAGE_BITS else None
+    if a["dhash"] and b["dhash"] and hamming(a["dhash"], b["dhash"]) <= DHASH_ONLY_BITS:
+        return "near-identical"
+    return None
 
 
 def check_photo(data: bytes, max_bytes: int, label: str) -> CheckedPhoto:
@@ -65,7 +89,7 @@ def check_photo(data: bytes, max_bytes: int, label: str) -> CheckedPhoto:
             probe.verify()  # structural check without full decode
         with Image.open(io.BytesIO(data)) as image:
             image.load()
-            hash64 = dhash(image)
+            found = hashing.hashes(image)
     except InvalidMediaError:
         raise
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError):
@@ -81,7 +105,7 @@ def check_photo(data: bytes, max_bytes: int, label: str) -> CheckedPhoto:
         width=width,
         height=height,
         sha256=hashlib.sha256(data).hexdigest(),
-        dhash=hash64,
+        **found,
     )
 
 

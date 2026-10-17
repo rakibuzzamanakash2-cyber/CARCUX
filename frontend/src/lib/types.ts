@@ -285,6 +285,11 @@ export interface ReportMedia {
   width: number;
   height: number;
   sha256: string;
+  /** Text read in the photo after submission (Bangla and English). */
+  ocr_text: string | null;
+  ocr_confidence: number | null;
+  /** null while waiting to be read, "done", or "failed". */
+  ocr_status: "done" | "failed" | null;
 }
 
 /** A detail found automatically in a report's or a signal's text, with its words. */

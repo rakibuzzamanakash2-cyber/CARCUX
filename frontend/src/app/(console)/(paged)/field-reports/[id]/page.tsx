@@ -21,6 +21,7 @@ import {
   type CandidateEvent,
   type FieldReport,
   type ReportLink,
+  type ReportMedia,
   suggestionUsed,
 } from "@/lib/types";
 import { suggestionIntro } from "@/lib/suggestions";
@@ -185,6 +186,7 @@ export default async function FieldReportPage({
                           <p className="text-xs text-muted">
                             {m.width} × {m.height} px, {formatBytes(m.size_bytes)}
                           </p>
+                          <PhotoText media={m} />
                         </li>
                       );
                     })}
@@ -358,5 +360,29 @@ export default async function FieldReportPage({
         )}
       </PageBody>
     </>
+  );
+}
+
+/** The text read in a photo: signboards, notices, screenshots. Machine-read, so it is
+ * shown as a hint to check against the photo, never as what the worker wrote. */
+function PhotoText({ media }: { media: ReportMedia }) {
+  if (media.ocr_status === null) {
+    return <p className="text-xs text-muted">Text in the photo: not read yet.</p>;
+  }
+  if (media.ocr_status === "failed") {
+    return <p className="text-xs text-muted">Text in the photo: could not be read.</p>;
+  }
+  if (!media.ocr_text) {
+    return <p className="text-xs text-muted">No readable text in the photo.</p>;
+  }
+  return (
+    <div className="rounded-md border border-line bg-panel-2 px-3 py-2">
+      <p className="text-xs text-steel">
+        Text in the photo, read automatically
+        {media.ocr_confidence !== null && ` (confidence ${Math.round(media.ocr_confidence)}%)`}.
+        Check it against the photo.
+      </p>
+      <p className="mt-1 text-sm whitespace-pre-wrap">{media.ocr_text}</p>
+    </div>
   );
 }

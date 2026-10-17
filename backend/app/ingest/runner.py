@@ -253,11 +253,22 @@ def run_due(session_factory, settings: Settings, fetcher: Fetcher | None = None)
 
 
 def loop(session_factory, settings: Settings, *, tick_seconds: int = 60) -> None:
-    """Run due sources forever. Used by the ingest worker container."""
+    """Run due sources forever, and work on new field-report photos (hashes, text in
+    photos). Used by the ingest worker container."""
+    from app.services import photo_text
+
     log.info("ingest worker started")
     while True:
         try:
             run_due(session_factory, settings)
         except Exception:  # database restarting and the like: try again next tick
             log.exception("ingest tick failed")
+        try:
+            with session_factory() as db:
+                done = photo_text.process(db, settings)
+            if done.hashed or done.read or done.failed:
+                log.info("photos: hashed=%s read=%s failed=%s waiting=%s",
+                         done.hashed, done.read, done.failed, done.waiting)  # fmt: skip
+        except Exception:
+            log.exception("photo pass failed")
         time.sleep(tick_seconds)

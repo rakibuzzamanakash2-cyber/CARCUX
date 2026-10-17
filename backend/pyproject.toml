@@ -55,3 +55,5 @@ ignore = ["S101"]  # assert is fine in tests
 "tests/**" = ["S105", "S106"]  # test credentials are not secrets
 # A copy of ai/extraction (pattern tables), linted and formatted there.
 "app/extraction/claims.py" = ["E501"]
+# A copy of ai/media: runs the tesseract program with a fixed argument list, no shell.
+"app/media_features/ocr.py" = ["S603", "S607"]

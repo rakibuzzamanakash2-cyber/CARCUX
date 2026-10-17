@@ -38,14 +38,13 @@ from app.models.event import ABOUT_THE_EVENT, Event, EventEvidence, EvidenceRela
 from app.models.user import User
 from app.services import audit
 from app.services.details import headline_and_text
-from app.services.media import hamming
+from app.services.media import photo_hashes, photo_match
 from app.services.suggest import TextSpace
 
 TEXT_COPY = 0.7  # news and other signals
 FIELD_TEXT_COPY = 0.9  # field reports: first-hand unless near-verbatim
 MIN_TEXT = 40  # characters: shorter texts are not copies on wording alone
 ATTRIBUTION_FLOOR = 0.3
-PHOTO_BITS = 6
 _PUNCT = re.compile(r"[^\w\u0980-\u09FF]+")
 ATTRIBUTION = re.compile(
     r"according to|reported by|\bvia\b|\bRT\b|sharing:|shared from|"
@@ -68,7 +67,7 @@ class Item:
     source_name: str
     at: datetime
     text: str
-    photos: tuple[str, ...]
+    photos: tuple[dict, ...]  # each photo's hashes (services.media.photo_hashes)
     stance: int  # 1 says it happened, -1 denies it, 0 neither
 
 
@@ -101,7 +100,7 @@ def items(event: Event) -> list[Item]:
             name = f"Field worker {r.reporter.full_name}" if r.reporter else "Field worker"
             item = Item(
                 link.id, True, f"reporter:{r.reporter_id}", name, r.received_at, r.text,
-                tuple(m.dhash for m in r.media), STANCE.get(relation, 0),
+                tuple(photo_hashes(m) for m in r.media), STANCE.get(relation, 0),
             )  # fmt: skip
         else:
             s = link.signal
@@ -148,9 +147,7 @@ def detect(event: Event) -> dict[uuid.UUID, Copy]:
             continue
         sims = {i: space.dot(space.vectors[j], space.vectors[i]) for i in earlier}
         photo = [
-            i
-            for i in earlier
-            if any(hamming(a, b) <= PHOTO_BITS for a in item.photos for b in its[i].photos)
+            i for i in earlier if any(photo_match(a, b) for a in item.photos for b in its[i].photos)
         ]
         best = max(earlier, key=lambda i: sims[i])
         attributes = bool(ATTRIBUTION.search(item.text))
