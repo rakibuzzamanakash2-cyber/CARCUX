@@ -165,6 +165,26 @@ docker run --rm -e PYTHONUNBUFFERED=1 -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/ou
   sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 index --out /out && python -m carcux_data.j24 recurrence --out /out && python -m carcux_data.j24 claim-sheet --out /out"
 ```
 
+### Claim sheet in batches (for a helper)
+
+The claim sheet can be split into files of about 25 fact-checks, each with a bilingual
+"Start here" page, a progress counter, clickable links and a `maybe_same_as` hint for rows
+whose titles look like the same claim (a hint only; the person decides). Work already in
+the sheet is carried over. The helper gets one batch at a time and enters a pseudonym in
+`checked_by`. Whoever fills the claim sheet sees the fact-checkers' verdicts, so they are
+not a stance annotator for J24.
+
+```powershell
+# Split D:\CARCUX-J24\claim_sheet.xlsx into D:\CARCUX-J24\batches\batch_01.xlsx, …
+docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+  -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
+  sh -c "pip install -q --root-user-action=ignore openpyxl && python -m carcux_data.j24 split-sheet --out /out --checked-by annotator-C"
+# When the batches come back (saved into the same folder): join and check them
+docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+  -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
+  sh -c "pip install -q --root-user-action=ignore openpyxl && python -m carcux_data.j24 merge-sheets --out /out"
+```
+
 ### News collection
 
 Stage 1 lists each outlet's articles in the window from its sitemaps (outlets in
@@ -188,6 +208,12 @@ salt that has been shown in a chat or a screenshot is no longer private: make a 
 and index again.
 
 ## Changes
+
+- 18 October 2026, before any claim was restated: the claim sheet may be filled in batches
+  by a second person (pseudonym in `checked_by`), with a tool hint for possible duplicates
+  that the person confirms or ignores. Who filled each row is kept. The claim sheet's
+  filler is excluded from stance annotation, since they have seen the verdicts. Procedure
+  only.
 
 - 18 October 2026, before any stance label: "partially supports" is judged against the
   claim's own details, so annotators stay blind to the verdict (CARCUX-BD judges it against

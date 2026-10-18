@@ -81,6 +81,11 @@ HOW_TO = [
 ]  # fmt: skip
 
 
+def code(value) -> str:
+    """The English code of a choice: "false — মিথ্যা" and "false" are both "false"."""
+    return str(value).split(" — ", 1)[0].strip()
+
+
 def write_sheet(records: list[dict], path: Path) -> int:
     wb = Workbook()
     ws = wb.active
@@ -143,8 +148,10 @@ def check_sheet(path: Path) -> list[str]:
     for n, r in enumerate(rows[1:], start=2):
 
         def v(name, r=r):
-            x = r[col[name]]
-            return str(x).strip() if x is not None else ""
+            x = r[col[name]] if col[name] < len(r) else None
+            if x is None:
+                return ""
+            return code(x) if name in CHOICES else str(x).strip()
 
         if v("in_scope") != "yes":
             continue
