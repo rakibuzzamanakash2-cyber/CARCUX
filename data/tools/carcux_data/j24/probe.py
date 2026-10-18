@@ -72,11 +72,26 @@ class Probe:
     host: str
     works: list[tuple[str, int, int]] = field(default_factory=list)  # (pattern, day1, day2)
     notes: list[str] = field(default_factory=list)
+    front: str = ""  # what the front page gave: "200, 85 links", "403", …
+
+
+def _front(fetcher: Fetcher, host: str) -> str:
+    """The front page's status and article links: tells blocking apart from a missing page."""
+    try:
+        status, body, final = fetcher.get_page(f"https://{host}/")
+    except Disallowed:
+        return "robots"
+    except OSError as exc:
+        return type(exc).__name__
+    if status >= 400:
+        return str(status)
+    n = len(article_links(body.decode("utf-8", "replace"), final, host))
+    return f"{status}, {n} links"
 
 
 def probe_outlet(fetcher: Fetcher, key: str, host: str, *,
                  log: Callable[[str], None] = print) -> Probe:  # fmt: skip
-    result = Probe(key, host)
+    result = Probe(key, host, front=_front(fetcher, host))
     for name, template in PATTERNS:
         sets = []
         for d in DAYS:
@@ -93,6 +108,7 @@ def probe_outlet(fetcher: Fetcher, key: str, host: str, *,
                 break
             if status >= 400:
                 sets = None
+                result.notes.append(f"{name} {status}")
                 break
             text = body.decode("utf-8", "replace")
             if name.endswith("-api"):
@@ -100,11 +116,14 @@ def probe_outlet(fetcher: Fetcher, key: str, host: str, *,
                     json.loads(text)
                 except ValueError:
                     sets = None
+                    result.notes.append(f"{name} not-json")
                     break
             sets.append(article_links(text, final or url, host))
         if not sets or len(sets) < 2:
             continue
         a, b = sets
+        if not (len(a) >= 5 and len(b) >= 5 and len(a & b) <= 0.3 * min(len(a), len(b))):
+            result.notes.append(f"{name} 200 {len(a)}/{len(b)} links, {len(a & b)} same")
         if len(a) >= 5 and len(b) >= 5 and len(a & b) <= 0.3 * min(len(a), len(b)):
             result.works.append((name, len(a), len(b)))
             log(f"[{key}] {name} works ({len(a)} and {len(b)} links on two days)")
@@ -118,9 +137,10 @@ def report(results: list[Probe]) -> str:
     for r in sorted(results, key=lambda r: r.key):
         if r.works:
             best = ", ".join(f"{n} {a}/{b}" for n, a, b in r.works)
-            lines.append(f"{r.key:16} {r.host:28} OK   {best}")
+            lines.append(f"{r.key:16} {r.host:28} OK   {best} (front {r.front})")
         else:
-            lines.append(f"{r.key:16} {r.host:28} NONE {'; '.join(r.notes)[:120]}")
+            lines.append(f"{r.key:16} {r.host:28} NONE front {r.front}; "
+                         f"{'; '.join(r.notes)[:300]}")  # fmt: skip
     ok = sum(1 for r in results if r.works)
     lines += ["", f"{ok} of {len(results)} outlets have a working date listing."]
     return "\n".join(lines)

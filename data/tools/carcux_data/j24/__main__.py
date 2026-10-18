@@ -61,6 +61,13 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
     pr.add_argument("--parallel", type=int, default=8)
     pr.add_argument("--contact", help="an e-mail for the User-Agent")
+    pr.add_argument(
+        "--gdelt-day",
+        default="2024-08-02",
+        help="one day for which GDELT's article lists are read and compared",
+    )
+    pr.add_argument("--skip-pages", action="store_true", help="only the GDELT check")
+    pr.add_argument("--skip-gdelt", action="store_true", help="only the date pages")
     for name, help_ in (("news-list", "list the outlets' articles captured in the window"),
                         ("news-fetch", "read the listed articles")):  # fmt: skip
         n = sub.add_parser(name, help=help_)
@@ -203,14 +210,49 @@ def _probe(args) -> int:
         return probe_outlet(f, key, host, log=lambda m: print(m, flush=True))
 
     results = []
-    with ThreadPoolExecutor(max_workers=max(1, args.parallel)) as pool:
-        for done in as_completed([pool.submit(one, j) for j in jobs]):
-            results.append(done.result())
-    text = report(results)
+    text = ""
+    if not args.skip_pages:
+        with ThreadPoolExecutor(max_workers=max(1, args.parallel)) as pool:
+            for done in as_completed([pool.submit(one, j) for j in jobs]):
+                results.append(done.result())
+        text = report(results)
+    if not args.skip_gdelt:
+        text += ("\n\n" if text else "") + _gdelt_check(args, outlets, keys)
     (args.out / "news").mkdir(parents=True, exist_ok=True)
     (args.out / "news" / "probe.txt").write_text(text, encoding="utf-8")
     print("\n" + text)
     return 0
+
+
+def _gdelt_check(args, outlets, keys) -> str:
+    from datetime import date
+
+    from carcux_data.j24 import gdelt, news
+
+    day = date.fromisoformat(args.gdelt_day)
+    hosts = {p.split("/", 1)[0].removeprefix("www."): k for k in keys for p in outlets[k].prefixes}
+    print(f"\nReading GDELT's article lists for {day} (192 small files, a few minutes)…",
+          flush=True)  # fmt: skip
+    f = Fetcher(args.out / "cache", delay=1.0, contact=args.contact,
+                log=lambda m: print(f"[gdelt] {m.strip()}", flush=True))  # fmt: skip
+    got = gdelt.sample_day(f, day, hosts, log=lambda m: print(m, flush=True))
+    listed: dict[str, set[str]] = {}
+    for row in news.load_urls(args.out):
+        if row["outlet"] in keys and (news.day_key(row) or "")[:8] == f"{day:%Y%m%d}":
+            if (u := news.normalise(row["url"])) is not None:
+                listed.setdefault(row["outlet"], set()).add(u)
+    lines = [
+        f"GDELT check for {day}: {got.files_read} files read, {got.files_missing} missing"
+        + (f" — {got.problem}" if got.problem else ""),
+        "",
+        f"{'outlet':16} {'GDELT':>6} {'our list':>8} {'both':>6}  GDELT has of our list",
+    ]
+    for k in sorted(keys):
+        g = {u for a in got.by_outlet.get(k, ()) if (u := news.normalise(a))}
+        ours = listed.get(k, set())
+        share = f"{100 * len(g & ours) // len(ours)}%" if ours else "-"
+        lines.append(f"{k:16} {len(g):>6} {len(ours):>8} {len(g & ours):>6}  {share}")
+    return "\n".join(lines)
 
 
 def _news(args) -> int:
