@@ -152,6 +152,62 @@ def list_outlet(
     return first
 
 
+def list_outlet_pages(
+    fetcher: Fetcher, outlet: NewsOutlet, since: str, until: str, log: Callable = print
+) -> dict[str, str]:
+    """Like list_outlet, but reads the archive's index page by page (its paged interface),
+    the way the Internet Archive asks large queries to be made. Each page is a fixed slice of
+    the index, so no request has to search a whole site's history and time out; the window,
+    status and type are applied to each page's rows here. A page that is not answered is
+    reported and filled in by a re-run (answered pages come from the cache)."""
+    first: dict[str, str] = {}
+    lo, hi = _stamp(since), _stamp(until, end=True)
+    pattern = re.compile(outlet.url_regex, re.I) if outlet.url_regex else None
+    for prefix in outlet.prefixes:
+        base = [("url", prefix), ("matchType", "prefix")]
+        try:
+            status, _, pages = fetcher.get_json(
+                f"{CDX}?{urlencode(base + [('showNumPages', 'true')])}"
+            )
+        except OSError as exc:
+            log(f"  {outlet.key}: no page count for {prefix} ({exc}); run again later")
+            continue
+        if status != 200 or not isinstance(pages, int):
+            log(f"  {outlet.key}: no page count for {prefix} (HTTP {status}); run again later")
+            continue
+        log(f"  {outlet.key}: {prefix} has {pages} index pages")
+        missed = 0
+        for page in range(pages):
+            params = base + [("from", lo), ("to", hi), ("output", "json"),
+                             ("fl", "timestamp,original,statuscode,mimetype"),
+                             ("page", str(page))]  # fmt: skip
+            try:
+                status, _, rows = fetcher.get_json(f"{CDX}?{urlencode(params)}")
+            except OSError:
+                status, rows = 0, None
+            if status != 200 or not isinstance(rows, list):
+                missed += 1
+                continue
+            for row in rows:
+                if not row or len(row) < 4 or row[0] == "timestamp":
+                    continue
+                ts, original, code, mime = row[:4]
+                if code != "200" or "html" not in (mime or ""):
+                    continue
+                if pattern and not pattern.search(original):
+                    continue
+                url = normalise(original)
+                if url and (url not in first or ts < first[url]):
+                    first[url] = ts
+            if (page + 1) % 10 == 0:
+                log(f"  {outlet.key}: {prefix} page {page + 1} of {pages}, "
+                    f"{len(first)} articles so far")  # fmt: skip
+        if missed:
+            log(f"  {outlet.key}: {missed} of {pages} pages for {prefix} not answered; "
+                "run again later to fill them in")  # fmt: skip
+    return first
+
+
 class _Article(HTMLParser):
     """Title, published time, language and paragraph text of a news page."""
 
