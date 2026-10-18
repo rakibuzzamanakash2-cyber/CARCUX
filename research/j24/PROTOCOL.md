@@ -215,6 +215,12 @@ and index again.
   filler is excluded from stance annotation, since they have seen the verdicts. Procedure
   only.
 
+- 18 October 2026, before any claim, stance or result: reading order uses the listed title,
+  or a headline-like address, to read likely-uprising articles first; a first pass may skip
+  articles whose title or address is clearly about something else (`--only-likely`), and a
+  second pass reads them, or the number left unread is reported per outlet. Sitemaps listed
+  12 of the 42 outlets; the rest are listed from the archive index, more slowly, and any
+  outlet still unlisted is reported as a coverage gap.
 - 18 October 2026, before any stance label: "partially supports" is judged against the
   claim's own details, so annotators stay blind to the verdict (CARCUX-BD judges it against
   ground truth, which J24 annotators must not see).

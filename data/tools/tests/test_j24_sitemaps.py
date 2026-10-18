@@ -201,3 +201,20 @@ def test_undated_sitemaps_are_given_up_when_they_hold_nothing_from_the_window(tm
     assert "2024-07-20" in reads[0] and len(reads) == 1 + sitemaps.GIVE_UP_AFTER
     assert got.sitemaps_skipped == 60 - sitemaps.GIVE_UP_AFTER
     assert any("held nothing from the window" in m for m in messages)
+
+
+def test_headline_addresses_count_as_titles_ids_do_not():
+    assert (
+        sitemaps.likely(None, "https://x.example/bangladesh/quota-protest-students-clash") is True
+    )
+    assert (
+        sitemaps.likely(None, "https://x.example/sport/cricket-tigers-win-series-opener") is False
+    )
+    assert sitemaps.likely(None, "https://x.example/national/837123") is None
+    assert sitemaps.likely(None, "https://x.example/a/short-one") is None  # too short to judge
+    assert sitemaps.likely("SYNTHETIC: কোটা আন্দোলন", "https://x.example/sport/cricket-x-y") is True
+
+
+def test_short_stems_do_not_match_inside_other_words():
+    assert sitemaps.likely(None, "https://x.example/tech/new-mobile-phones-launched-today") is False
+    assert sitemaps.likely(None, "https://x.example/news/shops-vandalised-in-old-town") is True
