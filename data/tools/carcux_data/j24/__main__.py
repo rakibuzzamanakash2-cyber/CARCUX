@@ -4,6 +4,8 @@
     python -m carcux_data.j24 recurrence --out DIR
     python -m carcux_data.j24 claim-sheet --out DIR
     python -m carcux_data.j24 check-sheet FILE
+    python -m carcux_data.j24 split-sheet --out DIR [--size 25] [--only-likely] [--checked-by P]
+    python -m carcux_data.j24 merge-sheets --out DIR
     python -m carcux_data.j24 news-list --out DIR [--outlets a,b] [--since D --until D]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
@@ -46,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
     cs.add_argument("--out", required=True, type=Path)
     ck = sub.add_parser("check-sheet", help="check a filled claim sheet")
     ck.add_argument("file", type=Path)
+    sp = sub.add_parser("split-sheet", help="split claim_sheet.xlsx into small batches")
+    sp.add_argument("--out", required=True, type=Path)
+    sp.add_argument("--size", type=int, default=25, help="fact-checks per batch")
+    sp.add_argument("--only-likely", action="store_true", help="only rows likely in scope")
+    sp.add_argument("--checked-by", default="", help="the helper's pseudonym, never a name")
+    mg = sub.add_parser("merge-sheets", help="join the batches into claim_sheet_merged.xlsx")
+    mg.add_argument("--out", required=True, type=Path)
     for name, help_ in (("news-list", "list the outlets' articles captured in the window"),
                         ("news-fetch", "read the listed articles")):  # fmt: skip
         n = sub.add_parser(name, help=help_)
@@ -111,6 +120,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{n} rows written to {path}")
         return 0
 
+    if args.command in ("split-sheet", "merge-sheets"):
+        return _batches(args)
+
     if args.command in ("news-list", "news-fetch"):
         return _news(args)
 
@@ -118,6 +130,45 @@ def main(argv: list[str] | None = None) -> int:
 
     problems = check_sheet(args.file)
     print("\n".join(problems) if problems else "The sheet is complete.")
+    return 1 if problems else 0
+
+
+def _batches(args) -> int:
+    from carcux_data.j24.batches import merge_sheets, split_sheet
+    from carcux_data.j24.sheet import check_sheet
+
+    folder = args.out / "batches"
+    if args.command == "split-sheet":
+        source = args.out / "claim_sheet.xlsx"
+        if not source.exists():
+            print(f"{source} not found: run claim-sheet first.", file=sys.stderr)
+            return 2
+        if folder.exists() and any(folder.glob("batch_*.xlsx")):
+            print(f"{folder} already holds batches, which may hold work. Merge them first, "
+                  "then move the folder away.", file=sys.stderr)  # fmt: skip
+            return 2
+        written = split_sheet(source, folder, size=args.size, only_likely=args.only_likely,
+                              checked_by=args.checked_by)  # fmt: skip
+        for path, n, hinted in written:
+            print(f"{path.name}: {n} fact-checks, {hinted} with a maybe-same hint")
+        print(f"\n{len(written)} batches in {folder}. Send one at a time.")
+        return 0
+    files = sorted(folder.glob("batch_*.xlsx"))
+    if not files:
+        print(f"No batches in {folder}.", file=sys.stderr)
+        return 2
+    out = args.out / "claim_sheet_merged.xlsx"
+    if out.exists():
+        print(f"{out} exists: rename it first.", file=sys.stderr)
+        return 2
+    try:
+        n = merge_sheets(files, out)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    problems = check_sheet(out)
+    print(f"{n} rows from {len(files)} batches written to {out}")
+    print("\n".join(problems) if problems else "The merged sheet is complete.")
     return 1 if problems else 0
 
 
