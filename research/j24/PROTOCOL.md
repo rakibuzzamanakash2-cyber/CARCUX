@@ -81,9 +81,12 @@ are collected from the outlets themselves:
 - **Outlets:** every outlet cited by 3 or more fact-checks in the pilot index, plus BBC
   (English and Bangla), Al Jazeera, Reuters, AP, AFP, DW, The Guardian and The New York
   Times. The list is fixed in `carcux_data/j24/news_outlets.csv` before collection.
-- **As published at the time:** each article is read from an Internet Archive (Wayback
-  Machine) capture made inside the window, so later edits and deletions do not change
-  what an outlet is recorded as having said. The capture time is stored with the item.
+- **As published at the time:** articles are listed from the outlets' own sitemaps (or,
+  for an outlet without usable sitemaps, the Internet Archive's index), and each is read
+  from the Internet Archive (Wayback Machine) copy captured nearest to its published date,
+  so later edits and deletions do not change what an outlet is recorded as having said. The
+  capture time is stored with the item; a copy captured more than 30 days after the window
+  is flagged, and an article with no copy in the archive is counted, not read live.
 - **Stored:** link, outlet, capture time, published time when the page states it, title
   and an excerpt of at most 300 characters. Full text stays only in the collector's local
   cache, used to suggest which claims an article is about, and is never published.
@@ -101,6 +104,9 @@ are collected from the outlets themselves:
 - **Item** (dataset `observation`): one report about a claim by one source, with time and
   language. **Stance** (dataset `relation`): supports, partially supports, contradicts,
   related, unrelated; two annotators, blind to each other and to the verdict; Cohen's κ;
+  "partially supports" means the item says the event happened but states a detail
+  (number, place, date, cause) differently from the claim (not from the ground truth, which
+  annotators do not see), as in the one-page annotator instructions v1.0;
   disagreements adjudicated. **Copies** (dataset `dependence`) as in CARCUX-BD.
 - **Ground truth tiers:** A, a finding of the OHCHR report; B, a fact-check resting on
   primary evidence; C, two or more fact-checkers agreeing on secondary evidence.
@@ -154,24 +160,25 @@ repository, so nothing collected can be committed by mistake.
 
 # Each run (the repository is mounted read-only; output goes to D:\CARCUX-J24):
 $env:CARCUX_J24_SALT = Get-Content -Raw D:\CARCUX-J24-salt.txt
-docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e CARCUX_J24_SALT `
+docker run --rm -e PYTHONUNBUFFERED=1 -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e CARCUX_J24_SALT `
   -e PYTHONPATH=/repo/data/tools -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
   sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 index --out /out && python -m carcux_data.j24 recurrence --out /out && python -m carcux_data.j24 claim-sheet --out /out"
 ```
 
 ### News collection
 
-Stage 1 lists the articles each outlet had captured in the window (quick). Stage 2 reads
-them, one request every 4 seconds; run a one-day trial on a few outlets first, then the
-rest overnight. A stopped run resumes where it stopped.
+Stage 1 lists each outlet's articles in the window from its sitemaps (outlets in
+parallel). Stage 2 reads them from the archive, one request every 4 seconds, articles whose
+title names the uprising first. A stopped run resumes where it stopped. An outlet whose
+sitemaps give nothing can be listed with `news-list --from archive --outlets KEY` (slow).
 
 ```powershell
 # Stage 1: list (all outlets)
-docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+docker run --rm -e PYTHONUNBUFFERED=1 -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
   -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
   sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 news-list --out /out"
 # Stage 2, trial: one day, three outlets
-docker run --rm -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
+docker run --rm -e PYTHONUNBUFFERED=1 -v "${PWD}:/repo:ro" -v "D:\CARCUX-J24:/out" -e PYTHONPATH=/repo/data/tools `
   -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim `
   sh -c "pip install -q --root-user-action=ignore jsonschema openpyxl && python -m carcux_data.j24 news-fetch --out /out --outlets prothomalo,thedailystar,bbc --since 2024-07-18 --until 2024-07-18"
 ```
@@ -182,6 +189,14 @@ and index again.
 
 ## Changes
 
+- 18 October 2026, before any stance label: "partially supports" is judged against the
+  claim's own details, so annotators stay blind to the verdict (CARCUX-BD judges it against
+  ground truth, which J24 annotators must not see).
+- 18 October 2026, before any claim, stance or result: articles are listed from outlets'
+  sitemaps instead of the Internet Archive's index, which in the trial (three outlets)
+  answered with repeated 503 and 504 errors over ten hours and left whole weeks unlisted;
+  articles are still read from archive copies (1,306 read in the trial, none failed).
+  Copies captured more than 30 days after the window are flagged. Procedure only.
 - 17 October 2026, after the pilot index and before any claim, stance or result:
   added the item collection from outlets (Wayback captures, fixed outlet list) and the
   fact-checker robustness analyses, because the pilot found a median of one outlet per
