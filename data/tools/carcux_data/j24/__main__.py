@@ -7,6 +7,7 @@
     python -m carcux_data.j24 split-sheet --out DIR [--size 25] [--only-likely] [--checked-by P]
     python -m carcux_data.j24 merge-sheets --out DIR
     python -m carcux_data.j24 news-list --out DIR [--outlets a,b] [--since D --until D]
+    python -m carcux_data.j24 news-probe --out DIR [--outlets a,b]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -55,6 +56,11 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--checked-by", default="", help="the helper's pseudonym, never a name")
     mg = sub.add_parser("merge-sheets", help="join the batches into claim_sheet_merged.xlsx")
     mg.add_argument("--out", required=True, type=Path)
+    pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
+    pr.add_argument("--out", required=True, type=Path)
+    pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
+    pr.add_argument("--parallel", type=int, default=8)
+    pr.add_argument("--contact", help="an e-mail for the User-Agent")
     for name, help_ in (("news-list", "list the outlets' articles captured in the window"),
                         ("news-fetch", "read the listed articles")):  # fmt: skip
         n = sub.add_parser(name, help=help_)
@@ -123,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in ("split-sheet", "merge-sheets"):
         return _batches(args)
 
+    if args.command == "news-probe":
+        return _probe(args)
+
     if args.command in ("news-list", "news-fetch"):
         return _news(args)
 
@@ -170,6 +179,38 @@ def _batches(args) -> int:
     print(f"{n} rows from {len(files)} batches written to {out}")
     print("\n".join(problems) if problems else "The merged sheet is complete.")
     return 1 if problems else 0
+
+
+def _probe(args) -> int:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    from carcux_data.j24 import news
+    from carcux_data.j24.probe import probe_outlet, report
+
+    outlets = news.load_news_outlets()
+    keys = [k.strip() for k in args.outlets.split(",") if k.strip()] or list(outlets)
+    unknown = [k for k in keys if k not in outlets]
+    if unknown:
+        print(f"Unknown outlets: {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    jobs = [(k, h) for k in keys
+            for h in sorted({p.split("/", 1)[0] for p in outlets[k].prefixes})]  # fmt: skip
+
+    def one(job):
+        key, host = job
+        f = Fetcher(args.out / "cache", delay=2.0, contact=args.contact,
+                    log=lambda m: print(f"[{key}] {m.strip()}", flush=True))  # fmt: skip
+        return probe_outlet(f, key, host, log=lambda m: print(m, flush=True))
+
+    results = []
+    with ThreadPoolExecutor(max_workers=max(1, args.parallel)) as pool:
+        for done in as_completed([pool.submit(one, j) for j in jobs]):
+            results.append(done.result())
+    text = report(results)
+    (args.out / "news").mkdir(parents=True, exist_ok=True)
+    (args.out / "news" / "probe.txt").write_text(text, encoding="utf-8")
+    print("\n" + text)
+    return 0
 
 
 def _news(args) -> int:
