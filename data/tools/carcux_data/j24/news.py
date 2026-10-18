@@ -359,12 +359,14 @@ def fetch_articles(
     with path.open("a", encoding="utf-8") as f:
         for key in keys:
             o = outlets[key]
-            mine = sorted((u for u in urls if u["outlet"] == key),
-                          key=lambda u: (order[likely(u.get("title"))], day_key(u)))  # fmt: skip
+            mine = sorted(
+                (u for u in urls if u["outlet"] == key),
+                key=lambda u: (order[likely(u.get("title"), u["url"])], day_key(u)),
+            )
             if only_likely:
-                skipped = [u for u in mine if likely(u.get("title")) is False]
+                skipped = [u for u in mine if likely(u.get("title"), u["url"]) is False]
                 results[key].skipped = len(skipped)
-                mine = [u for u in mine if likely(u.get("title")) is not False]
+                mine = [u for u in mine if likely(u.get("title"), u["url"]) is not False]
             if limit:
                 mine = mine[:limit]
             for n, u in enumerate(mine, start=1):
