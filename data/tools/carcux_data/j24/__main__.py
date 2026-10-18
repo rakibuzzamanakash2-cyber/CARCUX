@@ -159,7 +159,7 @@ def _news(args) -> int:
 def _news_list(args, outlets, keys) -> int:
     import re
     from collections import Counter
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     from datetime import date
 
     from carcux_data.j24 import news
@@ -167,13 +167,16 @@ def _news_list(args, outlets, keys) -> int:
 
     def one(key):
         o = outlets[key]
-        lines: list[str] = []
+
+        def say(message: str) -> None:
+            print(f"[{key}] {message.strip()}", flush=True)
+
         delay = args.delay if args.list_from == "archive" else min(args.delay, 2.0)
-        fetcher = Fetcher(args.out / "cache", delay=delay, contact=args.contact, log=lines.append)
+        fetcher = Fetcher(args.out / "cache", delay=delay, contact=args.contact, log=say)
         if args.list_from == "archive":
-            first = news.list_outlet(fetcher, o, args.since, args.until, log=lines.append)
+            first = news.list_outlet(fetcher, o, args.since, args.until, log=say)
             days = Counter(news.capture_day(ts) for ts in first.values())
-            return key, first, len(first), days, lines, None
+            return key, first, len(first), days, None
         hosts = sorted({p.split("/", 1)[0].removeprefix("www.") for p in o.prefixes})
         pattern = re.compile(o.url_regex, re.I) if o.url_regex else None
 
@@ -181,19 +184,18 @@ def _news_list(args, outlets, keys) -> int:
             return pattern is None or bool(pattern.search(f"{url} {title or ''}"))
 
         span = date.fromisoformat(args.since), date.fromisoformat(args.until)
-        got = list_from_sitemaps(fetcher, hosts, *span, keep=keep, log=lines.append)
+        got = list_from_sitemaps(fetcher, hosts, *span, keep=keep, log=say)
         days = Counter((r["published"] or "")[:10] for r in got.rows)
         note = (f"{got.sitemaps_read} sitemaps read"
-                + (f", {got.sitemaps_skipped} not read (limit)" if got.sitemaps_skipped else "")
+                + (f", {got.sitemaps_skipped} left unread" if got.sitemaps_skipped else "")
                 + (f", {got.undated} undated left out" if got.undated else "")
                 + (f" — {got.problem}" if got.problem else ""))  # fmt: skip
-        return key, got.rows, len(got.rows), days, lines, note
+        return key, got.rows, len(got.rows), days, note
 
     total = 0
     with ThreadPoolExecutor(max_workers=max(1, args.parallel)) as pool:
-        for key, found, n, days, lines, note in pool.map(one, keys):
-            for line in lines:
-                print(line)
+        for done in as_completed([pool.submit(one, k) for k in keys]):
+            key, found, n, days, note = done.result()
             news.write_urls(args.out, outlets[key], found,
                             "archive" if args.list_from == "archive" else "sitemap")  # fmt: skip
             first_days = ", ".join(f"{d} {c}" for d, c in sorted(days.items())[:3])

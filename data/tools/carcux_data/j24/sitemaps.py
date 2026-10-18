@@ -21,7 +21,11 @@ from carcux_data.j24.extract import SCOPE_TERMS
 from carcux_data.j24.fetch import Disallowed, Fetcher
 
 COMMON = ("/sitemap.xml", "/sitemap_index.xml", "/sitemap-index.xml", "/news-sitemap.xml")
-MAX_SITEMAPS = 400  # per outlet; the rest are reported, not read
+MAX_SITEMAPS = 200  # per outlet; the rest are reported, not read
+# Sitemaps whose address names no date are read only while they keep paying off: after
+# this many in a row with no article from the window, the rest are left out.
+GIVE_UP_AFTER = 25
+PROGRESS_EVERY = 25
 
 _BLOCK = re.compile(r"<(url|sitemap)\b[^>]*>(.*?)</\1>", re.S | re.I)
 _TAG = {
@@ -128,17 +132,27 @@ def list_from_sitemaps(
     log: Callable = print,
 ) -> Listing:
     out = Listing()
-    queue = [u for h in hosts for u in starting_points(fetcher, h)]
+    # Sitemaps whose address names a day or month in the window come first; others (no date
+    # in the address) after, and only while they keep yielding articles from the window.
+    dated: list[str] = [u for h in hosts for u in starting_points(fetcher, h)]
+    other: list[str] = []
     seen: set[str] = set()
     rows: dict[str, dict] = {}
-    while queue:
-        sm = queue.pop(0)
+    unproductive = 0
+    while dated or other:
+        from_other = not dated
+        sm = dated.pop(0) if dated else other.pop(0)
         if sm in seen:
             continue
         seen.add(sm)
         if out.sitemaps_read >= MAX_SITEMAPS:
-            out.sitemaps_skipped += 1
-            continue
+            out.sitemaps_skipped += 1 + len(dated) + len(other)
+            break
+        if from_other and unproductive >= GIVE_UP_AFTER:
+            out.sitemaps_skipped += 1 + len(other)
+            log(f"  {len(other) + 1} undated sitemaps left out: the last {GIVE_UP_AFTER} "
+                "held nothing from the window")  # fmt: skip
+            break
         try:
             xml = _text(fetcher, sm)
         except Disallowed:
@@ -148,18 +162,25 @@ def list_from_sitemaps(
             log(f"  sitemap {sm} not reachable ({exc})")
             continue
         out.sitemaps_read += 1
+        if out.sitemaps_read % PROGRESS_EVERY == 0:
+            log(f"  {out.sitemaps_read} sitemaps read, {len(rows)} articles from the window "
+                "so far")  # fmt: skip
         if xml is None:
             continue
         children, urls = parse(xml)
+        before = len(rows)
+        queued = 0
         for c in children:
             span = dates_in_address(c["loc"])
             if span:
                 if span[1] >= since and span[0] <= until:
-                    queue.append(c["loc"])
+                    dated.append(c["loc"])
+                    queued += 1
                 continue
             mod = day_of(c["lastmod"])
             if mod is None or mod >= since:  # may hold articles from the window
-                queue.append(c["loc"])
+                other.append(c["loc"])
+                queued += 1
         for u in urls:
             d = day_of(u["published"]) or day_of(u["lastmod"])
             if d is None and (span := dates_in_address(u["loc"])):
@@ -177,6 +198,8 @@ def list_from_sitemaps(
                 "url": u["loc"], "published": (u["published"] or u["lastmod"] or d.isoformat()),
                 "title": (u["title"] or None) and u["title"][:300],
             })  # fmt: skip
+        if from_other:
+            unproductive = 0 if (len(rows) > before or queued) else unproductive + 1
     out.rows = list(rows.values())
     return out
 

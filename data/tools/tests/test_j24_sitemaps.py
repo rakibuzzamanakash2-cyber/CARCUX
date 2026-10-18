@@ -166,3 +166,38 @@ def test_cli_lists_from_sitemaps_by_default(tmp_path, monkeypatch, capsys):
     assert main(["news-list", "--out", str(tmp_path), "--outlets", "paper"]) == 0
     out = capsys.readouterr().out
     assert "paper: 3 articles in the window" in out and "1 undated left out" in out
+
+
+def test_undated_sitemaps_are_given_up_when_they_hold_nothing_from_the_window(tmp_path):
+    # SYNTHETIC: one dated sitemap for the window, then 60 undated ones holding only 2023.
+    index = (
+        "<sitemapindex>"
+        + "".join(
+            f"<sitemap><loc>https://big.example/posts-{i}.xml</loc></sitemap>" for i in range(60)
+        )
+        + "<sitemap><loc>https://big.example/sitemap/2024-07-20.xml</loc></sitemap></sitemapindex>"
+    )
+    old = "<urlset><url><loc>https://big.example/a/1</loc><lastmod>2023-05-01</lastmod></url></urlset>"
+    day = "<urlset><url><loc>https://big.example/a/2</loc><lastmod>2024-07-20</lastmod></url></urlset>"
+
+    class Big(Web):
+        def __call__(self, url, headers):
+            self.calls.append(url)
+            if url.endswith("/robots.txt"):
+                return Response(200, {}, b"Sitemap: https://big.example/index.xml\n")
+            if url.endswith("/index.xml"):
+                return Response(200, {}, index.encode())
+            if "2024-07-20" in url:
+                return Response(200, {}, day.encode())
+            return Response(200, {}, old.encode())
+
+    web, messages = Big(), []
+    window = date(2024, 7, 1), date(2024, 8, 15)
+    got = sitemaps.list_from_sitemaps(fetcher(tmp_path, web), ["big.example"], *window,
+                                      log=messages.append)  # fmt: skip
+    assert [r["url"] for r in got.rows] == ["https://big.example/a/2"]
+    # The dated sitemap was read first; then 25 undated ones before giving up.
+    reads = [c for c in web.calls if c.endswith(".xml") and "index" not in c]
+    assert "2024-07-20" in reads[0] and len(reads) == 1 + sitemaps.GIVE_UP_AFTER
+    assert got.sitemaps_skipped == 60 - sitemaps.GIVE_UP_AFTER
+    assert any("held nothing from the window" in m for m in messages)
