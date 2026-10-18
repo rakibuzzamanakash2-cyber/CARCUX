@@ -204,9 +204,67 @@ def list_from_sitemaps(
     return out
 
 
-def likely(title: str | None) -> bool | None:
-    """True when a title names the uprising, False when it does not, None without a title."""
-    if not title:
-        return None
-    low = title.lower()
-    return any(t.lower() in low for t in SCOPE_TERMS)
+def _slug_words(url: str | None) -> list[str]:
+    """Words in the last part of an address that reads like a headline
+    (".../quota-protest-students-clash"), lower case; empty for ids ("/national/837123")."""
+    if not url:
+        return []
+    last = urlsplit(url).path.rstrip("/").rsplit("/", 1)[-1]
+    last = re.sub(r"\.(html?|php|aspx?)$", "", last)
+    return [
+        w for w in re.split(r"[-_]+", last.lower()) if re.fullmatch(r"[a-z\u0980-\u09ff]{2,}", w)
+    ]
+
+
+def likely(title: str | None, url: str | None = None) -> bool | None:
+    """True when a title (or, without one, a headline-like address) names the uprising, False
+    when it clearly does not, None when there is nothing to judge by."""
+    if title:
+        low = title.lower()
+        return any(t.lower() in low for t in SCOPE_TERMS)
+    words = _slug_words(url)
+    if len(words) < 3:
+        return None  # an id, or too short to judge
+    slug = " ".join(words)
+    return any(t.lower() in slug for t in SCOPE_TERMS) or any(
+        w.startswith(stem) for w in words for stem in SLUG_STEMS
+    )
+
+
+# Extra English word beginnings that headline addresses use for the uprising and its
+# aftermath; matched at the start of a whole word ("vandal" matches "vandalised").
+SLUG_STEMS = (
+    "clash",
+    "violen",
+    "shutdown",
+    "agitat",
+    "movement",
+    "unrest",
+    "hasina",
+    "yunus",
+    "awami",
+    "chhatra",
+    "jamaat",
+    "bnp",
+    "bgb",
+    "killed",
+    "death",
+    "injur",
+    "arrest",
+    "detain",
+    "attack",
+    "arson",
+    "vandal",
+    "minorit",
+    "communal",
+    "coordinator",
+    "discriminat",
+    "sayed",
+    "rally",
+    "blockade",
+    "siege",
+    "jatrabari",
+    "curfew",
+    "teargas",
+    "rubber",
+)
