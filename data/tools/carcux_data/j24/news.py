@@ -253,26 +253,73 @@ class OutletResult:
     fetched: int = 0
     about_uprising: int = 0
     failed: int = 0
+    not_archived: int = 0
+    late: int = 0
+    skipped: int = 0
     problem: str | None = None
 
 
-def write_urls(out: Path, outlet: NewsOutlet, first: dict[str, str]) -> None:
+def write_urls(
+    out: Path, outlet: NewsOutlet, found: dict[str, str] | list[dict], listed_from: str = "archive"
+) -> None:
+    """Store an outlet's listed articles, replacing what the same method listed before.
+    `found` is {address: capture time} from the archive index, or rows {url, published,
+    title} from sitemaps."""
     path = out / "news" / "urls.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     kept = []
     if path.exists():
-        kept = [line for line in path.read_text("utf-8").splitlines()
-                if line.strip() and json.loads(line)["outlet"] != outlet.key]  # fmt: skip
-    rows = [json.dumps({"outlet": outlet.key, "url": u, "capture": ts}) for u, ts in
-            sorted(first.items(), key=lambda x: x[1])]  # fmt: skip
+        for line in path.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            if not (r["outlet"] == outlet.key and r.get("listed_from", "archive") == listed_from):
+                kept.append(line)
+    if isinstance(found, dict):
+        new = [{"outlet": outlet.key, "url": u, "capture": ts, "listed_from": listed_from}
+               for u, ts in sorted(found.items(), key=lambda x: x[1])]  # fmt: skip
+    else:
+        new = []
+        for r in found:
+            url = normalise(r["url"])
+            if url:
+                new.append({"outlet": outlet.key, "url": url, "capture": None,
+                            "published": r.get("published"), "title": r.get("title"),
+                            "listed_from": listed_from})  # fmt: skip
+    rows = [json.dumps(r, ensure_ascii=False) for r in new]
     path.write_text("\n".join(kept + rows) + "\n", encoding="utf-8")
 
 
 def load_urls(out: Path) -> list[dict]:
+    """One row per article: an archive capture time where the index gave one, and the
+    published date and title where a sitemap gave them."""
     path = out / "news" / "urls.jsonl"
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text("utf-8").splitlines() if line.strip()]
+    merged: dict[str, dict] = {}
+    for line in path.read_text("utf-8").splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        m = merged.setdefault(r["url"], {"outlet": r["outlet"], "url": r["url"], "capture": None,
+                                         "published": None, "title": None})  # fmt: skip
+        for key in ("capture", "published", "title"):
+            if r.get(key) and not m.get(key):
+                m[key] = r[key]
+    return list(merged.values())
+
+
+def day_key(row: dict) -> str | None:
+    """YYYYMMDDhhmmss for the window filter: the capture time, else the published date."""
+    if row.get("capture"):
+        return row["capture"]
+    p = row.get("published")
+    if p and re.match(r"\d{4}-\d{2}-\d{2}", p):
+        return p[:10].replace("-", "") + "120000"
+    return None
+
+
+_CAPTURED = re.compile(r"/web/(\d{14})(?:id_)?/")
 
 
 def fetch_articles(
@@ -285,12 +332,18 @@ def fetch_articles(
     until: str = WINDOW[1],
     limit: int | None = None,
     text_from: str = "wayback",
+    only_likely: bool = False,
     log: Callable = print,
 ) -> list[OutletResult]:
-    """Read the listed articles of the given outlets captured between since and until.
-    Already-read pages come from the cache, so a stopped run resumes where it stopped."""
+    """Read the listed articles of the given outlets dated between since and until, from the
+    archive copy captured then (or nearest to the published date). Articles whose title
+    names the uprising are read first; with only_likely, articles whose title does not are
+    skipped. Already-read pages come from the cache, so a stopped run resumes."""
+    from carcux_data.j24.sitemaps import likely
+
     lo, hi = _stamp(since), _stamp(until, end=True)
-    urls = [u for u in load_urls(out) if u["outlet"] in keys and lo <= u["capture"] <= hi]
+    urls = [u for u in load_urls(out)
+            if u["outlet"] in keys and (k := day_key(u)) and lo <= k <= hi]  # fmt: skip
     path = out / "news" / "articles.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     done: dict[str, dict] = {}
@@ -302,10 +355,16 @@ def fetch_articles(
     results = {k: OutletResult(k) for k in keys}
     for u in urls:
         results[u["outlet"]].listed += 1
+    order = {True: 0, None: 1, False: 2}
     with path.open("a", encoding="utf-8") as f:
         for key in keys:
             o = outlets[key]
-            mine = [u for u in urls if u["outlet"] == key]
+            mine = sorted((u for u in urls if u["outlet"] == key),
+                          key=lambda u: (order[likely(u.get("title"))], day_key(u)))  # fmt: skip
+            if only_likely:
+                skipped = [u for u in mine if likely(u.get("title")) is False]
+                results[key].skipped = len(skipped)
+                mine = [u for u in mine if likely(u.get("title")) is not False]
             if limit:
                 mine = mine[:limit]
             for n, u in enumerate(mine, start=1):
@@ -314,10 +373,11 @@ def fetch_articles(
                     results[key].fetched += 1
                     results[key].about_uprising += bool(r.get("about_uprising"))
                     continue
-                source = (f"{WAYBACK}/{u['capture']}id_/{u['url']}" if text_from == "wayback"
+                when = u.get("capture") or day_key(u)
+                source = (f"{WAYBACK}/{when}id_/{u['url']}" if text_from == "wayback"
                           else u["url"])  # fmt: skip
                 try:
-                    status, body = fetcher.get_page(source)
+                    status, body, final = fetcher.get_page(source)
                 except Disallowed:
                     results[key].problem = f"robots.txt disallows {urlsplit(source).netloc}"
                     break
@@ -327,21 +387,38 @@ def fetch_articles(
                     continue
                 if status >= 400 or not body:
                     results[key].failed += 1
+                    if status == 404 and text_from == "wayback":
+                        results[key].not_archived += 1
                     continue
                 art = read_article(body)
+                m = _CAPTURED.search(final) if text_from == "wayback" else None
+                capture = m.group(1) if m else u.get("capture")
+                late = bool(capture and capture[:8] > _late_limit(until))
                 record = {
                     "outlet": key, "outlet_name": o.name, "country": o.country,
-                    "url": u["url"], "capture": u["capture"], "text_from": text_from,
-                    **art,
+                    "url": u["url"], "capture": capture, "capture_late": late,
+                    "text_from": text_from, **art,
                 }  # fmt: skip
+                if not record["title"] and u.get("title"):
+                    record["title"] = u["title"][:300]
+                if not record["published_at"] and u.get("published"):
+                    record["published_at"] = u["published"]
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
                 f.flush()
                 done[u["url"]] = record
                 results[key].fetched += 1
                 results[key].about_uprising += art["about_uprising"]
+                results[key].late += late
                 if n % 100 == 0:
                     log(f"  {key}: {n} of {len(mine)} read")
     return list(results.values())
+
+
+LATE_DAYS = 30  # a copy captured more than this long after the window may have been edited
+
+
+def _late_limit(until: str) -> str:
+    return (date.fromisoformat(until) + timedelta(days=LATE_DAYS)).isoformat().replace("-", "")
 
 
 def capture_day(ts: str) -> str:

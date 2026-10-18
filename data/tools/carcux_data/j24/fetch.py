@@ -24,6 +24,7 @@ class Response:
     status: int
     headers: dict[str, str]
     body: bytes
+    url: str | None = None  # where the request ended up, after redirects
 
 
 Opener = Callable[[str, dict[str, str]], Response]
@@ -39,7 +40,8 @@ def urllib_opener(url: str, headers: dict[str, str]) -> Response:
         raise ValueError(f"not an http(s) address: {url}")
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT) as r:  # noqa: S310
-            return Response(r.status, {k.lower(): v for k, v in r.headers.items()}, r.read())
+            return Response(r.status, {k.lower(): v for k, v in r.headers.items()}, r.read(),
+                            r.geturl())  # fmt: skip
     except urllib.error.HTTPError as e:
         return Response(e.code, {k.lower(): v for k, v in (e.headers or {}).items()}, e.read())
 
@@ -132,21 +134,23 @@ class Fetcher:
             )  # fmt: skip
         return r.status, keep, parsed
 
-    def get_page(self, url: str) -> tuple[int, bytes]:
-        """(status, body) for a web page, cached compressed on disk. Pages stay in the local
-        cache only; nothing here is published."""
+    def get_page(self, url: str) -> tuple[int, bytes, str]:
+        """(status, body, final address after redirects) for a web page, cached compressed on
+        disk. Pages stay in the local cache only; nothing here is published."""
         key = hashlib.sha256(url.encode()).hexdigest()
         body_path = self.cache_dir / "pages" / key[:2] / f"{key}.html.gz"
         status_path = body_path.with_suffix(".status")
         if status_path.exists():
-            status = int(status_path.read_text())
-            return status, gzip.decompress(body_path.read_bytes()) if body_path.exists() else b""
+            status_line, _, final = status_path.read_text().partition("\n")
+            body = gzip.decompress(body_path.read_bytes()) if body_path.exists() else b""
+            return int(status_line), body, final or url
         if not self.allowed(url):
             raise Disallowed(url)
         r = self._request(url, accept="text/html")
+        final = r.url or url
         if r.status < 500:
             body_path.parent.mkdir(parents=True, exist_ok=True)
             if r.status < 400:
                 body_path.write_bytes(gzip.compress(r.body))
-            status_path.write_text(str(r.status))
-        return r.status, r.body
+            status_path.write_text(f"{r.status}\n{final}")
+        return r.status, r.body, final

@@ -55,9 +55,21 @@ def main(argv: list[str] | None = None) -> int:
         n.add_argument("--until", default=WINDOW[1])
         n.add_argument("--delay", type=float, default=4.0, help="seconds between requests")
         n.add_argument("--contact", help="an e-mail for the User-Agent")
+        if name == "news-list":
+            n.add_argument(
+                "--from",
+                dest="list_from",
+                choices=["sitemaps", "archive"],
+                default="sitemaps",
+                help="the outlets' sitemaps (fast), or the Internet Archive's index (slow; "
+                "for outlets without sitemaps)",
+            )
+            n.add_argument("--parallel", type=int, default=6, help="outlets listed at once")
         if name == "news-fetch":
             n.add_argument("--limit", type=int, help="at most this many articles per outlet")
             n.add_argument("--text-from", choices=["wayback", "live"], default="wayback")
+            n.add_argument("--only-likely", action="store_true", help="skip articles whose "
+                           "listed title does not name the uprising")  # fmt: skip
     args = ap.parse_args(argv)
 
     if args.command == "index":
@@ -110,8 +122,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _news(args) -> int:
-    from collections import Counter
-
     from carcux_data.j24 import news
 
     outlets = news.load_news_outlets()
@@ -121,32 +131,78 @@ def _news(args) -> int:
         print(f"Unknown outlets: {', '.join(unknown)}. Known: {', '.join(outlets)}",
               file=sys.stderr)  # fmt: skip
         return 2
-    fetcher = Fetcher(args.out / "cache", delay=args.delay, contact=args.contact)
     if args.command == "news-list":
-        total = 0
-        for key in keys:
-            first = news.list_outlet(fetcher, outlets[key], args.since, args.until)
-            news.write_urls(args.out, outlets[key], first)
-            days = Counter(news.capture_day(ts) for ts in first.values())
-            busiest = ", ".join(f"{d} {n}" for d, n in sorted(days.items())[:3])
-            print(f"{key}: {len(first)} articles captured"
-                  + (f" (first days: {busiest} …)" if first else ""))  # fmt: skip
-            total += len(first)
-        print(f"\n{total} article addresses listed in {args.out / 'news' / 'urls.jsonl'} "
-              f"({fetcher.requests} requests).")  # fmt: skip
-        return 0
+        return _news_list(args, outlets, keys)
+    fetcher = Fetcher(args.out / "cache", delay=args.delay, contact=args.contact)
     if not news.load_urls(args.out):
         print("No article list yet: run news-list first.", file=sys.stderr)
         return 2
     results = news.fetch_articles(
         fetcher, args.out, outlets, keys=keys, since=args.since, until=args.until,
-        limit=args.limit, text_from=args.text_from,
+        limit=args.limit, text_from=args.text_from, only_likely=args.only_likely,
     )  # fmt: skip
     for r in results:
+        extra = [f"{r.failed} failed"]
+        if r.not_archived:
+            extra.append(f"{r.not_archived} not in the archive")
+        if r.late:
+            extra.append(f"{r.late} from copies captured long after the window")
+        if r.skipped:
+            extra.append(f"{r.skipped} skipped (title not about the uprising)")
         problem = f" — {r.problem}" if r.problem else ""
         print(f"{r.outlet}: {r.fetched} of {r.listed} read, {r.about_uprising} about the "
-              f"uprising, {r.failed} failed{problem}")  # fmt: skip
+              f"uprising, {', '.join(extra)}{problem}")  # fmt: skip
     print(f"\n{fetcher.requests} requests. Articles in {args.out / 'news' / 'articles.jsonl'}.")
+    return 0
+
+
+def _news_list(args, outlets, keys) -> int:
+    import re
+    from collections import Counter
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import date
+
+    from carcux_data.j24 import news
+    from carcux_data.j24.sitemaps import list_from_sitemaps
+
+    def one(key):
+        o = outlets[key]
+        lines: list[str] = []
+        delay = args.delay if args.list_from == "archive" else min(args.delay, 2.0)
+        fetcher = Fetcher(args.out / "cache", delay=delay, contact=args.contact, log=lines.append)
+        if args.list_from == "archive":
+            first = news.list_outlet(fetcher, o, args.since, args.until, log=lines.append)
+            days = Counter(news.capture_day(ts) for ts in first.values())
+            return key, first, len(first), days, lines, None
+        hosts = sorted({p.split("/", 1)[0].removeprefix("www.") for p in o.prefixes})
+        pattern = re.compile(o.url_regex, re.I) if o.url_regex else None
+
+        def keep(url, title):
+            return pattern is None or bool(pattern.search(f"{url} {title or ''}"))
+
+        span = date.fromisoformat(args.since), date.fromisoformat(args.until)
+        got = list_from_sitemaps(fetcher, hosts, *span, keep=keep, log=lines.append)
+        days = Counter((r["published"] or "")[:10] for r in got.rows)
+        note = (f"{got.sitemaps_read} sitemaps read"
+                + (f", {got.sitemaps_skipped} not read (limit)" if got.sitemaps_skipped else "")
+                + (f", {got.undated} undated left out" if got.undated else "")
+                + (f" — {got.problem}" if got.problem else ""))  # fmt: skip
+        return key, got.rows, len(got.rows), days, lines, note
+
+    total = 0
+    with ThreadPoolExecutor(max_workers=max(1, args.parallel)) as pool:
+        for key, found, n, days, lines, note in pool.map(one, keys):
+            for line in lines:
+                print(line)
+            news.write_urls(args.out, outlets[key], found,
+                            "archive" if args.list_from == "archive" else "sitemap")  # fmt: skip
+            first_days = ", ".join(f"{d} {c}" for d, c in sorted(days.items())[:3])
+            hint = "" if n else "  <- none: try --from archive for this outlet"
+            print(f"{key}: {n} articles in the window"
+                  + (f" (first days: {first_days} …)" if n else "")
+                  + (f"; {note}" if note else "") + hint)  # fmt: skip
+            total += n
+    print(f"\n{total} article addresses listed in {args.out / 'news' / 'urls.jsonl'}.")
     return 0
 
 
