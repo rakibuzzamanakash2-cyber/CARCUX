@@ -217,6 +217,15 @@ and index again.
 
 ## Changes
 
+- 18 October 2026, before any stance label or result: a probe of the 30 outlets without
+  usable sitemaps found a working date-listing page for 1 (5 block automated requests with
+  403, Reuters disallows robots, several build their pages with JavaScript, the rest use
+  addresses the probe did not guess). GDELT's public article index, checked for 2 August
+  2024, listed no articles for most Bangladeshi outlets and 10–19 % of the sitemap-listed
+  articles of the two it did list, so it is not used. Missing outlets are listed from the
+  Internet Archive's index (slow, unattended) in a fixed priority order; outlets still
+  unlisted when collection closes are reported as coverage gaps.
+
 - 18 October 2026, before any claim was used or any result: coding rules for the incident
   frame added (see Sampling frames), after reading the OHCHR report and before checking the
   draft claims.
