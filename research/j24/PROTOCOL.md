@@ -69,7 +69,15 @@ statement; this section is it, and a statement from the university's ethics comm
    AFP Fact Check Bangla and BOOM Bangladesh (indexed by hand), about an event of the
    uprising or its aftermath.
 2. **Incident frame:** every incident the OHCHR report finds on reasonable grounds,
-   restated as claims.
+   restated as claims. Coding: incidents only (violence, arson, shutdowns, curfews, arrests,
+   public official actions and statements), not the report's findings on orders or
+   responsibility; no names of victims or private people; no party, side or religion of any
+   person; individual accounts of sexual violence and torture left out (no date or place to
+   match, and restating them adds harm). A claim the report finds true or false is tier A; a
+   claim it cannot confirm is unresolved; a figure or allegation it only passes on from
+   another source (police, ministry, media) is kept for matching but is not ground truth.
+   Claims are drafted from the report's text, each with its paragraph, page and a verbatim
+   excerpt checked by program, and every one is checked by a person before use.
 
 Fact-checkers are ground truth, so they are never also sources in the model.
 
@@ -208,6 +216,10 @@ salt that has been shown in a chat or a screenshot is no longer private: make a 
 and index again.
 
 ## Changes
+
+- 18 October 2026, before any claim was used or any result: coding rules for the incident
+  frame added (see Sampling frames), after reading the OHCHR report and before checking the
+  draft claims.
 
 - 18 October 2026, before any claim was restated: the claim sheet may be filled in batches
   by a second person (pseudonym in `checked_by`), with a tool hint for possible duplicates
