@@ -214,7 +214,6 @@ and index again.
   that the person confirms or ignores. Who filled each row is kept. The claim sheet's
   filler is excluded from stance annotation, since they have seen the verdicts. Procedure
   only.
-
 - 18 October 2026, before any claim, stance or result: reading order uses the listed title,
   or a headline-like address, to read likely-uprising articles first; a first pass may skip
   articles whose title or address is clearly about something else (`--only-likely`), and a
