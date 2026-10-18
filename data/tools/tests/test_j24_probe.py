@@ -69,3 +69,54 @@ def test_a_pattern_counts_only_when_the_day_changes_the_links(tmp_path):
     assert [w[0] for w in got["wp.example"].works] == ["wordpress-api"]
     text = report(list(got.values()))
     assert "2 of 3 outlets" in text and "NONE" in text
+
+
+def test_failures_say_why(tmp_path):
+    web = Site()
+    got = probe_outlet(fetcher(tmp_path, web), "frontpage", "frontpage.example", log=lambda m: None)
+    text = report([got])
+    assert "front 404" in text  # the synthetic site has no front page
+    assert "archive-date 200 12/12 links, 12 same" in text  # ignores the date
+    assert "ymd-path 404" in text and "wordpress-api 404" in text
+
+
+def _mentions_zip(rows):
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("x.CSV", "\n".join("\t".join(r) for r in rows))
+    return buf.getvalue()
+
+
+def test_gdelt_day_counts_articles_per_outlet(tmp_path):
+    from datetime import date
+
+    from carcux_data.j24 import gdelt
+
+    # SYNTHETIC mentions: two web articles from paper.example (one on a subdomain), one
+    # from elsewhere, one non-web mention.
+    row = ["1", "20240802", "20240802", "1", "paper.example", "https://www.paper.example/a/123456"]
+    rows = [
+        row + ["0"] * 10,
+        ["2", "x", "x", "1", "paper.example", "https://en.paper.example/b/654321"] + ["0"] * 10,
+        ["3", "x", "x", "1", "other.example", "https://other.example/c/111111"] + ["0"] * 10,
+        ["4", "x", "x", "2", "paper.example", "https://paper.example/d/222222"] + ["0"] * 10,
+    ]
+    body = _mentions_zip(rows)
+
+    def web(url, headers):
+        if url.endswith("/robots.txt"):
+            return Response(404, {}, b"")
+        if url.endswith("20240802000000.mentions.CSV.zip"):
+            return Response(200, {}, body)
+        return Response(404, {}, b"")
+
+    f = Fetcher(tmp_path / "c", opener=web, sleep=lambda s: None, log=lambda m: None)
+    got = gdelt.sample_day(f, date(2024, 8, 2), {"paper.example": "paper"}, every=720,
+                           log=lambda m: None)  # fmt: skip
+    assert got.by_outlet == {"paper": {"https://www.paper.example/a/123456",
+                                       "https://en.paper.example/b/654321"}}  # fmt: skip
+    assert (got.files_read, got.files_missing) == (1, 3)
+    assert gdelt.stamps(date(2024, 8, 2), 720) == ["20240802000000", "20240802120000"]
