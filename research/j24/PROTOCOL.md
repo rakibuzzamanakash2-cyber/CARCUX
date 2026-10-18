@@ -217,6 +217,11 @@ and index again.
 
 ## Changes
 
+- 18 October 2026, before any stance label or result: the archive index is read page by
+  page (its paged interface, `news-list --from archive-pages`), because week-by-week prefix
+  queries made the index search each section's whole history and time out (HTTP 503/504).
+  Same index, same window and filters; procedure only.
+
 - 18 October 2026, before any stance label or result: a probe of the 30 outlets without
   usable sitemaps found a working date-listing page for 1 (5 block automated requests with
   403, Reuters disallows robots, several build their pages with JavaScript, the rest use

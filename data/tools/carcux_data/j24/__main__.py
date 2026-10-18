@@ -81,10 +81,11 @@ def main(argv: list[str] | None = None) -> int:
             n.add_argument(
                 "--from",
                 dest="list_from",
-                choices=["sitemaps", "archive"],
+                choices=["sitemaps", "archive", "archive-pages"],
                 default="sitemaps",
-                help="the outlets' sitemaps (fast), or the Internet Archive's index (slow; "
-                "for outlets without sitemaps)",
+                help="the outlets' sitemaps (fast), or the Internet Archive's index for "
+                "outlets without sitemaps: archive-pages reads it page by page (recommended), "
+                "archive week by week (often times out)",
             )
             n.add_argument("--parallel", type=int, default=6, help="outlets listed at once")
         if name == "news-fetch":
@@ -305,10 +306,14 @@ def _news_list(args, outlets, keys) -> int:
         def say(message: str) -> None:
             print(f"[{key}] {message.strip()}", flush=True)
 
-        delay = args.delay if args.list_from == "archive" else min(args.delay, 2.0)
+        from_archive = args.list_from in ("archive", "archive-pages")
+        delay = args.delay if from_archive else min(args.delay, 2.0)
         fetcher = Fetcher(args.out / "cache", delay=delay, contact=args.contact, log=say)
-        if args.list_from == "archive":
-            first = news.list_outlet(fetcher, o, args.since, args.until, log=say)
+        if from_archive:
+            lister = (
+                news.list_outlet_pages if args.list_from == "archive-pages" else news.list_outlet
+            )
+            first = lister(fetcher, o, args.since, args.until, log=say)
             days = Counter(news.capture_day(ts) for ts in first.values())
             return key, first, len(first), days, None
         hosts = sorted({p.split("/", 1)[0].removeprefix("www.") for p in o.prefixes})
@@ -331,9 +336,9 @@ def _news_list(args, outlets, keys) -> int:
         for done in as_completed([pool.submit(one, k) for k in keys]):
             key, found, n, days, note = done.result()
             news.write_urls(args.out, outlets[key], found,
-                            "archive" if args.list_from == "archive" else "sitemap")  # fmt: skip
+                            "sitemap" if args.list_from == "sitemaps" else "archive")  # fmt: skip
             first_days = ", ".join(f"{d} {c}" for d, c in sorted(days.items())[:3])
-            hint = "" if n else "  <- none: try --from archive for this outlet"
+            hint = "" if n else "  <- none: try --from archive-pages for this outlet"
             print(f"{key}: {n} articles in the window"
                   + (f" (first days: {first_days} …)" if n else "")
                   + (f"; {note}" if note else "") + hint)  # fmt: skip
