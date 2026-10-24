@@ -61,3 +61,28 @@ def test_an_unanswered_page_is_reported_and_filled_by_a_rerun(tmp_path):
     got = news.list_outlet_pages(f, OUTLET, "2024-07-01", "2024-08-15", log=lambda m: None)
     assert len(got) == 2
     assert sum("page=0" in c for c in web.calls) == 1  # answered page came from the cache
+
+
+BANGLADESH = "%E0%A6%AC%E0%A6%BE%E0%A6%82%E0%A6%B2%E0%A6%BE%E0%A6%A6%E0%A7%87%E0%A6%B6"
+
+
+def test_bangla_addresses_are_matched_after_decoding(tmp_path):
+    # SYNTHETIC: a percent-encoded Bangla address (the word for Bangladesh) and an unrelated one.
+    bn = f"https://www.dw.com/bn/{BANGLADESH}/a-1"
+    rows = [
+        ["timestamp", "original", "statuscode", "mimetype"],
+        ["20240720100000", bn, "200", "text/html"],
+        ["20240720100000", "https://www.dw.com/en/football/a-2", "200", "text/html"],
+    ]
+
+    def web(url, headers):
+        if url.endswith("/robots.txt"):
+            return Response(200, {}, b"User-agent: *\nAllow: /\n")
+        if "showNumPages" in url:
+            return Response(200, {}, b"1\n")
+        return Response(200, {}, json.dumps(rows).encode())
+
+    outlet = news.NewsOutlet("dw", "DW", "DE", "en", ("dw.com/",), "bangladesh|বাংলাদেশ")
+    got = news.list_outlet_pages(fetcher(tmp_path, web), outlet, "2024-07-01", "2024-08-15",
+                                 log=lambda m: None)  # fmt: skip
+    assert len(got) == 1 and "/bn/" in next(iter(got))

@@ -217,6 +217,11 @@ and index again.
 
 ## Changes
 
+- 24 October 2026, before any stance label or result: outlet address filters are matched
+  against the decoded address (Bangla-script addresses are stored percent-encoded, so DW
+  Bangla matched nothing), and DW Bangla is kept whole, as it reports mostly on Bangladesh.
+  The Guardian's archive index refused access (HTTP 403) twice; it is a coverage gap.
+
 - 18 October 2026, before any stance label or result: the archive index is read page by
   page (its paged interface, `news-list --from archive-pages`), because week-by-week prefix
   queries made the index search each section's whole history and time out (HTTP 503/504).

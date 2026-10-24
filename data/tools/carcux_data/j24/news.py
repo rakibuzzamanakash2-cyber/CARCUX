@@ -27,7 +27,7 @@ from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from importlib import resources
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import unquote, urlencode, urlsplit, urlunsplit
 
 from carcux_data.j24 import WINDOW
 from carcux_data.j24.extract import SCOPE_TERMS
@@ -194,7 +194,8 @@ def list_outlet_pages(
                 ts, original, code, mime = row[:4]
                 if code != "200" or "html" not in (mime or ""):
                     continue
-                if pattern and not pattern.search(original):
+                # Addresses in Bangla script are stored percent-encoded: match the text.
+                if pattern and not pattern.search(unquote(original)):
                     continue
                 url = normalise(original)
                 if url and (url not in first or ts < first[url]):
