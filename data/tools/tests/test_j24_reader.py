@@ -88,3 +88,18 @@ def test_rebuild_rereads_the_cache_offline_and_joins_runs(tmp_path):
     assert all(r["text_chars"] >= 300 and r["about_uprising"] for r in rows)
     assert all(r["published_in_window"] is True for r in rows)
     assert "TOTAL" in (tmp_path / "news" / "rebuild.txt").read_text("utf-8")
+
+
+def test_a_damaged_cache_file_counts_as_missing(tmp_path):
+    def web(url, headers):
+        if url.endswith("/robots.txt"):
+            return Response(200, {}, b"User-agent: *\nAllow: /\n")
+        return Response(200, {}, b"<html>fresh</html>", url)
+
+    f = Fetcher(tmp_path / "c", opener=web, sleep=lambda s: None, log=lambda m: None)
+    url = "https://paper.example/a/1"
+    f.get_page(url)
+    status_file = next((tmp_path / "c" / "pages").rglob("*.status"))
+    status_file.write_bytes(b"\x00" * 64)  # what a power cut left behind
+    status, body, _ = f.get_page(url)
+    assert status == 200 and body == b"<html>fresh</html>" and f.damaged == 1

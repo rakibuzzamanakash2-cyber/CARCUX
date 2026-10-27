@@ -11,6 +11,7 @@ import time
 import urllib.error
 import urllib.request
 import urllib.robotparser
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,6 +71,7 @@ class Fetcher:
         self.log = log
         self.robots: dict[str, urllib.robotparser.RobotFileParser] = {}
         self.requests = 0
+        self.damaged = 0  # cache files found damaged (crash, power cut) and dropped
 
     def _cache_path(self, url: str) -> Path:
         return self.cache_dir / (hashlib.sha256(url.encode()).hexdigest() + ".json")
@@ -116,8 +118,12 @@ class Fetcher:
         """(status, headers, parsed JSON or None). Cached responses are reused."""
         cached = self._cache_path(url)
         if cached.exists():
-            data = json.loads(cached.read_text(encoding="utf-8"))
-            return data["status"], data["headers"], data["json"]
+            try:
+                data = json.loads(cached.read_text(encoding="utf-8"))
+                return data["status"], data["headers"], data["json"]
+            except (ValueError, KeyError, OSError):
+                self.damaged += 1  # damaged by a crash: forget it and ask again
+                cached.unlink(missing_ok=True)
         if not self.allowed(url):
             raise Disallowed(url)
         r = self._request(url)
@@ -141,9 +147,15 @@ class Fetcher:
         body_path = self.cache_dir / "pages" / key[:2] / f"{key}.html.gz"
         status_path = body_path.with_suffix(".status")
         if status_path.exists():
-            status_line, _, final = status_path.read_text().partition("\n")
-            body = gzip.decompress(body_path.read_bytes()) if body_path.exists() else b""
-            return int(status_line), body, final or url
+            try:
+                status_line, _, final = status_path.read_text().partition("\n")
+                body = gzip.decompress(body_path.read_bytes()) if body_path.exists() else b""
+                return int(status_line), body, final or url
+            except (ValueError, OSError, EOFError, zlib.error):
+                # Damaged by a crash or power cut: forget it and fetch the page again.
+                self.damaged += 1
+                status_path.unlink(missing_ok=True)
+                body_path.unlink(missing_ok=True)
         if not self.allowed(url):
             raise Disallowed(url)
         r = self._request(url, accept="text/html")
