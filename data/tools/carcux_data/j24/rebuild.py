@@ -91,6 +91,11 @@ def rebuild(out: Path, parts: list[Path], *, log: Callable[[str], None] = print
                 if n % 5000 == 0:
                     log(f"  {path.parent.parent.name}: {n} records done")
     tmp.replace(target)
+    if fetcher.damaged:
+        log(
+            f"  {fetcher.damaged} damaged cache files (from crashes) were dropped; those "
+            "articles keep their first record"
+        )
     return stats
 
 
