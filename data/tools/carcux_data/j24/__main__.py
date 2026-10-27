@@ -8,6 +8,7 @@
     python -m carcux_data.j24 merge-sheets --out DIR
     python -m carcux_data.j24 news-list --out DIR [--outlets a,b] [--since D --until D]
     python -m carcux_data.j24 news-probe --out DIR [--outlets a,b]
+    python -m carcux_data.j24 news-rebuild --out DIR [--parts part2,part4]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -56,6 +57,10 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--checked-by", default="", help="the helper's pseudonym, never a name")
     mg = sub.add_parser("merge-sheets", help="join the batches into claim_sheet_merged.xlsx")
     mg.add_argument("--out", required=True, type=Path)
+    rb = sub.add_parser("news-rebuild", help="re-read collected articles offline and join "
+                        "the runs into news/articles_all.jsonl")  # fmt: skip
+    rb.add_argument("--out", required=True, type=Path)
+    rb.add_argument("--parts", default="", help="part folders inside --out, e.g. part2,part4")
     pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
     pr.add_argument("--out", required=True, type=Path)
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
@@ -136,6 +141,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command in ("split-sheet", "merge-sheets"):
         return _batches(args)
+
+    if args.command == "news-rebuild":
+        from carcux_data.j24.rebuild import rebuild, report
+
+        parts = [args.out / p.strip() for p in args.parts.split(",") if p.strip()]
+        text = report(rebuild(args.out, parts, log=lambda m: print(m, flush=True)))
+        (args.out / "news" / "rebuild.txt").write_text(text, encoding="utf-8")
+        print("\n" + text)
+        return 0
 
     if args.command == "news-probe":
         return _probe(args)
