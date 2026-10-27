@@ -210,7 +210,12 @@ def list_outlet_pages(
 
 
 class _Article(HTMLParser):
-    """Title, published time, language and paragraph text of a news page."""
+    """Title, published time, language and text of a news page. Text comes from paragraphs
+    when the page has them, else from the article data many sites embed for search engines
+    (JSON-LD articleBody) or for their own scripts (Next.js data), else from the page's
+    longer visible text blocks (sites that lay articles out without paragraphs)."""
+
+    NOISE = ("nav", "header", "footer", "aside", "form", "button")
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -220,10 +225,14 @@ class _Article(HTMLParser):
         self._in_title = False
         self._in_p = 0
         self._skip = 0
+        self._noise = 0
         self.paragraphs: list[str] = []
         self._current: list[str] = []
         self.ld: list[str] = []
+        self._json: list[str] = []
         self._in_ld = False
+        self._in_json = False
+        self.blocks: list[str] = []
         self.times: list[str] = []
 
     def handle_starttag(self, tag, attrs):
@@ -237,10 +246,15 @@ class _Article(HTMLParser):
         elif tag == "title":
             self._in_title = True
         elif tag in ("script", "style", "noscript"):
-            if tag == "script" and (a.get("type") or "").lower() == "application/ld+json":
+            kind = (a.get("type") or "").lower()
+            if tag == "script" and kind == "application/ld+json":
                 self._in_ld = True
+            elif tag == "script" and (a.get("id") == "__NEXT_DATA__" or kind == "application/json"):
+                self._in_json = True
             else:
                 self._skip += 1
+        elif tag in self.NOISE:
+            self._noise += 1
         elif tag == "p":
             self._in_p += 1
         elif tag == "time" and a.get("datetime"):
@@ -251,8 +265,12 @@ class _Article(HTMLParser):
             self._in_title = False
         elif tag == "script" and self._in_ld:
             self._in_ld = False
+        elif tag == "script" and self._in_json:
+            self._in_json = False
         elif tag in ("script", "style", "noscript") and self._skip:
             self._skip -= 1
+        elif tag in self.NOISE and self._noise:
+            self._noise -= 1
         elif tag == "p" and self._in_p:
             self._in_p -= 1
             text = " ".join("".join(self._current).split())
@@ -263,12 +281,77 @@ class _Article(HTMLParser):
     def handle_data(self, data):
         if self._in_ld:
             self.ld.append(data)
+        elif self._in_json:
+            self._json.append(data)
         elif self._skip:
             return
         elif self._in_title:
             self.title += data
-        elif self._in_p:
-            self._current.append(data)
+        else:
+            if self._in_p:
+                self._current.append(data)
+            if not self._noise:
+                text = " ".join(data.split())
+                if len(text) >= 40:
+                    self.blocks.append(text)
+
+
+def _json_objects(chunks: list[str]) -> list:
+    out = []
+    for chunk in chunks:
+        try:
+            out.append(json.loads(chunk))
+        except ValueError:
+            continue
+    return out
+
+
+def _walk(node, found: list, want) -> None:
+    if isinstance(node, dict):
+        for k, v in node.items():
+            want(k, v, found)
+            _walk(v, found, want)
+    elif isinstance(node, list):
+        for v in node:
+            _walk(v, found, want)
+
+
+def _ld_fields(page: _Article) -> dict[str, str]:
+    """articleBody, headline and datePublished from the page's JSON-LD, if any."""
+    fields: dict[str, str] = {}
+
+    def want(k, v, found):
+        if k in ("articleBody", "headline", "datePublished") and isinstance(v, str):
+            fields.setdefault(k, v.strip())
+
+    for obj in _json_objects(["".join(page.ld)]) + _json_objects(page.ld):
+        _walk(obj, [], want)
+    return fields
+
+
+def _script_text(page: _Article) -> str:
+    """Sentences held in a page's script data (Next.js and similar): the long strings
+    stored under text-like keys, in order."""
+    found: list[str] = []
+
+    def want(k, v, out):
+        if (
+            k in ("text", "body", "content", "paragraph", "value")
+            and isinstance(v, str)
+            and len(v) >= 40
+            and v.count(" ") >= 5
+            and not v.startswith(("http", "<"))
+        ):
+            out.append(" ".join(v.split()))
+
+    for obj in _json_objects(["".join(page._json)]):
+        _walk(obj, found, want)
+    seen, ordered = set(), []
+    for t in found:
+        if t not in seen:
+            seen.add(t)
+            ordered.append(t)
+    return " ".join(ordered)
 
 
 _ISO = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?")
@@ -285,19 +368,35 @@ def _published(page: _Article) -> str | None:
     return next((t for t in page.times if _ISO.match(t)), None)
 
 
+MIN_TEXT = 300  # fewer characters than this from paragraphs: look for the text elsewhere
+
+
 def read_article(html: bytes) -> dict:
     page = _Article()
     page.feed(html.decode("utf-8", "replace"))
-    title = page.meta.get("og:title") or " ".join(page.title.split())
-    text = " ".join(page.paragraphs)
+    ld = _ld_fields(page)
+    title = (page.meta.get("og:title") or ld.get("headline")
+             or " ".join(page.title.split()))  # fmt: skip
+    text, text_source = " ".join(page.paragraphs), "paragraphs"
+    if len(text) < MIN_TEXT:
+        for source, candidate in (("json_ld", ld.get("articleBody", "")),
+                                  ("script_data", _script_text(page)),
+                                  ("text_blocks", " ".join(page.blocks))):  # fmt: skip
+            if len(candidate) >= MIN_TEXT:
+                text, text_source = " ".join(candidate.split()), source
+                break
     low = f"{title} {text[:4000]}".lower()
     terms = sorted({t for t in SCOPE_TERMS if t.lower() in low})
     in_title = any(t.lower() in title.lower() for t in SCOPE_TERMS)
+    published = _published(page)
+    if not published and ld.get("datePublished") and _ISO.match(ld["datePublished"]):
+        published = ld["datePublished"]
     return {
         "title": title[:300],
-        "published_at": _published(page),
+        "published_at": published,
         "language": page.lang,
         "text_chars": len(text),
+        "text_source": text_source,
         "scope_terms": terms,
         "about_uprising": in_title or len(terms) >= 2,
     }

@@ -217,6 +217,15 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, after collection and before any matching, stance label or result: the
+  article reader also takes text from a page's JSON-LD article body, its script data, or
+  its longer text blocks when the page has no paragraphs (BBC, Ittefaq and Kaler Kantho
+  pages had yielded no text), and all collected pages are re-read offline from the cache
+  with it (`news-rebuild`), joining the parallel runs and dropping duplicates. Articles are
+  later kept for matching only if published in the window. Coverage notes: most Desh
+  Rupantor articles listed by its sitemaps have no archive copy (about 7,000), and many
+  Hindustan Times copies failed; both are reported per outlet.
+
 - 24 October 2026, before any stance label or result: outlet address filters are matched
   against the decoded address (Bangla-script addresses are stored percent-encoded, so DW
   Bangla matched nothing), and DW Bangla is kept whole, as it reports mostly on Bangladesh.
