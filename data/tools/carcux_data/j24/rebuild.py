@@ -18,7 +18,14 @@ from pathlib import Path
 
 from carcux_data.j24 import WINDOW
 from carcux_data.j24.fetch import Disallowed, Fetcher, Response
-from carcux_data.j24.news import MIN_TEXT, WAYBACK, day_key, load_urls, read_article
+from carcux_data.j24.news import (
+    MIN_TEXT,
+    WAYBACK,
+    day_key,
+    load_urls,
+    parse_date,
+    read_article,
+)
 
 
 def _offline(url: str, headers: dict) -> Response:
@@ -79,7 +86,8 @@ def rebuild(out: Path, parts: list[Path], *, log: Callable[[str], None] = print
                     if status and status < 400 and body:
                         art = read_article(body)
                         art["title"] = art["title"] or r.get("title") or ""
-                        art["published_at"] = art["published_at"] or r.get("published_at")
+                        old = parse_date(r.get("published_at"))
+                        art["published_at"] = art["published_at"] or old
                         r.update(art)
                         s.reread += 1
                 r["published_in_window"] = _in_window(r.get("published_at"))

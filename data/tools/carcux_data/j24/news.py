@@ -19,11 +19,13 @@ Outputs, in the folder given with --out (working files, never published as they 
 from __future__ import annotations
 
 import csv
+import gzip
+import html as htmllib
 import json
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
 from importlib import resources
 from pathlib import Path
@@ -35,6 +37,7 @@ from carcux_data.j24.fetch import Disallowed, Fetcher
 
 CDX = "https://web.archive.org/cdx/search/cdx"
 WAYBACK = "https://web.archive.org/web"
+BD_TIME = timezone(timedelta(hours=6))
 PAGE_SIZE = 1000
 
 # Addresses that are listings, media or tools, not articles.
@@ -234,6 +237,7 @@ class _Article(HTMLParser):
         self._in_json = False
         self.blocks: list[str] = []
         self.times: list[str] = []
+        self.canonical = ""
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -243,6 +247,8 @@ class _Article(HTMLParser):
             key = (a.get("property") or a.get("name") or a.get("itemprop") or "").lower()
             if key and a.get("content"):
                 self.meta.setdefault(key, a["content"].strip())
+        elif tag == "link" and (a.get("rel") or "").lower() == "canonical" and a.get("href"):
+            self.canonical = self.canonical or a["href"]
         elif tag == "title":
             self._in_title = True
         elif tag in ("script", "style", "noscript"):
@@ -356,44 +362,168 @@ def _script_text(page: _Article) -> str:
 
 _ISO = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?")
 
+# Dates as Bangladeshi outlets write them. Bangla digits are turned into ASCII first.
+_BN_DIGITS = str.maketrans("০১২৩৪৫৬৭৮৯", "0123456789")
+_MONTHS = {
+    **{m: i for i, m in enumerate(("jan feb mar apr may jun jul aug sep oct nov dec").split(), 1)},
+    **{m: i for i, m in enumerate(("জানুয়ারি ফেব্রুয়ারি মার্চ এপ্রিল মে জুন জুলাই আগস্ট "
+                                   "সেপ্টেম্বর অক্টোবর নভেম্বর ডিসেম্বর").split(), 1)},
+}  # fmt: skip
+_MONTH_WORD = "|".join(sorted((re.escape(m) for m in _MONTHS), key=len, reverse=True))
+_DAY_MONTH_YEAR = re.compile(rf"(?<!\d)(\d{{1,2}})\s+({_MONTH_WORD})[a-z]*\.?,?\s+(\d{{4}})", re.I)
+_YMD = re.compile(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?")
+_CLOCK = re.compile(r"(\d{1,2}):(\d{2})\s*(am|pm|এএম|পিএম)?", re.I)
+_LABELLED = re.compile(r"(?:প্রকাশ|প্রকাশিত|Published)\s*:\s*(.{6,60})")
+_URL_DATE = re.compile(r"/(20\d{2})[/-](\d{2})[/-](\d{2})(?:/|$)")
+_EPOCH_MS = re.compile(r'publishedAt"?\s*:\s*"?(1\d{12})"?')
+_IMAGE_STAMP = re.compile(r"image-\d+-(1\d{9})\.\w+")
 
-def _published(page: _Article) -> str | None:
-    for key in ("article:published_time", "og:published_time", "datepublished",
-                "publishdate", "pubdate", "dc.date"):  # fmt: skip
-        if page.meta.get(key) and _ISO.match(page.meta[key]):
-            return page.meta[key]
-    m = re.search(r'"datePublished"\s*:\s*"([^"]+)"', "".join(page.ld))
-    if m and _ISO.match(m.group(1)):
-        return m.group(1)
-    return next((t for t in page.times if _ISO.match(t)), None)
+
+def parse_date(raw: str | None) -> str | None:
+    """A published date written in any of the outlets' formats, as ISO ("2024-07-18" or
+    "2024-07-18T10:05"). None for a date without a day, or before 2000 (a placeholder)."""
+    if not raw:
+        return None
+    text = raw.translate(_BN_DIGITS)
+    if _ISO.match(text):
+        return text if text[:4] >= "2000" else None
+    m = _YMD.search(text)
+    if m:
+        y, mo, d, hh, mm = m.groups()
+        day = f"{y}-{mo}-{d}"
+    else:
+        m = _DAY_MONTH_YEAR.search(text)
+        if not m:
+            return None
+        d, word, y = m.groups()
+        mo = _MONTHS.get(word.lower()[:3]) or _MONTHS.get(word)
+        if not mo:
+            return None
+        day = f"{y}-{mo:02d}-{int(d):02d}"
+        hh = mm = None
+        c = _CLOCK.search(text)
+        if c:
+            h, mm, half = int(c.group(1)), c.group(2), (c.group(3) or "").lower()
+            h = h % 12 + 12 if half in ("pm", "পিএম") else (h % 12 if half else h)
+            hh = f"{h:02d}"
+    try:
+        date.fromisoformat(day)
+    except ValueError:
+        return None
+    if day < "2000":
+        return None
+    return f"{day}T{hh}:{mm}" if hh else day
+
+
+def _published(page: _Article, html: str) -> tuple[str | None, str | None]:
+    """The page's published date and where it came from. In order of trust: the page's
+    own date fields; the date in its address; the date printed after "প্রকাশ:" or
+    "Published:"; a time stamp in the page's script data; and, last, the upload time
+    stamped in the lead image's file name (Jugantor prints no date at all)."""
+    ld = re.findall(r'"datePublished"\s*:\s*"([^"]+)"', "".join(page.ld))
+    for raw in [page.meta.get(k) for k in ("article:published_time", "og:published_time",
+                                           "datepublished", "publishdate", "pubdate",
+                                           "dc.date")] + ld + page.times:  # fmt: skip
+        found = parse_date(raw)
+        if found:
+            return found, "page_field"
+    for address in (page.meta.get("og:url"), page.canonical):
+        m = _URL_DATE.search(unquote(address or ""))
+        if m:
+            return parse_date("-".join(m.groups())), "address"
+    for m in _LABELLED.finditer(re.sub(r"<[^>]+>|&nbsp;", " ", html)):
+        found = parse_date(m.group(1))
+        if found:
+            return found, "page_text"
+    m = _EPOCH_MS.search(html)
+    if m:
+        stamp = datetime.fromtimestamp(int(m.group(1)) / 1000, tz=BD_TIME)
+        return stamp.strftime("%Y-%m-%dT%H:%M"), "script_data"
+    m = _IMAGE_STAMP.search(page.meta.get("og:image", ""))
+    if m:
+        stamp = datetime.fromtimestamp(int(m.group(1)), tz=BD_TIME)
+        return stamp.strftime("%Y-%m-%dT%H:%M"), "image_stamp"
+    return None, None
+
+
+def _is_article(page: _Article) -> bool:
+    """False for a section or front page (its own address has no article number or slug)."""
+    address = unquote(page.meta.get("og:url") or page.canonical or "")
+    if not address:
+        return page.meta.get("og:type", "article") == "article"
+    last = urlsplit(address).path.rstrip("/").rsplit("/", 1)[-1]
+    return bool(re.search(r"\d{4,}", address)) or last.count("-") >= 3
+
+
+def _plain(text: str) -> str:
+    """Text that may be HTML, escaped once or twice (Kaler Kantho's articleBody)."""
+    for _ in range(3):
+        unescaped = htmllib.unescape(text)
+        if unescaped == text:
+            break
+        text = unescaped
+    return " ".join(re.sub(r"<[^>]+>", " ", text).split())
+
+
+_JS_STRING = re.compile(r'"((?:[^"\\]|\\.){300,})"')
+
+
+def _nuxt_text(html: str) -> str:
+    """The article body kept in a Nuxt page's state (window.__NUXT__, Somoy): the longest
+    string there that holds paragraphs."""
+    i = html.find("window.__NUXT__")
+    if i < 0:
+        return ""
+    script = html[i : html.find("</script>", i)]
+    best = ""
+    for m in _JS_STRING.finditer(script):
+        raw = m.group(1)
+        if "\\u003Cp" not in raw and "<p" not in raw:
+            continue
+        try:
+            value = json.loads(f'"{raw}"')
+        except ValueError:
+            continue
+        value = _plain(value)
+        if len(value) > len(best):
+            best = value
+    return best
 
 
 MIN_TEXT = 300  # fewer characters than this from paragraphs: look for the text elsewhere
 
 
 def read_article(html: bytes) -> dict:
+    if html[:2] == b"\x1f\x8b":  # some captures (Ittefaq) were saved still compressed
+        try:
+            html = gzip.decompress(html)
+        except (OSError, EOFError):
+            pass
+    raw = html.decode("utf-8", "replace")
     page = _Article()
-    page.feed(html.decode("utf-8", "replace"))
+    page.feed(raw)
     ld = _ld_fields(page)
     title = (page.meta.get("og:title") or ld.get("headline")
              or " ".join(page.title.split()))  # fmt: skip
     text, text_source = " ".join(page.paragraphs), "paragraphs"
     if len(text) < MIN_TEXT:
-        for source, candidate in (("json_ld", ld.get("articleBody", "")),
-                                  ("script_data", _script_text(page)),
-                                  ("text_blocks", " ".join(page.blocks))):  # fmt: skip
+        for source, get in (("json_ld", lambda: _plain(ld.get("articleBody", ""))),
+                            ("script_data", lambda: _script_text(page)),
+                            ("nuxt_state", lambda: _nuxt_text(raw)),
+                            ("text_blocks", lambda: " ".join(page.blocks))):  # fmt: skip
+            candidate = get()
             if len(candidate) >= MIN_TEXT:
                 text, text_source = " ".join(candidate.split()), source
                 break
     low = f"{title} {text[:4000]}".lower()
     terms = sorted({t for t in SCOPE_TERMS if t.lower() in low})
     in_title = any(t.lower() in title.lower() for t in SCOPE_TERMS)
-    published = _published(page)
-    if not published and ld.get("datePublished") and _ISO.match(ld["datePublished"]):
-        published = ld["datePublished"]
+    published, published_source = _published(page, raw)
     return {
         "title": title[:300],
         "published_at": published,
+        "published_source": published_source,
+        "is_article": _is_article(page),
         "language": page.lang,
         "text_chars": len(text),
         "text_source": text_source,
