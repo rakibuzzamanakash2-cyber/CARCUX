@@ -217,6 +217,25 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, before the matcher is built and before any result: the fact-check
+  claim sheet is complete. All 459 fact-checks (Rumor Scanner, Dismislab, FactWatch,
+  1 July–15 August 2024) were drafted by an AI assistant and checked row by row by
+  annotator-A; 290 are about the uprising. Rules settled while checking: (1) the check
+  says whether the draft is right, never whether the news is true; an annotator's own
+  view of what happened is not recorded, and a row the annotator disagrees with is marked
+  "disputed" with the fact-checker's verdict kept; (2) a fact-check that covers several
+  claims at once (a roundup) is coded misleading as a whole, with one general claim;
+  (3) a fact-check of a claim already in the sheet (another fact-checker, or an English
+  version) points to it with same_claim_as and keeps its own fact-checker's verdict, so
+  disagreements between fact-checkers stay visible; (4) satire is not a verdict, and a
+  satire row is dropped; (5) a live-update page is not a fact-check and is dropped. A
+  consistency pass (codes, links, dates, privacy) fixed two event codes and removed
+  remaining names, religion and party labels attached to persons from the evidence text.
+  Merged with the 107 OHCHR incident claims into claims v1: 397 rows in scope in 323
+  claim groups, 96 of them ground truth (OHCHR found or contradicted). Because annotator-A
+  marked nearly every draft as correct, a random sample of 100 fact-check rows (seed 2024)
+  will be fully re-checked against the source and the draft error rate reported.
+
 - 28 October 2026, before any article is matched to a claim and before any result: the
   article reader was fixed on 18 saved sample pages from six outlets. Dates are now read
   in the formats the outlets use (Bangla digits and month names, "29 June 2024", "2024-07-18
