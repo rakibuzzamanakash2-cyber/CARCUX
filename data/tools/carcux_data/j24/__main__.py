@@ -58,6 +58,10 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--checked-by", default="", help="the helper's pseudonym, never a name")
     mg = sub.add_parser("merge-sheets", help="join the batches into claim_sheet_merged.xlsx")
     mg.add_argument("--out", required=True, type=Path)
+    sm = sub.add_parser("news-sample", help="copy a few saved pages per outlet to samples/")
+    sm.add_argument("--out", required=True, type=Path)
+    sm.add_argument("--outlets", required=True)
+    sm.add_argument("--n", type=int, default=3)
     fx = sub.add_parser("factcheck-export", help="fact-check texts from the cache, in batches")
     fx.add_argument("--out", required=True, type=Path)
     fx.add_argument("--batch", type=int, default=40)
@@ -145,6 +149,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command in ("split-sheet", "merge-sheets"):
         return _batches(args)
+
+    if args.command == "news-sample":
+        from carcux_data.j24.sample import sample
+
+        keys = [k.strip() for k in args.outlets.split(",") if k.strip()]
+        files = sample(args.out, keys, n=args.n)
+        print(f"{len(files)} pages copied to {args.out / 'samples'}")
+        return 0 if files else 1
 
     if args.command == "factcheck-export":
         from carcux_data.j24.export import export
