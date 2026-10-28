@@ -217,6 +217,13 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, after looking at a sample of the first candidates and before any is
+  labelled: a story saved under two addresses was listed more than once for a claim, so
+  candidates are now kept once per outlet and title. The English OHCHR claims found
+  mostly English articles (BM25 cannot cross languages), so the candidates are made with
+  `--embed` (the multilingual model, as described above), not BM25 alone. No candidate
+  had been labelled; nothing was tuned on labels.
+
 - 28 October 2026, before any article is labelled and before any result: the matcher.
   `news-texts` writes the text of every collected article that is an article, has at
   least 300 characters of text and was published in the window (or has no known date),

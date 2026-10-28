@@ -96,3 +96,15 @@ def test_candidate_sheet_has_no_verdict(tmp_path):
     ws = load_workbook(tmp_path / "matches" / "candidates.xlsx")["Candidates"]
     head = [c.value for c in ws[1]]
     assert "verdict" not in head and "stance" in head and ws.max_row == 2
+
+
+def test_the_same_story_under_two_addresses_is_listed_once(tmp_path):
+    claims = [claim("c1", "students were killed at the campus", "2024-07-16")]
+    text = "SYNTHETIC students were killed at the campus " * 5
+    arts = [
+        art("u1", "Campus deaths | Paper", text, "2024-07-16"),
+        art("u1%20", "Campus deaths", text, "2024-07-16"),
+        art("u2", "Another story on the campus", text, "2024-07-16"),
+    ]
+    res = m.match(tmp_path, write(tmp_path, claims, arts), log=lambda s: None)
+    assert len(res) == 2 and {r["url"] for r in res} >= {"u2"}

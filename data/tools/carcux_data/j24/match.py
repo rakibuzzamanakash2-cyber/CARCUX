@@ -251,7 +251,16 @@ def match(out: Path, claims_path: Path, *, top: int = 10, embed: bool = False,
             for rank, (_, i) in enumerate(emb):
                 fused[i] += 1 / (60 + rank)
         bm_score = dict((i, s) for s, i in bm)
-        for rank, (i, f) in enumerate(sorted(fused.items(), key=lambda kv: -kv[1])[:top], 1):
+        chosen, seen = [], set()
+        for i, f in sorted(fused.items(), key=lambda kv: -kv[1]):
+            key = same_article(articles[i])
+            if key in seen:
+                continue  # the same story saved under two addresses
+            seen.add(key)
+            chosen.append((i, f))
+            if len(chosen) == top:
+                break
+        for rank, (i, f) in enumerate(chosen, 1):
             a = articles[i]
             results.append({
                 "claim_group": g["claim_group"], "rank": rank, "url": a["url"],
@@ -270,6 +279,14 @@ def match(out: Path, claims_path: Path, *, top: int = 10, embed: bool = False,
     )
     write_sheet(folder / "candidates.xlsx", groups, results)
     return results
+
+
+def same_article(a: dict) -> tuple[str, str]:
+    """Outlet and title without punctuation, site name or spacing: one key per story, so a
+    story saved under two addresses (encoded, mobile, with a query) is listed once."""
+    title = (a.get("title") or "").split(" | ")[0].lower()
+    title = "".join(re.findall(r"[a-z0-9\u0980-\u09ff]+", title))
+    return a.get("outlet") or "", title or a.get("url", "")
 
 
 def snippet(article: dict, query: list[str], width: int = 300) -> str:
