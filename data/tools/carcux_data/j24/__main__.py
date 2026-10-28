@@ -8,6 +8,7 @@
     python -m carcux_data.j24 merge-sheets --out DIR
     python -m carcux_data.j24 news-list --out DIR [--outlets a,b] [--since D --until D]
     python -m carcux_data.j24 news-probe --out DIR [--outlets a,b]
+    python -m carcux_data.j24 factcheck-export --out DIR [--batch 40]
     python -m carcux_data.j24 news-rebuild --out DIR [--parts part2,part4]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
@@ -61,6 +62,9 @@ def main(argv: list[str] | None = None) -> int:
     sm.add_argument("--out", required=True, type=Path)
     sm.add_argument("--outlets", required=True)
     sm.add_argument("--n", type=int, default=3)
+    fx = sub.add_parser("factcheck-export", help="fact-check texts from the cache, in batches")
+    fx.add_argument("--out", required=True, type=Path)
+    fx.add_argument("--batch", type=int, default=40)
     rb = sub.add_parser("news-rebuild", help="re-read collected articles offline and join "
                         "the runs into news/articles_all.jsonl")  # fmt: skip
     rb.add_argument("--out", required=True, type=Path)
@@ -153,6 +157,14 @@ def main(argv: list[str] | None = None) -> int:
         files = sample(args.out, keys, n=args.n)
         print(f"{len(files)} pages copied to {args.out / 'samples'}")
         return 0 if files else 1
+
+    if args.command == "factcheck-export":
+        from carcux_data.j24.export import export
+
+        files = export(args.out, batch=args.batch)
+        rows = sum(len(p.read_text("utf-8").splitlines()) for p in files)
+        print(f"{rows} fact-checks in {len(files)} files in {args.out / 'factcheck_export'}")
+        return 0 if rows else 1
 
     if args.command == "news-rebuild":
         from carcux_data.j24.rebuild import rebuild, report

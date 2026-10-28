@@ -217,6 +217,14 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, before any claim from the fact-check frame is used and before any
+  result: the claim sheet is drafted by an AI assistant from each fact-check's own text
+  (exported from the local cache, `factcheck-export`) and every row is then verified by a
+  human annotator against the fact-check (ok / fix / drop), as was done for the OHCHR
+  incident claims. The verdict is the fact-checker's, copied from its article, never the
+  assistant's or the annotator's own judgement. Drafted and verified rows are reported as
+  such. Reason: the helper annotator could not take part.
+
 - 28 October 2026, after collection and before any matching, stance label or result: the
   article reader also takes text from a page's JSON-LD article body, its script data, or
   its longer text blocks when the page has no paragraphs (BBC, Ittefaq and Kaler Kantho
