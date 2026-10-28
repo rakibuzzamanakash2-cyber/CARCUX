@@ -217,6 +217,21 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, before any article is matched to a claim and before any result: the
+  article reader was fixed on 18 saved sample pages from six outlets. Dates are now read
+  in the formats the outlets use (Bangla digits and month names, "29 June 2024", "2024-07-18
+  10:05"), and a placeholder date (1970) or one without a day is rejected. When the page's
+  own date field is missing or unusable, the date is taken, in this order, from the
+  article's address (Kaler Kantho, Somoy), the line after "প্রকাশ:" or "Published:", a
+  time stamp in the page's script data, and last the upload time in the lead image's file
+  name (Jugantor prints no article date; this is an approximation). Each record says where
+  its date came from (`published_source`), so the approximate ones can be left out of any
+  analysis that depends on time. Ittefaq captures were saved still compressed and are now
+  decompressed (its earlier "text" was unreadable bytes); Somoy's text is read from its Nuxt
+  page state; Kaler Kantho's escaped JSON-LD body is cleaned. Section pages (for example
+  /country-news) are marked `is_article: false`. Some Kaler Kantho captures are empty
+  page shells and have no text to recover.
+
 - 28 October 2026, before any claim from the fact-check frame is used and before any
   result: the claim sheet is drafted by an AI assistant from each fact-check's own text
   (exported from the local cache, `factcheck-export`) and every row is then verified by a
