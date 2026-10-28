@@ -217,6 +217,21 @@ and index again.
 
 ## Changes
 
+- 28 October 2026, before any article is labelled and before any result: the matcher.
+  `news-texts` writes the text of every collected article that is an article, has at
+  least 300 characters of text and was published in the window (or has no known date),
+  from the saved pages. `claims-match` then ranks candidate articles for each claim group
+  of claims v1: articles dated from 7 days before to 21 days after the claim's date (its
+  event date, else a week before the first fact-check), ranked by BM25 on words with a
+  light Bangla suffix strip; the query joins the English claim with the fact-checkers' own
+  Bangla titles and sentences, so Bangla articles are found without translation. With
+  `--embed`, BM25 is fused (reciprocal rank fusion, k = 60) with the multilingual
+  sentence model intfloat/multilingual-e5-small. The top 10 per group go to a candidate
+  sheet for stance labelling (repeats, questions, corrects, mentions, unrelated). The
+  sheet shows no verdicts; annotator-A has seen the verdicts and does not label stance.
+  These settings (window, top 10, model) are fixed before labelling and not tuned on
+  labelled pairs.
+
 - 28 October 2026, before the matcher is built and before any result: the fact-check
   claim sheet is complete. All 459 fact-checks (Rumor Scanner, Dismislab, FactWatch,
   1 July–15 August 2024) were drafted by an AI assistant and checked row by row by

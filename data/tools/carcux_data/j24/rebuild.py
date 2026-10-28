@@ -50,10 +50,27 @@ def _in_window(published: str | None) -> bool | None:
     return WINDOW[0] <= published[:10] <= WINDOW[1]
 
 
+def cached_page(fetcher: Fetcher, urls: dict[str, dict], record: dict) -> bytes | None:
+    """The saved page of an article read from the archive, or None if it is not cached."""
+    u = urls.get(record.get("url"))
+    when = (u.get("capture") or day_key(u)) if u else None
+    if record.get("text_from", "wayback") != "wayback" or not when:
+        return None
+    try:
+        status, body, _ = fetcher.get_page(f"{WAYBACK}/{when}id_/{record['url']}")
+    except (OSError, Disallowed):
+        return None
+    return body if status and status < 400 and body else None
+
+
+def offline_fetcher(out: Path) -> Fetcher:
+    return Fetcher(out / "cache", opener=_offline, sleep=lambda s: None, log=lambda m: None)
+
+
 def rebuild(out: Path, parts: list[Path], *, log: Callable[[str], None] = print
             ) -> dict[str, OutletStats]:  # fmt: skip
     urls = {u["url"]: u for u in load_urls(out)}
-    fetcher = Fetcher(out / "cache", opener=_offline, sleep=lambda s: None, log=lambda m: None)
+    fetcher = offline_fetcher(out)
     files = [out / "news" / "articles.jsonl"] + [p / "news" / "articles.jsonl" for p in parts]
     seen: set[str] = set()
     stats: dict[str, OutletStats] = {}
@@ -76,20 +93,14 @@ def rebuild(out: Path, parts: list[Path], *, log: Callable[[str], None] = print
                 s.records += 1
                 s.with_text_before += r.get("text_chars", 0) >= MIN_TEXT
                 s.about_before += bool(r.get("about_uprising"))
-                u = urls.get(r["url"])
-                when = (u.get("capture") or day_key(u)) if u else None
-                if r.get("text_from", "wayback") == "wayback" and when:
-                    try:
-                        status, body, _ = fetcher.get_page(f"{WAYBACK}/{when}id_/{r['url']}")
-                    except (OSError, Disallowed):
-                        status, body = 0, b""
-                    if status and status < 400 and body:
-                        art = read_article(body)
-                        art["title"] = art["title"] or r.get("title") or ""
-                        old = parse_date(r.get("published_at"))
-                        art["published_at"] = art["published_at"] or old
-                        r.update(art)
-                        s.reread += 1
+                body = cached_page(fetcher, urls, r)
+                if body:
+                    art = read_article(body)
+                    art["title"] = art["title"] or r.get("title") or ""
+                    old = parse_date(r.get("published_at"))
+                    art["published_at"] = art["published_at"] or old
+                    r.update(art)
+                    s.reread += 1
                 r["published_in_window"] = _in_window(r.get("published_at"))
                 s.with_text += r.get("text_chars", 0) >= MIN_TEXT
                 s.about += bool(r.get("about_uprising"))
