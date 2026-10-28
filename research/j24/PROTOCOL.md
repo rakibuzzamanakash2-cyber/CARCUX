@@ -217,6 +217,15 @@ and index again.
 
 ## Changes
 
+- 29 October 2026, after looking at the candidates made with `--embed` and before any is
+  labelled: the multilingual model kept the candidate quality but did not bring Bangla
+  articles to the English OHCHR claims (3% Bangla), and one outlet (The Daily Star) made
+  up half of all candidates. The candidate list per claim is therefore balanced: at most
+  3 articles from one outlet, and 5 Bangla and 5 English articles while both languages
+  have candidates (the rest filled from either), each chosen in rank order. This sets
+  how the labelled sample is drawn, not how articles are scored; it was fixed before any
+  pair was labelled.
+
 - 28 October 2026, after looking at a sample of the first candidates and before any is
   labelled: a story saved under two addresses was listed more than once for a claim, so
   candidates are now kept once per outlet and title. The English OHCHR claims found

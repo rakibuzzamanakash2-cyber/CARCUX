@@ -108,3 +108,15 @@ def test_the_same_story_under_two_addresses_is_listed_once(tmp_path):
     ]
     res = m.match(tmp_path, write(tmp_path, claims, arts), log=lambda s: None)
     assert len(res) == 2 and {r["url"] for r in res} >= {"u2"}
+
+
+def test_candidates_are_balanced_by_language_and_outlet():
+    arts = [
+        {"outlet": "big", "title": f"English story {n}", "text": "SYNTHETIC text"} for n in range(8)
+    ]
+    arts += [{"outlet": f"bn{n}", "title": f"বাংলা খবর {n}", "text": "কৃত্রিম লেখা"} for n in range(4)]
+    ranked = [(i, 1.0 - i / 100) for i in range(len(arts))]
+    chosen = [i for i, _ in m.pick(arts, ranked, 6)]
+    assert sum(1 for i in chosen if arts[i]["outlet"] == "big") == 3
+    assert sum(1 for i in chosen if m.is_bangla(arts[i])) == 3
+    assert chosen == sorted(chosen)  # still in rank order
