@@ -251,15 +251,8 @@ def match(out: Path, claims_path: Path, *, top: int = 10, embed: bool = False,
             for rank, (_, i) in enumerate(emb):
                 fused[i] += 1 / (60 + rank)
         bm_score = dict((i, s) for s, i in bm)
-        chosen, seen = [], set()
-        for i, f in sorted(fused.items(), key=lambda kv: -kv[1]):
-            key = same_article(articles[i])
-            if key in seen:
-                continue  # the same story saved under two addresses
-            seen.add(key)
-            chosen.append((i, f))
-            if len(chosen) == top:
-                break
+        ranked = sorted(fused.items(), key=lambda kv: -kv[1])
+        chosen = pick(articles, ranked, top)
         for rank, (i, f) in enumerate(chosen, 1):
             a = articles[i]
             results.append({
@@ -279,6 +272,50 @@ def match(out: Path, claims_path: Path, *, top: int = 10, embed: bool = False,
     )
     write_sheet(folder / "candidates.xlsx", groups, results)
     return results
+
+
+PER_OUTLET = 3  # at most this many candidates from one outlet for a claim
+
+
+def is_bangla(a: dict) -> bool:
+    sample = f"{a.get('title') or ''} {(a.get('text') or '')[:200]}"
+    return len(re.findall(r"[\u0980-\u09ff]", sample)) > len(re.findall(r"[a-zA-Z]", sample))
+
+
+def pick(articles: list[dict], ranked: list[tuple[int, float]], top: int) -> list:
+    """The top candidates in rank order, but balanced: each story once, at most PER_OUTLET
+    from one outlet, and half Bangla and half English while both languages have
+    candidates left (the rest is filled from either). Without this, English claims find
+    mostly English articles and one large outlet fills the list."""
+    seen, per_outlet, out = set(), Counter(), []
+    lang_cap = {True: (top + 1) // 2, False: top // 2}
+    by_lang = Counter()
+    rest = []
+    for i, f in ranked:
+        a = articles[i]
+        key = same_article(a)
+        if key in seen:
+            continue  # the same story saved under two addresses
+        seen.add(key)
+        if per_outlet[a.get("outlet")] >= PER_OUTLET:
+            continue
+        bn = is_bangla(a)
+        if by_lang[bn] >= lang_cap[bn]:
+            rest.append((i, f))
+            continue
+        out.append((i, f))
+        per_outlet[a.get("outlet")] += 1
+        by_lang[bn] += 1
+        if len(out) == top:
+            break
+    for i, f in rest:  # one language ran short: fill from the other, keeping the outlet cap
+        if len(out) == top:
+            break
+        if per_outlet[articles[i].get("outlet")] < PER_OUTLET:
+            out.append((i, f))
+            per_outlet[articles[i].get("outlet")] += 1
+    order = {i: n for n, (i, _) in enumerate(ranked)}
+    return sorted(out, key=lambda x: order[x[0]])
 
 
 def same_article(a: dict) -> tuple[str, str]:
