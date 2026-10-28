@@ -10,6 +10,8 @@
     python -m carcux_data.j24 news-probe --out DIR [--outlets a,b]
     python -m carcux_data.j24 factcheck-export --out DIR [--batch 40]
     python -m carcux_data.j24 news-rebuild --out DIR [--parts part2,part4]
+    python -m carcux_data.j24 news-texts --out DIR
+    python -m carcux_data.j24 claims-match --out DIR --claims FILE [--top 10] [--embed]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -69,6 +71,13 @@ def main(argv: list[str] | None = None) -> int:
                         "the runs into news/articles_all.jsonl")  # fmt: skip
     rb.add_argument("--out", required=True, type=Path)
     rb.add_argument("--parts", default="", help="part folders inside --out, e.g. part2,part4")
+    nt = sub.add_parser("news-texts", help="article texts from the saved pages, for matching")
+    nt.add_argument("--out", required=True, type=Path)
+    cm = sub.add_parser("claims-match", help="candidate articles for each claim group")
+    cm.add_argument("--out", required=True, type=Path)
+    cm.add_argument("--claims", required=True, type=Path, help="claims v1 .jsonl")
+    cm.add_argument("--top", type=int, default=10)
+    cm.add_argument("--embed", action="store_true", help="add the multilingual sentence model")
     pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
     pr.add_argument("--out", required=True, type=Path)
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
@@ -174,6 +183,25 @@ def main(argv: list[str] | None = None) -> int:
         (args.out / "news" / "rebuild.txt").write_text(text, encoding="utf-8")
         print("\n" + text)
         return 0
+
+    if args.command == "news-texts":
+        from carcux_data.j24.match import news_texts
+
+        n = news_texts(args.out, log=lambda m: print(m, flush=True))
+        print(f"{n} article texts in {args.out / 'news' / 'texts.jsonl'}")
+        return 0 if n else 1
+
+    if args.command == "claims-match":
+        from collections import Counter
+
+        from carcux_data.j24.match import match
+
+        res = match(args.out, args.claims, top=args.top, embed=args.embed,
+                    log=lambda m: print(m, flush=True))  # fmt: skip
+        groups = Counter(r["claim_group"] for r in res)
+        print(f"{len(res)} candidate pairs for {len(groups)} claim groups in "
+              f"{args.out / 'matches'}")  # fmt: skip
+        return 0 if res else 1
 
     if args.command == "news-probe":
         return _probe(args)

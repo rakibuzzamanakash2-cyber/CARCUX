@@ -493,7 +493,7 @@ def _nuxt_text(html: str) -> str:
 MIN_TEXT = 300  # fewer characters than this from paragraphs: look for the text elsewhere
 
 
-def read_article(html: bytes) -> dict:
+def read_article(html: bytes, with_text: bool = False) -> dict:
     if html[:2] == b"\x1f\x8b":  # some captures (Ittefaq) were saved still compressed
         try:
             html = gzip.decompress(html)
@@ -519,7 +519,9 @@ def read_article(html: bytes) -> dict:
     terms = sorted({t for t in SCOPE_TERMS if t.lower() in low})
     in_title = any(t.lower() in title.lower() for t in SCOPE_TERMS)
     published, published_source = _published(page, raw)
+    extra = {"text": text} if with_text else {}
     return {
+        **extra,
         "title": title[:300],
         "published_at": published,
         "published_source": published_source,
