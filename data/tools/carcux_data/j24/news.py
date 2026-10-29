@@ -219,6 +219,17 @@ class _Article(HTMLParser):
     longer visible text blocks (sites that lay articles out without paragraphs)."""
 
     NOISE = ("nav", "header", "footer", "aside", "form", "button")
+    # Containers and paragraphs whose class or id marks them as page furniture: lists of
+    # other headlines, tabs, sidebars, and the title or intro paragraphs of side cards.
+    # Their text is not the article's (The Daily Star's "most read" list and side cards
+    # were read as the first and last paragraphs). Broad words such as "card" or
+    # "widget" are not used: some outlets wrap the article itself in them.
+    CONTAINERS = ("div", "section", "ul", "ol", "li", "article", "figure")
+    NOISE_CLASS = re.compile(
+        r"(?:^|[\s_-])(?:tabs?-panel|type-counter|related|most-?(?:read|viewed|popular)"
+        r"|sidebar|recommend|trending|more-news|also-read|newsletter|breadcrumb)"
+        r"(?:[\s_-]|$)", re.I)  # fmt: skip
+    NOISE_P = re.compile(r"(?:^|\s)(?:title|intro|caption)(?:\s|$)", re.I)
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -238,9 +249,19 @@ class _Article(HTMLParser):
         self.blocks: list[str] = []
         self.times: list[str] = []
         self.canonical = ""
+        self._stack: list[tuple[str, bool]] = []
+        self._cnoise = 0
+        self._p_noisy: list[bool] = []
+
+    def _noisy(self, a: dict) -> bool:
+        return bool(self.NOISE_CLASS.search(f"{a.get('class') or ''} {a.get('id') or ''}"))
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag in self.CONTAINERS:
+            noisy = self._noisy(a)
+            self._stack.append((tag, noisy))
+            self._cnoise += noisy
         if tag == "html" and a.get("lang"):
             self.lang = a["lang"].lower()
         elif tag == "meta":
@@ -263,10 +284,17 @@ class _Article(HTMLParser):
             self._noise += 1
         elif tag == "p":
             self._in_p += 1
+            self._p_noisy.append(bool(self.NOISE_P.search(a.get("class") or "")))
         elif tag == "time" and a.get("datetime"):
             self.times.append(a["datetime"])
 
     def handle_endtag(self, tag):
+        if tag in self.CONTAINERS and any(t == tag for t, _ in self._stack):
+            while self._stack:  # close up to the matching container (forgiving bad HTML)
+                t, noisy = self._stack.pop()
+                self._cnoise -= noisy
+                if t == tag:
+                    break
         if tag == "title":
             self._in_title = False
         elif tag == "script" and self._in_ld:
@@ -279,8 +307,9 @@ class _Article(HTMLParser):
             self._noise -= 1
         elif tag == "p" and self._in_p:
             self._in_p -= 1
+            noisy_p = self._p_noisy.pop() if self._p_noisy else False
             text = " ".join("".join(self._current).split())
-            if text:
+            if text and not noisy_p and not self._cnoise:
                 self.paragraphs.append(text)
             self._current = []
 
@@ -296,7 +325,7 @@ class _Article(HTMLParser):
         else:
             if self._in_p:
                 self._current.append(data)
-            if not self._noise:
+            if not self._noise and not self._cnoise:
                 text = " ".join(data.split())
                 if len(text) >= 40:
                     self.blocks.append(text)

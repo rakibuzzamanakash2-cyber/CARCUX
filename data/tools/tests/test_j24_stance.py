@@ -25,6 +25,7 @@ def test_predict_follows_the_guide_order():
     assert st.predict({**base, "entail": 0.9, "doubt_cues": 1}) == "questions"
     assert st.predict({**base, "entail": 0.9}) == "repeats"
     assert st.predict(base) == "mentions"
+    assert st.predict({**base, "correct_cues": 9}, {**st.DEFAULTS, "strong": 5}) == "corrects"
 
 
 def test_score_with_stand_in_models(tmp_path):
