@@ -12,6 +12,8 @@
     python -m carcux_data.j24 news-rebuild --out DIR [--parts part2,part4]
     python -m carcux_data.j24 news-texts --out DIR
     python -m carcux_data.j24 claims-match --out DIR --claims FILE [--top 10] [--embed]
+    python -m carcux_data.j24 stance-auto --out DIR [--claims-bn FILE]
+    python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -78,6 +80,13 @@ def main(argv: list[str] | None = None) -> int:
     cm.add_argument("--claims", required=True, type=Path, help="claims v1 .jsonl")
     cm.add_argument("--top", type=int, default=10)
     cm.add_argument("--embed", action="store_true", help="add the multilingual sentence model")
+    sa = sub.add_parser("stance-auto", help="features for the automatic stance baseline")
+    sa.add_argument("--out", required=True, type=Path)
+    sa.add_argument("--claims-bn", type=Path, help="Bangla claims, one JSON line per group")
+    se = sub.add_parser("stance-eval", help="agreement and baseline scores from the sheets")
+    se.add_argument("--out", required=True, type=Path)
+    se.add_argument("--key", required=True, type=Path)
+    se.add_argument("--sheets", required=True, help="the returned part sheets, comma-separated")
     pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
     pr.add_argument("--out", required=True, type=Path)
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
@@ -202,6 +211,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(res)} candidate pairs for {len(groups)} claim groups in "
               f"{args.out / 'matches'}")  # fmt: skip
         return 0 if res else 1
+
+    if args.command == "stance-auto":
+        from carcux_data.j24.stance import score
+
+        rows = score(args.out, args.claims_bn, log=lambda m: print(m, flush=True))
+        print(f"{len(rows)} pairs scored in {args.out / 'matches' / 'stance_features.jsonl'}")
+        return 0 if rows else 1
+
+    if args.command == "stance-eval":
+        from carcux_data.j24.stance import evaluate
+
+        sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
+        print(json.dumps(evaluate(args.out, sheets, args.key), indent=1))
+        return 0
 
     if args.command == "news-probe":
         return _probe(args)

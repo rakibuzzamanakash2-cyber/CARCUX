@@ -217,6 +217,23 @@ and index again.
 
 ## Changes
 
+- 29 October 2026, while the stance sheets are being labelled and before any label is
+  seen: the stance labelling and its evaluation are fixed. Three labellers (pseudonyms
+  given by annotator-A; none has seen the fact-check verdicts) each label one third of
+  the 3,230 candidate pairs with five labels (repeats, questions, corrects, mentions,
+  unrelated) following a Bangla guide; each claim is shown in English and in an AI
+  (Claude) Bangla translation, the English being authoritative. 45 pairs (15 from each
+  part) are labelled by all three; agreement is Krippendorff's alpha (nominal) on them.
+  Gold labels: the single label of a pair, or the majority on shared pairs; a tie has no
+  gold label. 9 pairs labelled by Claude as worked examples are excluded. The automatic
+  baseline (`stance-auto`) uses multilingual-e5-small to pick the 3 article sentences
+  closest to the claim (from the title and the 8 sentences sharing most words) and
+  mDeBERTa-v3-base-xnli-multilingual-nli-2mil7 for entailment and contradiction, with
+  cue-word counts for correction and doubt; the claim is given in the article's
+  language. Its five thresholds are chosen by grid search (macro-F1) on a development
+  split of 20% of the claim groups (seed 2024) and reported once on the other 80%,
+  against a majority-class and a similarity-only baseline (`stance-eval`).
+
 - 29 October 2026, after looking at the candidates made with `--embed` and before any is
   labelled: the multilingual model kept the candidate quality but did not bring Bangla
   articles to the English OHCHR claims (3% Bangla), and one outlet (The Daily Star) made
