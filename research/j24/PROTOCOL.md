@@ -217,6 +217,25 @@ and index again.
 
 ## Changes
 
+- 30 October 2026, the fusion experiment for Paper 1 (`fuse`). Truth per claim group:
+  OHCHR found = true, contradicted = false; fact-check true = true; false, altered or
+  misleading = false; relayed, unproven, partly-true and groups with conflicting verdicts
+  have none. Stances become votes (repeats +1, corrects −1, questions −0.5; mentions and
+  unrelated none); articles of one claim whose titles share at least 60% of their words
+  count as one story and share one vote. Methods: smoothed majority; supervised outlet
+  reliability; unsupervised Dawid-Skene EM; and the proposed CARCUX fusion (Dawid-Skene EM
+  with separate per-outlet rates for supporting true and opposing false claims under
+  Beta(2,1) priors, training claims clamped to their truth, votes weighted by stance
+  confidence and the copy discount, prior = training base rate). Split: 30% of the
+  claim groups with truth as test (seed 2024), the rest for training; metrics AUC,
+  accuracy, macro-F1 and Brier, on all test claims and on those with at least one vote.
+  Disclosure: while building it, one run with the automatic stances (provisional default
+  thresholds, before any human label) was looked at on the test split (AUC: majority
+  0.38, reliability 0.63, Dawid-Skene 0.37, CARCUX 0.56; 91 test claims with votes).
+  The methods are frozen as committed here; from now on any development uses
+  cross-validation within the training claims only, and the test split is used once for
+  the reported results with the human stances.
+
 - 29 October 2026, before any stance label is seen: (1) the reader no longer takes text
   from headline lists, tabs, sidebars and the title or intro paragraphs of side cards
   (classes such as related, most-read, type-counter, tabs-panel; broad words like card or

@@ -14,6 +14,8 @@
     python -m carcux_data.j24 claims-match --out DIR --claims FILE [--top 10] [--embed]
     python -m carcux_data.j24 stance-auto --out DIR [--claims-bn FILE]
     python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
+    python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
+                                   [--key FILE --sheets A,B,C]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -92,6 +94,12 @@ def main(argv: list[str] | None = None) -> int:
     se.add_argument("--out", required=True, type=Path)
     se.add_argument("--key", required=True, type=Path)
     se.add_argument("--sheets", required=True, help="the returned part sheets, comma-separated")
+    fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
+    fu.add_argument("--out", required=True, type=Path)
+    fu.add_argument("--claims", required=True, type=Path)
+    fu.add_argument("--stances", choices=["auto", "human"], default="auto")
+    fu.add_argument("--key", type=Path)
+    fu.add_argument("--sheets", default="")
     pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
     pr.add_argument("--out", required=True, type=Path)
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
@@ -235,6 +243,15 @@ def main(argv: list[str] | None = None) -> int:
 
         sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
         print(json.dumps(evaluate(args.out, sheets, args.key), indent=1))
+        return 0
+
+    if args.command == "fuse":
+        from carcux_data.j24.fusion import run
+
+        sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
+        rep = run(args.out, args.claims, stances=args.stances, sheets=sheets, key=args.key,
+                  log=lambda m: print(m, flush=True))  # fmt: skip
+        print(json.dumps(rep, indent=1))
         return 0
 
     if args.command == "news-probe":
