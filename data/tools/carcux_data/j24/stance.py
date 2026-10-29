@@ -144,13 +144,15 @@ def score(out: Path, claims_bn: Path | None = None, *, embed=None, infer=None,
 
 # ------------------------------------------------------------------ from features to labels
 
-DEFAULTS = {"sim": 0.80, "entail": 0.5, "contra": 0.5, "cues": 1}
+DEFAULTS = {"sim": 0.80, "entail": 0.5, "contra": 0.5, "cues": 1, "strong": 10**6}
 
 
 def predict(f: dict, p: dict = DEFAULTS) -> str:
     """One label from the features. The order follows the guide's decision steps."""
     if f["sim_max"] < p["sim"]:
         return "unrelated"
+    if f["correct_cues"] >= p.get("strong", 10**6):
+        return "corrects"  # many correction words: a fact-check or a denial story
     if f["contra"] >= p["contra"] and f["correct_cues"] >= p["cues"]:
         return "corrects"
     if f["doubt_cues"] >= p["cues"] and (
@@ -164,9 +166,9 @@ def predict(f: dict, p: dict = DEFAULTS) -> str:
     return "mentions"
 
 
-GRID = {"sim": [0.70, 0.75, 0.78, 0.80, 0.82, 0.84, 0.86, 0.88],
-        "entail": [0.3, 0.4, 0.5, 0.6, 0.7], "contra": [0.3, 0.4, 0.5, 0.6, 0.7],
-        "cues": [1, 2, 3]}  # fmt: skip
+GRID = {"sim": [0.70, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.88],
+        "entail": [0.3, 0.4, 0.5, 0.6, 0.7], "contra": [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        "cues": [1, 2, 3], "strong": [3, 5, 8, 10**6]}  # fmt: skip
 
 
 def macro_f1(gold: list[str], pred: list[str]) -> float:
@@ -274,7 +276,7 @@ def evaluate(out: Path, sheets: list[Path], key_path: Path) -> dict:
     params = fit([feats[p] for p in dev], [gold[p] for p in dev])
     g_test = [gold[p] for p in test]
     majority = Counter(gold[p] for p in dev).most_common(1)[0][0] if dev else "unrelated"
-    sim_only = {**params, "entail": 2.0, "contra": 2.0, "cues": 10**6}
+    sim_only = {**params, "entail": 2.0, "contra": 2.0, "cues": 10**6, "strong": 10**6}
     report = {
         "labelled_pairs": len(labels), "gold_pairs": len(gold), "dev": len(dev),
         "test": len(test), "alpha_on_shared_pairs": alpha, "params": params,

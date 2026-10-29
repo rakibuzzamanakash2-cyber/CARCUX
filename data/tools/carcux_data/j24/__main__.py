@@ -80,6 +80,11 @@ def main(argv: list[str] | None = None) -> int:
     cm.add_argument("--claims", required=True, type=Path, help="claims v1 .jsonl")
     cm.add_argument("--top", type=int, default=10)
     cm.add_argument("--embed", action="store_true", help="add the multilingual sentence model")
+    cm.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite existing candidates (they may already be in labelling)",
+    )
     sa = sub.add_parser("stance-auto", help="features for the automatic stance baseline")
     sa.add_argument("--out", required=True, type=Path)
     sa.add_argument("--claims-bn", type=Path, help="Bangla claims, one JSON line per group")
@@ -205,6 +210,12 @@ def main(argv: list[str] | None = None) -> int:
 
         from carcux_data.j24.match import match
 
+        if (args.out / "matches" / "candidates.jsonl").exists() and not args.force:
+            print(
+                "matches/candidates.jsonl exists and may already be in labelling; the "
+                "pair numbers would change. Use --force to overwrite it anyway."
+            )
+            return 1
         res = match(args.out, args.claims, top=args.top, embed=args.embed,
                     log=lambda m: print(m, flush=True))  # fmt: skip
         groups = Counter(r["claim_group"] for r in res)

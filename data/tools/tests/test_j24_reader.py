@@ -103,3 +103,16 @@ def test_a_damaged_cache_file_counts_as_missing(tmp_path):
     status_file.write_bytes(b"\x00" * 64)  # what a power cut left behind
     status, body, _ = f.get_page(url)
     assert status == 200 and body == b"<html>fresh</html>" and f.damaged == 1
+
+
+def test_headline_lists_and_side_cards_are_not_article_text():
+    html = (
+        "<html><body><div class='tabs-panel'><ul class='type-counter'><li>"
+        "<p class='title'>SYNTHETIC other headline that is not this article</p></li></ul></div>"
+        f"<div class='story-card'><p>{BODY}</p></div>"
+        "<div class='card'><p class='intro'>SYNTHETIC side card intro sentence here</p></div>"
+        "</body></html>"
+    )
+    art = read_article(html.encode(), with_text=True)
+    assert "other headline" not in art["text"] and "side card" not in art["text"]
+    assert art["text"].startswith("SYNTHETIC: students")  # "story-card" is kept

@@ -217,6 +217,20 @@ and index again.
 
 ## Changes
 
+- 29 October 2026, before any stance label is seen: (1) the reader no longer takes text
+  from headline lists, tabs, sidebars and the title or intro paragraphs of side cards
+  (classes such as related, most-read, type-counter, tabs-panel; broad words like card or
+  widget are not used because some outlets wrap the article in them). The Daily Star's
+  pages carried its "most read" headlines and a side-card sentence into every article;
+  the other outlets' samples read exactly as before. The candidate pairs already in
+  labelling are kept as they are; only the texts and the automatic stance features are
+  made again. `claims-match` now refuses to overwrite candidates without `--force`.
+  (2) Having looked at the stance features (not at any label): the inference model often
+  rates unrelated or number-differing sentences as contradiction, so the decision rule
+  gains a cue-only path (many correction words give corrects) and the similarity grid is
+  finer within the range the embeddings actually take (0.78–0.88). Both are chosen on the
+  development split only, as fixed above.
+
 - 29 October 2026, while the stance sheets are being labelled and before any label is
   seen: the stance labelling and its evaluation are fixed. Three labellers (pseudonyms
   given by annotator-A; none has seen the fact-check verdicts) each label one third of
