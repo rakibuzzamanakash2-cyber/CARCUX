@@ -20,6 +20,8 @@
     python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
     python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
                                    [--key FILE --sheets A,B,C]
+    python -m carcux_data.j24 fuse-cv --out DIR --claims FILE [--stances auto|human]
+    python -m carcux_data.j24 fuse-bench --answers answer.csv --truth truth.csv
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -111,6 +113,18 @@ def main(argv: list[str] | None = None) -> int:
                         "archive links")  # fmt: skip
     ft.add_argument("--release", required=True, type=Path)
     ft.add_argument("--limit", type=int)
+    cv = sub.add_parser("fuse-cv", help="cross-validation inside the training claims, "
+                        "with ablations (never reads the test claims)")  # fmt: skip
+    cv.add_argument("--out", required=True, type=Path)
+    cv.add_argument("--claims", required=True, type=Path)
+    cv.add_argument("--stances", choices=["auto", "human"], default="auto")
+    cv.add_argument("--key", type=Path)
+    cv.add_argument("--sheets", default="")
+    cv.add_argument("--folds", type=int, default=5)
+    fb = sub.add_parser("fuse-bench", help="the fusion methods on a crowdsourcing dataset")
+    fb.add_argument("--answers", required=True, type=Path)
+    fb.add_argument("--truth", required=True, type=Path)
+    fb.add_argument("--json", type=Path)
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
     fu.add_argument("--out", required=True, type=Path)
     fu.add_argument("--claims", required=True, type=Path)
@@ -280,6 +294,22 @@ def main(argv: list[str] | None = None) -> int:
         from carcux_data.j24.release import fulltext
 
         print(fulltext(args.release, args.release / "fulltext.jsonl", limit=args.limit))
+        return 0
+
+    if args.command == "fuse-cv":
+        from carcux_data.j24.fusion_dev import cross_validate
+
+        sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
+        cross_validate(args.out, args.claims, k=args.folds, stances=args.stances,
+                       sheets=sheets, key=args.key)  # fmt: skip
+        return 0
+
+    if args.command == "fuse-bench":
+        from carcux_data.j24.fusion_dev import benchmark
+
+        rep = benchmark(args.answers, args.truth)
+        if args.json:
+            args.json.write_text(json.dumps(rep, indent=1), encoding="utf-8")
         return 0
 
     if args.command == "fuse":
