@@ -70,8 +70,54 @@ def test_cross_validation_never_sees_test_claims(tmp_path, monkeypatch):
     monkeypatch.setattr(fd, "truth_labels", lambda p: truth)
     monkeypatch.setattr(fd, "split", lambda groups: test)
     monkeypatch.setattr(fd, "load_votes", fake_votes)
+    monkeypatch.setattr(fd, "claim_sources", lambda p: {})
     monkeypatch.setattr(fd, "VARIANTS", {n: (spy(f), o) for n, (f, o) in fd.VARIANTS.items()})
     rep = fd.cross_validate(tmp_path, tmp_path / "c.jsonl", log=lambda m: None)
     assert rep["training_claims"] == 28
     assert not seen & test
     assert (tmp_path / "fusion" / "cv_auto.json").exists()
+
+
+def test_dawid_skene_learns_the_true_share():
+    from carcux_data.j24 import fusion as fu
+
+    rng = random.Random(5)  # noqa: S311
+    truth, votes = {}, {}
+    for i in range(300):
+        t = int(rng.random() < 0.15)
+        truth[f"g{i}"] = t
+        votes[f"g{i}"] = [
+            {"outlet": o, "vote": 1.0 if (rng.random() < acc) == bool(t) else -1.0, "weight": 1.0}
+            for o, acc in (("a", 0.8), ("b", 0.75), ("c", 0.7))
+        ]
+    claims = sorted(truth)
+    learned = fu.dawid_skene(votes, claims)
+    fixed = fu._em(votes, claims, clamp={}, prior=0.5)
+
+    def acc(s):
+        return sum((s[g] >= 0.5) == bool(truth[g]) for g in claims) / len(claims)
+
+    assert acc(learned) > acc(fixed)
+
+
+def test_choose_prior_and_claim_sources(tmp_path):
+    import json
+
+    from carcux_data.j24 import fusion as fu
+
+    rng = random.Random(7)  # noqa: S311
+    train, votes = {}, {}
+    for i in range(60):
+        t = int(rng.random() < 0.5)
+        train[f"g{i}"] = t
+        votes[f"g{i}"] = [{"outlet": "a", "vote": 1.0 if t else -1.0, "weight": 1.0}]
+    name, res = fu.choose_prior(votes, train)
+    assert name in fu.PRIORS and set(res) == set(fu.PRIORS)
+    rows = [
+        {"claim_id": "1", "claim_group": "g", "in_scope": "yes", "source": "fact_check"},
+        {"claim_id": "2", "claim_group": "g", "in_scope": "yes", "source": "ohchr"},
+        {"claim_id": "3", "claim_group": "h", "in_scope": "yes", "source": "fact_check"},
+    ]
+    p = tmp_path / "c.jsonl"
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    assert fu.claim_sources(p) == {"g": "ohchr", "h": "fact_check"}

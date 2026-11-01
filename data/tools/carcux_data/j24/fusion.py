@@ -17,6 +17,15 @@ Methods compared (all give P(claim is true)):
   clamped to their known truth, (b) each outlet has separate rates for supporting true
   claims and opposing false ones, with Beta priors, (c) votes are weighted by stance
   confidence and by the copy discount above, and (d) the prior is the training base rate.
+  The Beta prior on the outlet rates, Beta(2,1) (outlets usually right) or Beta(1,1)
+  (flat), is chosen by 5-fold cross-validation inside the training claims (`prior="auto"`).
+
+`dawid_skene` learns the share of true claims together with the outlet rates, as in the
+original method, so it is not handicapped when true and false claims are unbalanced.
+
+Every report also gives a reference that sees no vote at all: the claim's source (OHCHR
+claims are mostly true, fact-checked claims are all false in this window). A method can
+only be credited with what it adds beyond that.
 
 Truth comes only from OHCHR (found = true, contradicted = false) and fact-checkers (false,
 altered, misleading = false; true = true); relayed, unproven and partly-true claims have no
@@ -195,7 +204,8 @@ def reliability(votes, claims, train: dict[str, int], **_) -> dict[str, float]:
 
 
 def _em(votes, claims, clamp: dict[str, int], prior: float, iters: int = 50,
-        a0: tuple[float, float] = (2.0, 1.0)) -> dict[str, float]:  # fmt: skip
+        a0: tuple[float, float] = (2.0, 1.0), learn_prior: bool = False
+        ) -> dict[str, float]:  # fmt: skip
     """Binary Dawid-Skene. sens = P(support | true), spec = P(oppose | false), per outlet."""
     p = majority(votes, claims)
     p.update({g: float(t) for g, t in clamp.items() if g in p})
@@ -225,6 +235,9 @@ def _em(votes, claims, clamp: dict[str, int], prior: float, iters: int = 50,
                 else:
                     logit += w * math.log((1 - sens[o]) / spec[o])
             new[g] = _sigmoid(logit)
+        free = [g for g in claims if g not in clamp]
+        if learn_prior and free:
+            prior = min(max(sum(new[g] for g in free) / len(free), 0.02), 0.98)
         if max(abs(new[g] - p[g]) for g in claims) < 1e-6:
             p = new
             break
@@ -233,12 +246,51 @@ def _em(votes, claims, clamp: dict[str, int], prior: float, iters: int = 50,
 
 
 def dawid_skene(votes, claims, **_) -> dict[str, float]:
-    return _em(votes, claims, clamp={}, prior=0.5)
+    return _em(votes, claims, clamp={}, prior=0.5, learn_prior=True)
 
 
-def carcux(votes, claims, train: dict[str, int], **_) -> dict[str, float]:
+PRIORS = {"beta21": (2.0, 1.0), "flat": (1.0, 1.0)}
+
+
+def carcux(votes, claims, train: dict[str, int], a0: tuple[float, float] = PRIORS["beta21"],
+           **_) -> dict[str, float]:  # fmt: skip
     base = min(max(sum(train.values()) / len(train), 0.05), 0.95) if train else 0.5
-    return _em(votes, claims, clamp=train, prior=base)
+    return _em(votes, claims, clamp=train, prior=base, a0=a0)
+
+
+def choose_prior(votes, train: dict[str, int], k: int = 5) -> tuple[str, dict[str, float]]:
+    """The outlet-rate prior with the best out-of-fold AUC inside the training claims."""
+    groups = sorted(g for g in train if votes.get(g))
+    rng = random.Random(SEED)  # noqa: S311 - a reproducible split, not security
+    rng.shuffle(groups)
+    parts = [groups[i::k] for i in range(k)]
+    results = {}
+    for name, a0 in PRIORS.items():
+        scores = {}
+        for part in parts:
+            held = set(part)
+            fit_on = {g: t for g, t in train.items() if g not in held}
+            s = carcux(votes, sorted(train), train=fit_on, a0=a0)
+            scores.update({g: s[g] for g in part})
+        results[name] = auc([train[g] for g in groups], [scores[g] for g in groups]) or 0.0
+    best = max(PRIORS, key=lambda n: (results[n], n == "beta21"))  # ties keep Beta(2,1)
+    return best, results
+
+
+def claim_sources(claims_path: Path) -> dict[str, str]:
+    """claim_group -> 'ohchr' if any of its claims comes from the OHCHR report, else
+    'fact_check'."""
+    out: dict[str, str] = {}
+    for line in claims_path.read_text("utf-8").splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if r.get("in_scope") != "yes":
+            continue
+        g = r.get("claim_group") or r["claim_id"]
+        if r["source"] == "ohchr" or g not in out:
+            out[g] = r["source"]
+    return out
 
 
 METHODS = {"majority": majority, "reliability": reliability, "dawid_skene": dawid_skene,
@@ -309,7 +361,7 @@ def intervals(truth: dict[str, int], ids: list[str], scores: dict[str, dict]) ->
 
 
 def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key=None,
-        log: Callable[[str], None] = print) -> dict:  # fmt: skip
+        prior: str = "auto", log: Callable[[str], None] = print) -> dict:  # fmt: skip
     truth = truth_labels(claims_path)
     votes = load_votes(out, stances=stances, sheets=sheets, key=key)
     claims = sorted(set(truth) | set(votes))
@@ -321,9 +373,17 @@ def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key
               "test": len(test_ids), "test_with_votes": len(covered),
               "test_true_share": sum(truth[g] for g in test_ids) / max(len(test_ids), 1),
               "methods": {}}  # fmt: skip
+    if prior == "auto":
+        prior, inner = choose_prior(votes, train)
+        report["prior_cv_auc"] = inner
+    report["prior"] = prior
+    src = claim_sources(claims_path)
+    report["reference_claim_source_only"] = metrics(
+        [truth[g] for g in covered], [1.0 if src.get(g) == "ohchr" else 0.0 for g in covered]
+    )
     scores = {}
     for name, fn in METHODS.items():
-        s = fn(votes, claims, train=train)
+        s = fn(votes, claims, train=train, a0=PRIORS[prior])
         scores[name] = s
         report["methods"][name] = {
             "all_test": metrics([truth[g] for g in test_ids], [s[g] for g in test_ids]),

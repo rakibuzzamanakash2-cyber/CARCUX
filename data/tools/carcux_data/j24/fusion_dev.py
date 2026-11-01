@@ -22,6 +22,7 @@ from carcux_data.j24.fusion import (
     METHODS,
     SEED,
     _em,
+    claim_sources,
     copy_clusters,
     load_votes,
     metrics,
@@ -103,10 +104,20 @@ def cross_validate(out: Path, claims_path: Path, *, k: int = 5, stances: str = "
               "with_votes": sum(1 for g in claims if votes.get(g)),
               "true_share": sum(truth.values()) / max(len(truth), 1),
               "methods": _pooled(truth, votes, claims, folds(claims, k), VARIANTS)}  # fmt: skip
+    src = claim_sources(claims_path)
+    covered = [g for g in claims if votes.get(g)]
+    report["reference_claim_source_only"] = metrics(
+        [truth[g] for g in covered], [1.0 if src.get(g) == "ohchr" else 0.0 for g in covered]
+    )
     folder = out / "fusion"
     folder.mkdir(exist_ok=True)
     (folder / f"cv_{stances}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     log(table(report))
+    r = report["reference_claim_source_only"]
+    log(
+        f"{'claim source only':22s} {r.get('auc') or 0:6.3f} {'(sees no vote)':>15s} "
+        f"{r.get('accuracy', 0):6.3f} {r.get('macro_f1', 0):6.3f} {r.get('brier', 0):6.3f}"
+    )
     return report
 
 

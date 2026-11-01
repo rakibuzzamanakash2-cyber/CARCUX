@@ -217,6 +217,22 @@ and index again.
 
 ## Changes
 
+- 1 November 2026, after `fuse-cv` on the training claims with automatic stances and
+  before any stance label or test result: (1) majority vote and unsupervised Dawid-Skene
+  scored below chance (AUC 0.37 and 0.35), so with automatic stances supporting votes are
+  more common on false claims; the learned methods recover the sign (reliability 0.68,
+  CARCUX 0.61). The copy discount (+0.015 AUC) and stance confidence (+0.03) helped,
+  question votes made no difference, and the Beta(2,1) prior on outlet rates hurt (flat
+  prior 0.66). The prior is therefore no longer fixed: `fuse` chooses Beta(2,1) or
+  Beta(1,1) by 5-fold cross-validation inside the training claims (ties keep Beta(2,1)),
+  and the choice is reported. (2) Dawid-Skene now learns the share of true claims, as in
+  the original method, so the baseline is not handicapped by the imbalance. (3) Every
+  claim group's truth is confounded with its source: all 89 true groups come from the
+  OHCHR report and every fact-checked group is false. Reports therefore include a
+  reference that sees no vote, the claim's source alone, and results are discussed as
+  what outlet coverage adds; Paper 1 reports this limitation and uses the crowdsourcing
+  benchmarks as a check free of it.
+
 - 1 November 2026, before any stance label is seen and without reading the test claims:
   fusion development tools (`fuse-cv`, `fuse-bench`). `fuse-cv` runs 5-fold
   cross-validation (seed 2024) inside the training claim groups only, the test split being
