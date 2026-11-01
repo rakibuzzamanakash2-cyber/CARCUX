@@ -217,6 +217,14 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, before any method is run on these data: a diagnostic of how the
+  methods behave as votes get scarce, on two datasets never used in this project: RTE and
+  TEMP (Snow, O'Connor, Jurafsky & Ng, EMNLP 2008; 800 and 462 items, 10 answers each). Each
+  item's answers are randomly cut to 1, 2, 3 and 5 (and all 10), 3 seeds, and the four
+  methods, unchanged, are scored by 5-fold cross-validation on AUC, calibration (ECE) and
+  accuracy on the 80% most confident items. Nothing is tuned on these runs; they describe
+  where the methods break. A later calibration step is not to be judged on them.
+
 - 2 November 2026, result of the sparse-vote work above: on the development datasets
   `carcux_eb` gave no gain (AUC Product 0.905 vs 0.906, Sentiment 0.990 vs 0.991, Duck
   0.951 vs 0.952; ECE equal within 0.002), so it is **not adopted** and was not run on the
