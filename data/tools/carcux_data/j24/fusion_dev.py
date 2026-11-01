@@ -133,15 +133,17 @@ def load_crowd(answers: Path, truth_file: Path, positive: str = "1"
                ) -> tuple[dict[str, int], dict[str, list[dict]]]:  # fmt: skip
     """Truth for the gold items, and votes on every item (unlabelled items still teach the
     unsupervised part about the workers). CSV rows are question, worker, answer;
-    tab-separated rows are worker, item, label. `positive` is the label that means true."""
-    truth = {r[0]: int(r[1].strip().lower() == positive.lower()) for r in _rows(truth_file)
+    tab-separated rows are worker, item, label. `positive` is the label (or comma-separated
+    labels) that means true."""
+    pos = {x.strip().lower() for x in positive.split(",")}
+    truth = {r[0]: int(r[1].strip().lower() in pos) for r in _rows(truth_file)
              if len(r) >= 2 and r[1]}  # fmt: skip
     votes: dict[str, list[dict]] = defaultdict(list)
     for r in _rows(answers):
         if len(r) < 3 or not r[2]:
             continue
         item, worker = (r[0], r[1]) if answers.suffix == ".csv" else (r[1], r[0])
-        v = 1.0 if r[2].strip().lower() == positive.lower() else -1.0
+        v = 1.0 if r[2].strip().lower() in pos else -1.0
         votes[item].append({"outlet": worker, "vote": v, "weight": 1.0, "conf": 1.0,
                             "title": ""})  # fmt: skip
     return truth, dict(votes)

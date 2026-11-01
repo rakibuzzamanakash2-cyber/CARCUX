@@ -22,13 +22,27 @@ Duck (Zheng et al. 2017, d_Duck Identification): 108 items, 39 workers, 39 answe
   dawid_skene   AUC 0.942 [0.891, 0.982]  acc 0.889  F1 0.887  Brier 0.104
   carcux        AUC 0.952 [0.905, 0.985]  acc 0.889  F1 0.887  Brier 0.106
 
+Sentiment (Zheng et al. 2017, d_sentiment): 1,000 items, 85 workers, 20 answers per item
+  majority      AUC 0.977 [0.966, 0.985]  acc 0.935  F1 0.935  Brier 0.120
+  reliability   AUC 0.991 [0.985, 0.995]  acc 0.953  F1 0.953  Brier 0.042
+  dawid_skene   AUC 0.990 [0.985, 0.995]  acc 0.959  F1 0.959  Brier 0.038
+  carcux        AUC 0.991 [0.985, 0.995]  acc 0.960  F1 0.960  Brier 0.038
+
+Relevance, binarised (Zheng et al. 2017, s4_Relevance; graded 1-3 = relevant, 0 = not):
+20,232 items (4,460 with gold), 766 workers, 4.9 answers per item, 66% relevant
+  majority      AUC 0.733 [0.717, 0.749]  acc 0.723  F1 0.624  Brier 0.187
+  reliability   AUC 0.782 [0.767, 0.797]  acc 0.738  F1 0.637  Brier 0.206
+  dawid_skene   AUC 0.781 [0.765, 0.797]  acc 0.766  F1 0.722  Brier 0.184
+  carcux        AUC 0.789 [0.773, 0.804]  acc 0.770  F1 0.721  Brier 0.178
+
 HIT spam (Get-Another-Label, HITspam-UsingCrowdflower): 5,380 items, 100 with gold, 38 answers
 per gold item. The workers' answers carry no signal about the gold labels (8% "Yes" answers on
 gold-Yes and gold-No items alike), so every method is at chance:
   majority      AUC 0.514   reliability 0.523   dawid_skene 0.505   carcux 0.497
 
-Not usable: CopyrightInfringement (9 gold items); HITspam-UsingMTurk (gold items use addresses
+Not used: s5_AdultContent (four ordered categories with no natural yes/no split);
+CopyrightInfringement (9 gold items); HITspam-UsingMTurk (gold items use addresses
 that do not match the labelled HIT ids).
 
-Data: https://github.com/zhydhkcws/crowd_truth_infer (datasets/),
+Data: https://github.com/zhydhkcws/crowd_truth_infer (datasets/ and the full datasets.zip),
 https://github.com/ipeirotis/Get-Another-Label (data/). Not copied into this repository.
