@@ -217,6 +217,16 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, before any run of the change below: calibration for scarce votes.
+  `carcux_cal` is CARCUX followed by Platt scaling (P = sigmoid(a·logit(p) + b)), with a and
+  b fitted on out-of-fold scores inside the training items only (3-fold), so the method
+  learns how far to soften its own confidence. Development datasets: Product, Duck and
+  Sentiment, with each item's answers cut to 1, 2, 3 and all (3 seeds). Adopted only if, at
+  1 and 2 answers per item, mean ECE falls on at least two of the three datasets and AUC
+  drops by no more than 0.005 on any. If adopted, it is tested once on a dataset not yet
+  used in this project and then on the J24 human-stance test; RTE, TEMP, Mozafari and
+  Relevance are not used to judge it. If not adopted, that is reported.
+
 - 2 November 2026, before any method is run on these data: a diagnostic of how the
   methods behave as votes get scarce, on two datasets never used in this project: RTE and
   TEMP (Snow, O'Connor, Jurafsky & Ng, EMNLP 2008; 800 and 462 items, 10 answers each). Each
