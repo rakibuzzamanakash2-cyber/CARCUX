@@ -217,6 +217,19 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, before the change below is run on any held-out dataset: work on
+  sparse votes (few votes per source and per claim). Proposed change: `carcux_eb`, which
+  replaces the fixed Beta prior on each source's two rates by an empirical-Bayes prior
+  centred on the pooled rates of all sources (re-estimated in every EM step), with its
+  strength chosen by 3-fold cross-validation inside the training items, so that a source
+  with few votes is pulled towards how sources behave on average rather than towards a
+  fixed guess. Trustworthiness is measured as well as ranking: expected calibration error
+  (10 equal-count bins) and accuracy on the 80% most confident items. Development datasets
+  (the change may be revised on them): Product, Duck, Sentiment. Held-out datasets (run once
+  after the change is frozen, every number reported): Mozafari, Relevance (binarised), HIT
+  spam. The baseline methods' results on the held-out sets were already seen on
+  1–2 November; the new variant's were not. The J24 test split stays sealed.
+
 - 1 November 2026, after `fuse-cv` on the training claims with automatic stances and
   before any stance label or test result: (1) majority vote and unsupervised Dawid-Skene
   scored below chance (AUC 0.37 and 0.35), so with automatic stances supporting votes are
