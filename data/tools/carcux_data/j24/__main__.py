@@ -13,6 +13,7 @@
     python -m carcux_data.j24 news-texts --out DIR
     python -m carcux_data.j24 claims-match --out DIR --claims FILE [--top 10] [--embed]
     python -m carcux_data.j24 stance-auto --out DIR [--claims-bn FILE]
+    python -m carcux_data.j24 j24-stats --out DIR --claims FILE
     python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
     python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
                                    [--key FILE --sheets A,B,C]
@@ -94,6 +95,9 @@ def main(argv: list[str] | None = None) -> int:
     se.add_argument("--out", required=True, type=Path)
     se.add_argument("--key", required=True, type=Path)
     se.add_argument("--sheets", required=True, help="the returned part sheets, comma-separated")
+    st = sub.add_parser("j24-stats", help="the numbers and tables for Paper 2")
+    st.add_argument("--out", required=True, type=Path)
+    st.add_argument("--claims", required=True, type=Path)
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
     fu.add_argument("--out", required=True, type=Path)
     fu.add_argument("--claims", required=True, type=Path)
@@ -243,6 +247,13 @@ def main(argv: list[str] | None = None) -> int:
 
         sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
         print(json.dumps(evaluate(args.out, sheets, args.key), indent=1))
+        return 0
+
+    if args.command == "j24-stats":
+        from carcux_data.j24.stats import compute
+
+        print(json.dumps(compute(args.out, args.claims), indent=1, ensure_ascii=False))
+        print(f"tables in {args.out / 'stats' / 'tables.xlsx'}")
         return 0
 
     if args.command == "fuse":
