@@ -131,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     fu.add_argument("--stances", choices=["auto", "human"], default="auto")
     fu.add_argument("--key", type=Path)
     fu.add_argument("--sheets", default="")
+    fu.add_argument("--prior", choices=["auto", "beta21", "flat"], default="auto",
+                    help="outlet-rate prior for CARCUX; auto chooses it by cross-validation "
+                    "inside the training claims")  # fmt: skip
     pr = sub.add_parser("news-probe", help="find each outlet's date-listing pages")
     pr.add_argument("--out", required=True, type=Path)
     pr.add_argument("--outlets", default="", help="keys from news_outlets.csv; default all")
@@ -317,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
 
         sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
         rep = run(args.out, args.claims, stances=args.stances, sheets=sheets, key=args.key,
-                  log=lambda m: print(m, flush=True))  # fmt: skip
+                  prior=args.prior, log=lambda m: print(m, flush=True))  # fmt: skip
         print(json.dumps(rep, indent=1))
         return 0
 
