@@ -217,6 +217,16 @@ and index again.
 
 ## Changes
 
+- 1 November 2026, before any stance label is seen and without reading the test claims:
+  fusion development tools (`fuse-cv`, `fuse-bench`). `fuse-cv` runs 5-fold
+  cross-validation (seed 2024) inside the training claim groups only, the test split being
+  removed before anything is loaded, with ablations of CARCUX (no copy discount, no stance
+  confidence, a flat Beta(1,1) prior, question votes dropped). `fuse-bench` runs the same
+  methods on public crowdsourcing truth-inference datasets (Zheng et al., PVLDB 2017), where
+  workers stand in for outlets, as an external check that the methods behave as expected
+  when sources recur. Any change made from these results is recorded here before the test
+  split is used. The AUC is now computed from ranks (same value, faster).
+
 - 1 November 2026, before any stance label is seen: (1) the public release (`j24-release`)
   holds links, archive links, metadata, claims and labels but no article text and no
   excerpts, because the outlets hold the copyright and names in excerpts cannot yet be

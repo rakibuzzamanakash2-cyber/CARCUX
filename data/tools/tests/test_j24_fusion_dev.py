@@ -1,0 +1,77 @@
+"""Fusion development checks on SYNTHETIC data: reweighting, folds, crowd benchmark, and
+that cross-validation never reads the J24 test claims."""
+
+import csv
+import random
+
+from carcux_data.j24 import fusion_dev as fd
+
+
+def test_reweight_switches_parts_off():
+    votes = {"g": [
+        {"outlet": "a", "vote": 1.0, "conf": 0.8, "title": "Police killed seven at the bridge"},
+        {"outlet": "b", "vote": 1.0, "conf": 0.6,
+         "title": "Police killed seven at the bridge, says report"},
+        {"outlet": "c", "vote": -0.5, "conf": 0.5, "title": "Was anyone killed? Doubts"},
+    ]}  # fmt: skip
+    full = fd.reweight(votes)["g"]
+    assert full[0]["weight"] == 0.4 and full[1]["weight"] == 0.3  # one story, two copies
+    assert [v["weight"] for v in fd.reweight(votes, copies=False)["g"]][:2] == [0.8, 0.6]
+    assert {v["weight"] for v in fd.reweight(votes, copies=False, conf=False)["g"]} == {1.0}
+    assert len(fd.reweight(votes, questions=False)["g"]) == 2
+    assert votes["g"][0].get("weight") is None  # the input is left alone
+
+
+def test_folds_cover_everything_once():
+    items = [f"g{i}" for i in range(23)]
+    parts = fd.folds(items, 5)
+    assert sorted(x for p in parts for x in p) == sorted(items)
+    assert parts == fd.folds(list(reversed(items)), 5)  # same split whatever the order
+
+
+def test_benchmark_on_synthetic_crowd(tmp_path):
+    rng = random.Random(3)  # noqa: S311
+    answers, truth = [], []
+    for i in range(150):
+        t = int(rng.random() < 0.4)
+        truth.append({"question": f"q{i}", "truth": t})
+        for w, acc in (("w1", 0.9), ("w2", 0.85), ("spammer", 0.15)):
+            a = t if rng.random() < acc else 1 - t
+            answers.append({"question": f"q{i}", "worker": w, "answer": a})
+    for name, rows in (("answer.csv", answers), ("truth.csv", truth)):
+        with (tmp_path / name).open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+    rep = fd.benchmark(tmp_path / "answer.csv", tmp_path / "truth.csv", log=lambda m: None)
+    m = rep["methods"]
+    assert rep["items"] == 150 and rep["workers"] == 3
+    assert m["carcux"]["with_votes"]["auc"] > m["majority"]["with_votes"]["auc"]
+    assert "carcux" in rep["methods_20pct_known"]
+
+
+def test_cross_validation_never_sees_test_claims(tmp_path, monkeypatch):
+    truth = {f"g{i}": i % 2 for i in range(40)}
+    test = set(list(truth)[:12])
+    seen = set()
+
+    def fake_votes(*a, **k):
+        return {g: [{"outlet": "o", "vote": 1.0 if t else -1.0, "weight": 1.0, "conf": 1.0,
+                     "title": ""}] for g, t in truth.items()}  # fmt: skip
+
+    def spy(fn):
+        def wrapped(votes, claims, train, **k):
+            seen.update(claims)
+            seen.update(train)
+            return fn(votes, claims, train=train)
+
+        return wrapped
+
+    monkeypatch.setattr(fd, "truth_labels", lambda p: truth)
+    monkeypatch.setattr(fd, "split", lambda groups: test)
+    monkeypatch.setattr(fd, "load_votes", fake_votes)
+    monkeypatch.setattr(fd, "VARIANTS", {n: (spy(f), o) for n, (f, o) in fd.VARIANTS.items()})
+    rep = fd.cross_validate(tmp_path, tmp_path / "c.jsonl", log=lambda m: None)
+    assert rep["training_claims"] == 28
+    assert not seen & test
+    assert (tmp_path / "fusion" / "cv_auto.json").exists()

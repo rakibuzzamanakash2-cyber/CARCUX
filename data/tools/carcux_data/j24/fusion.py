@@ -253,8 +253,15 @@ def auc(y: list[int], p: list[float]) -> float | None:
     neg = [s for s, t in zip(p, y, strict=True) if t == 0]
     if not pos or not neg:
         return None
-    wins = sum((a > b) + 0.5 * (a == b) for a in pos for b in neg)
-    return wins / (len(pos) * len(neg))
+    # Mann-Whitney U from mid-ranks: the same value as counting every pair, in n log n
+    order = sorted(p)
+    first: dict[float, int] = {}
+    last: dict[float, int] = {}
+    for i, s in enumerate(order, start=1):
+        first.setdefault(s, i)
+        last[s] = i
+    rank_sum = sum((first[s] + last[s]) / 2 for s in pos)
+    return (rank_sum - len(pos) * (len(pos) + 1) / 2) / (len(pos) * len(neg))
 
 
 def metrics(y: list[int], p: list[float]) -> dict:
