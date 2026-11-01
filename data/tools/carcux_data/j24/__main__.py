@@ -126,6 +126,10 @@ def main(argv: list[str] | None = None) -> int:
     fb.add_argument("--truth", required=True, type=Path)
     fb.add_argument("--json", type=Path)
     fb.add_argument("--positive", default="1", help="the label that means true (e.g. Yes)")
+    fb.add_argument("--extra", default="", help="more variants, e.g. carcux_cal")
+    fb.add_argument("--budgets", default="1,2,3,5,0", help="answers per item for --sparsity "
+                    "(0 = all)")  # fmt: skip
+    fb.add_argument("--seeds", type=int, default=3)
     fb.add_argument("--sparsity", action="store_true", help="cut each item's answers to "
                     "1, 2, 3, 5 and all, and score the methods at each budget")  # fmt: skip
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
@@ -316,7 +320,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.sparsity:
             from carcux_data.j24.fusion_dev import sparsity
 
-            rep = sparsity(args.answers, args.truth, positive=args.positive)
+            extra = tuple(x for x in args.extra.split(",") if x)
+            budgets = tuple(int(x) for x in args.budgets.split(","))
+            rep = sparsity(args.answers, args.truth, positive=args.positive, extra=extra,
+                           budgets=budgets, seeds=args.seeds)  # fmt: skip
         else:
             rep = benchmark(args.answers, args.truth, positive=args.positive)
         if args.json:

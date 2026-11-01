@@ -22,6 +22,7 @@ from carcux_data.j24.fusion import (
     METHODS,
     SEED,
     _em,
+    carcux_cal,
     carcux_eb,
     claim_sources,
     copy_clusters,
@@ -60,6 +61,7 @@ VARIANTS: dict[str, tuple[Callable, dict]] = {
     "carcux_no_questions": (METHODS["carcux"], {"questions": False}),
     "carcux_flat_prior": (_carcux_flat, {}),
     "carcux_eb": (carcux_eb, {}),
+    "carcux_cal": (carcux_cal, {}),
 }
 
 
@@ -194,16 +196,17 @@ BUDGETS = (1, 2, 3, 5, 0)  # answers kept per item; 0 = all
 
 
 def sparsity(answers: Path, truth_file: Path, *, positive: str = "1", seeds: int = 3,
-             k: int = 5, log: Callable[[str], None] = print) -> dict:  # fmt: skip
+             k: int = 5, extra: tuple[str, ...] = (), budgets: tuple[int, ...] = BUDGETS,
+             log: Callable[[str], None] = print) -> dict:  # fmt: skip
     """The methods as each item's answers are randomly cut to a budget (seed-averaged)."""
     truth, votes = load_crowd(answers, truth_file, positive)
     truth = {g: t for g, t in truth.items() if votes.get(g)}
     claims = sorted(set(votes) | set(truth))
     parts = folds(list(truth), k)
-    base = {n: VARIANTS[n] for n in METHODS}
+    base = {n: VARIANTS[n] for n in [*METHODS, *extra]}
     keys = ("auc", "accuracy", "brier", "ece", "acc_at_80pct")
     out: dict[str, dict] = {}
-    for budget in BUDGETS:
+    for budget in budgets:
         sums: dict[str, dict[str, float]] = {n: dict.fromkeys(keys, 0.0) for n in base}
         for seed in range(seeds):
             rng = random.Random(SEED + seed)  # noqa: S311 - reproducible subsampling
