@@ -172,3 +172,19 @@ def test_snow_format_and_sparsity(tmp_path):
     rep = fd.sparsity(f, f, seeds=1, log=lambda m: None)
     assert set(rep["budgets"]) == {"1", "2", "3", "5", "all"}
     assert rep["budgets"]["all"]["carcux"]["auc"] >= rep["budgets"]["1"]["carcux"]["auc"]
+
+
+def test_platt_stays_bounded_and_softens_overconfidence():
+    from carcux_data.j24 import fusion as fu
+
+    rng = random.Random(17)  # noqa: S311
+    y, p = [], []
+    for _ in range(400):  # says 95% but is right only 70% of the time
+        t = int(rng.random() < 0.5)
+        right = rng.random() < 0.7
+        y.append(t)
+        p.append(0.95 if (t == 1) == right else 0.05)
+    a, b = fu.fit_platt(y, p)
+    assert 0.05 <= a < 1  # confidence is softened
+    sep = fu.fit_platt([1, 0] * 50, [0.999, 0.001] * 50)  # perfectly separable
+    assert sep[0] <= 3.0 and abs(sep[1]) <= 5.0

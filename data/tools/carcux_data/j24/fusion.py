@@ -319,6 +319,73 @@ def choose_strength(votes, claims, train: dict[str, int], k: int = 3) -> float:
     return best
 
 
+def _logit(q: float) -> float:
+    q = min(max(q, 1e-6), 1 - 1e-6)
+    return math.log(q / (1 - q))
+
+
+def fit_platt(y: list[int], p: list[float], ridge: float = 1.0) -> tuple[float, float]:
+    """a, b minimising log loss of sigmoid(a·logit(p) + b) plus a ridge pulling towards the
+    identity (a = 1, b = 0), by damped Newton steps with backtracking. a is kept in
+    [0.05, 3] and b in [-5, 5]: when the training scores separate the classes perfectly the
+    unpenalised fit runs off to infinity."""
+    x = [_logit(q) for q in p]
+
+    def loss(a, b):
+        tot = ridge * ((a - 1) ** 2 + b**2) / 2
+        for xi, yi in zip(x, y, strict=True):
+            z = a * xi + b
+            tot += math.log1p(math.exp(-abs(z))) + max(z, 0) - yi * z
+        return tot
+
+    a, b = 1.0, 0.0
+    cur = loss(a, b)
+    for _ in range(100):
+        ga, gb = ridge * (a - 1), ridge * b
+        haa, hab, hbb = ridge, 0.0, ridge
+        for xi, yi in zip(x, y, strict=True):
+            q = _sigmoid(a * xi + b)
+            r, w = q - yi, q * (1 - q)
+            ga, gb = ga + r * xi, gb + r
+            haa, hab, hbb = haa + w * xi * xi, hab + w * xi, hbb + w
+        det = haa * hbb - hab * hab
+        if det <= 1e-12:
+            break
+        da, db = (hbb * ga - hab * gb) / det, (haa * gb - hab * ga) / det
+        step = 1.0
+        while step > 1e-4:
+            na = min(max(a - step * da, 0.05), 3.0)
+            nb = min(max(b - step * db, -5.0), 5.0)
+            new = loss(na, nb)
+            if new <= cur:
+                break
+            step /= 2
+        else:
+            break
+        moved = abs(na - a) + abs(nb - b)
+        a, b, cur = na, nb, new
+        if moved < 1e-7:
+            break
+    return a, b
+
+
+def carcux_cal(votes, claims, train: dict[str, int], k: int = 3, **_) -> dict[str, float]:
+    """CARCUX, then Platt scaling fitted on out-of-fold scores inside the training items."""
+    full = carcux(votes, claims, train=train)
+    groups = sorted(g for g in train if votes.get(g))
+    if len(groups) < 4 * k or len({train[g] for g in groups}) < 2:
+        return full
+    rng = random.Random(SEED)  # noqa: S311 - a reproducible split, not security
+    rng.shuffle(groups)
+    oof = {}
+    for i in range(k):
+        held = set(groups[i::k])
+        s = carcux(votes, claims, train={g: t for g, t in train.items() if g not in held})
+        oof.update({g: s[g] for g in held})
+    a, b = fit_platt([train[g] for g in groups], [oof[g] for g in groups])
+    return {g: (q if g in train else _sigmoid(a * _logit(q) + b)) for g, q in full.items()}
+
+
 def claim_sources(claims_path: Path) -> dict[str, str]:
     """claim_group -> 'ohchr' if any of its claims comes from the OHCHR report, else
     'fact_check'."""

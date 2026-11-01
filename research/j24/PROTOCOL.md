@@ -217,6 +217,27 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, result of the calibration step above: **not adopted**. The first
+  Platt fit diverged when training scores separated the classes (a ≈ 10^5 on Duck); it was
+  fixed (ridge towards the identity, damped Newton, a in [0.05, 3], b in [-5, 5]) before
+  the results below, all on the development datasets. Mean ECE at 1 and 2 answers per item,
+  CARCUX → carcux_cal: Sentiment 0.042 → 0.036, Product 0.012 → 0.011, Duck 0.112 → 0.121.
+  AUC was unchanged on Sentiment and Product but fell on Duck at 1 answer (0.668 → 0.644),
+  beyond the 0.005 allowed, so the rule is not met. The empirical-Bayes variant was also
+  checked at 1–3 answers on the development datasets and did not help either. CARCUX stays
+  as it is; its calibration at scarce votes is already good on Product (ECE 0.016 at one
+  answer) and Sentiment (0.049). Neither variant is run on a fresh dataset.
+
+- 2 November 2026, before any run of the change below: calibration for scarce votes.
+  `carcux_cal` is CARCUX followed by Platt scaling (P = sigmoid(a·logit(p) + b)), with a and
+  b fitted on out-of-fold scores inside the training items only (3-fold), so the method
+  learns how far to soften its own confidence. Development datasets: Product, Duck and
+  Sentiment, with each item's answers cut to 1, 2, 3 and all (3 seeds). Adopted only if, at
+  1 and 2 answers per item, mean ECE falls on at least two of the three datasets and AUC
+  drops by no more than 0.005 on any. If adopted, it is tested once on a dataset not yet
+  used in this project and then on the J24 human-stance test; RTE, TEMP, Mozafari and
+  Relevance are not used to judge it. If not adopted, that is reported.
+
 - 2 November 2026, before any method is run on these data: a diagnostic of how the
   methods behave as votes get scarce, on two datasets never used in this project: RTE and
   TEMP (Snow, O'Connor, Jurafsky & Ng, EMNLP 2008; 800 and 462 items, 10 answers each). Each
