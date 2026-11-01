@@ -155,3 +155,20 @@ def test_empirical_bayes_variant_and_trust_metrics():
     assert all(0 < s[g] < 1 for g in claims[120:])
     m = fu.metrics([truth[g] for g in claims[120:]], [s[g] for g in claims[120:]])
     assert 0 <= m["ece"] <= 1 and 0 <= m["acc_at_80pct"] <= 1
+
+
+def test_snow_format_and_sparsity(tmp_path):
+    rng = random.Random(13)  # noqa: S311
+    lines = ["!amt_annotation_ids\t!amt_worker_ids\torig_id\tresponse\tgold"]
+    for i in range(60):
+        t = int(rng.random() < 0.5)
+        for w in range(6):
+            a = t if rng.random() < 0.8 else 1 - t
+            lines.append(f"x{i}{w}\tw{w}\t{i}\t{a}\t{t}")
+    f = tmp_path / "rte.standardized.tsv"
+    f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    truth, votes = fd.load_crowd(f, f)
+    assert len(truth) == 60 and all(len(v) == 6 for v in votes.values())
+    rep = fd.sparsity(f, f, seeds=1, log=lambda m: None)
+    assert set(rep["budgets"]) == {"1", "2", "3", "5", "all"}
+    assert rep["budgets"]["all"]["carcux"]["auc"] >= rep["budgets"]["1"]["carcux"]["auc"]
