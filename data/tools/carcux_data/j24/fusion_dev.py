@@ -70,7 +70,7 @@ def folds(items: list[str], k: int) -> list[list[str]]:
 
 
 def _pooled(truth: dict[str, int], votes, claims: list[str], parts: list[list[str]],
-            variants: dict) -> dict[str, dict]:  # fmt: skip
+            variants: dict, ci: bool = True) -> dict[str, dict]:  # fmt: skip
     """Out-of-fold scores for every variant, and their metrics with bootstrap intervals."""
     report = {}
     for name, (fn, opts) in variants.items():
@@ -90,7 +90,8 @@ def _pooled(truth: dict[str, int], votes, claims: list[str], parts: list[list[st
         def auc_of(gs, scores=scores):
             return metrics([truth[g] for g in gs], [scores[g] for g in gs])["auc"]
 
-        report[name]["with_votes"]["auc_95"] = interval(covered, auc_of)
+        if ci:
+            report[name]["with_votes"]["auc_95"] = interval(covered, auc_of)
     return report
 
 
@@ -138,6 +139,16 @@ def load_crowd(answers: Path, truth_file: Path, positive: str = "1"
     tab-separated rows are worker, item, label. `positive` is the label (or comma-separated
     labels) that means true."""
     pos = {x.strip().lower() for x in positive.split(",")}
+    with answers.open(encoding="utf-8") as f:
+        snow = f.readline().startswith("!amt_annotation_ids")
+    if snow:  # Snow et al. 2008 standardized: annotation, worker, item, response, gold
+        rows = _rows(answers)[1:]
+        truth = {r[2]: int(r[4].lower() in pos) for r in rows}
+        votes: dict[str, list[dict]] = defaultdict(list)
+        for r in rows:
+            votes[r[2]].append({"outlet": r[1], "vote": 1.0 if r[3].lower() in pos else -1.0,
+                                "weight": 1.0, "conf": 1.0, "title": ""})  # fmt: skip
+        return truth, dict(votes)
     truth = {r[0]: int(r[1].strip().lower() in pos) for r in _rows(truth_file)
              if len(r) >= 2 and r[1]}  # fmt: skip
     votes: dict[str, list[dict]] = defaultdict(list)
@@ -177,6 +188,40 @@ def benchmark(answers: Path, truth_file: Path, *, k: int = 5, positive: str = "1
     report["methods_20pct_known"] = sparse
     log(table(report))
     return report
+
+
+BUDGETS = (1, 2, 3, 5, 0)  # answers kept per item; 0 = all
+
+
+def sparsity(answers: Path, truth_file: Path, *, positive: str = "1", seeds: int = 3,
+             k: int = 5, log: Callable[[str], None] = print) -> dict:  # fmt: skip
+    """The methods as each item's answers are randomly cut to a budget (seed-averaged)."""
+    truth, votes = load_crowd(answers, truth_file, positive)
+    truth = {g: t for g, t in truth.items() if votes.get(g)}
+    claims = sorted(set(votes) | set(truth))
+    parts = folds(list(truth), k)
+    base = {n: VARIANTS[n] for n in METHODS}
+    keys = ("auc", "accuracy", "brier", "ece", "acc_at_80pct")
+    out: dict[str, dict] = {}
+    for budget in BUDGETS:
+        sums: dict[str, dict[str, float]] = {n: dict.fromkeys(keys, 0.0) for n in base}
+        for seed in range(seeds):
+            rng = random.Random(SEED + seed)  # noqa: S311 - reproducible subsampling
+            cut = {g: (rng.sample(vs, budget) if budget and len(vs) > budget else list(vs))
+                   for g, vs in votes.items()}  # fmt: skip
+            rep = _pooled(truth, cut, claims, parts, base, ci=False)
+            for n in base:
+                for key in keys:
+                    sums[n][key] += (rep[n]["with_votes"].get(key) or 0.0) / seeds
+        out[str(budget or "all")] = sums
+    lines = [f"{'answers/item':>12s} {'method':12s} {'AUC':>6s} {'acc':>6s} {'Brier':>6s} "
+             f"{'ECE':>6s} {'acc@80':>6s}"]  # fmt: skip
+    for budget, ms in out.items():
+        for n, m in ms.items():
+            lines.append(f"{budget:>12s} {n:12s} {m['auc']:6.3f} {m['accuracy']:6.3f} "
+                         f"{m['brier']:6.3f} {m['ece']:6.3f} {m['acc_at_80pct']:6.3f}")  # fmt: skip
+    log("\n".join(lines))
+    return {"items": len(truth), "seeds": seeds, "budgets": out}
 
 
 def table(report: dict) -> str:

@@ -61,3 +61,28 @@ Relevance       0.040 0.764     0.174 0.786     0.116 0.812     0.114 0.818
 
 Tried and not adopted: carcux_eb (empirical-Bayes prior on source rates), no gain on the
 development datasets (Product, Sentiment, Duck); see the protocol.
+
+Vote scarcity (2 November 2026, diagnostic, methods unchanged). RTE and TEMP (Snow et al.,
+EMNLP 2008; data from https://github.com/brendano/nlp_jobs, unified/all_standardized.tgz),
+never used in this project before. Each item's 10 answers randomly cut to a budget, 3 seeds,
+5-fold cross-validation; mean of the seeds.
+
+RTE (800 items, 164 workers)          AUC                              ECE
+answers/item             majority reliab  D-S    CARCUX     majority reliab  D-S    CARCUX
+   1                     0.731    0.741   0.777  0.792      0.071    0.061   0.163  0.090
+   2                     0.828    0.871   0.858  0.885      0.121    0.046   0.061  0.057
+   3                     0.862    0.913   0.908  0.920      0.115    0.032   0.051  0.026
+   5                     0.923    0.957   0.957  0.960      0.163    0.030   0.035  0.030
+  10                     0.965    0.980   0.980  0.981      0.206    0.042   0.046  0.043
+
+TEMP (462 items, 76 workers)
+   1                     0.749    0.813   0.816  0.834      0.084    0.060   0.311  0.086
+   2                     0.848    0.923   0.928  0.933      0.136    0.046   0.074  0.063
+   3                     0.896    0.951   0.950  0.950      0.151    0.042   0.036  0.041
+   5                     0.947    0.964   0.963  0.964      0.201    0.042   0.043  0.041
+  10                     0.970    0.979   0.978  0.979      0.219    0.038   0.030  0.030
+
+Reading: CARCUX's ranking advantage grows as answers get scarce (RTE, 1 answer: +0.015 over
+Dawid-Skene, +0.051 over reliability) and vanishes with 5 or more. With 1 answer per item its
+probabilities are less well calibrated than reliability's (ECE 0.090 vs 0.061 on RTE, 0.086
+vs 0.060 on TEMP); unsupervised Dawid-Skene is badly calibrated there (0.163, 0.311).
