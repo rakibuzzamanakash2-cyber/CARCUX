@@ -21,7 +21,7 @@
     python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
                                    [--key FILE --sheets A,B,C]
     python -m carcux_data.j24 fuse-cv --out DIR --claims FILE [--stances auto|human]
-    python -m carcux_data.j24 fuse-bench --answers answer.csv --truth truth.csv
+    python -m carcux_data.j24 fuse-bench --answers answer.csv --truth truth.csv [--positive L]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
 
@@ -125,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     fb.add_argument("--answers", required=True, type=Path)
     fb.add_argument("--truth", required=True, type=Path)
     fb.add_argument("--json", type=Path)
+    fb.add_argument("--positive", default="1", help="the label that means true (e.g. Yes)")
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
     fu.add_argument("--out", required=True, type=Path)
     fu.add_argument("--claims", required=True, type=Path)
@@ -310,7 +311,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fuse-bench":
         from carcux_data.j24.fusion_dev import benchmark
 
-        rep = benchmark(args.answers, args.truth)
+        rep = benchmark(args.answers, args.truth, positive=args.positive)
         if args.json:
             args.json.write_text(json.dumps(rep, indent=1), encoding="utf-8")
         return 0

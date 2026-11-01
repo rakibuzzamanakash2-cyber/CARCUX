@@ -121,29 +121,43 @@ def cross_validate(out: Path, claims_path: Path, *, k: int = 5, stances: str = "
     return report
 
 
-def load_crowd(answers: Path, truth_file: Path) -> tuple[dict[str, int], dict[str, list[dict]]]:
-    with truth_file.open(encoding="utf-8") as f:
-        truth = {r["question"]: int(r["truth"]) for r in csv.DictReader(f)}
+def _rows(path: Path) -> list[list[str]]:
+    """CSV with a header (Zheng et al.), or tab-separated without one (Get-Another-Label)."""
+    with path.open(encoding="utf-8") as f:
+        if path.suffix == ".csv":
+            return [list(r.values()) for r in csv.DictReader(f)]
+        return [[c.strip() for c in line.split("\t")] for line in f if line.strip()]
+
+
+def load_crowd(answers: Path, truth_file: Path, positive: str = "1"
+               ) -> tuple[dict[str, int], dict[str, list[dict]]]:  # fmt: skip
+    """Truth for the gold items, and votes on every item (unlabelled items still teach the
+    unsupervised part about the workers). CSV rows are question, worker, answer;
+    tab-separated rows are worker, item, label. `positive` is the label that means true."""
+    truth = {r[0]: int(r[1].strip().lower() == positive.lower()) for r in _rows(truth_file)
+             if len(r) >= 2 and r[1]}  # fmt: skip
     votes: dict[str, list[dict]] = defaultdict(list)
-    with answers.open(encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            if r["question"] in truth and r["answer"] in ("0", "1"):
-                v = 1.0 if r["answer"] == "1" else -1.0
-                votes[r["question"]].append({"outlet": r["worker"], "vote": v, "weight": 1.0,
-                                             "conf": 1.0, "title": ""})  # fmt: skip
+    for r in _rows(answers):
+        if len(r) < 3 or not r[2]:
+            continue
+        item, worker = (r[0], r[1]) if answers.suffix == ".csv" else (r[1], r[0])
+        v = 1.0 if r[2].strip().lower() == positive.lower() else -1.0
+        votes[item].append({"outlet": worker, "vote": v, "weight": 1.0, "conf": 1.0,
+                            "title": ""})  # fmt: skip
     return truth, dict(votes)
 
 
-def benchmark(answers: Path, truth_file: Path, *, k: int = 5,
+def benchmark(answers: Path, truth_file: Path, *, k: int = 5, positive: str = "1",
               log: Callable[[str], None] = print) -> dict:  # fmt: skip
     """Each fold in turn is scored with the other folds' truth known (80% supervision), and
     again with only one other fold known (20%), the sparse case."""
-    truth, votes = load_crowd(answers, truth_file)
-    claims = sorted(truth)
-    parts = folds(claims, k)
+    truth, votes = load_crowd(answers, truth_file, positive)
+    truth = {g: t for g, t in truth.items() if votes.get(g)}
+    claims = sorted(set(votes) | set(truth))
+    parts = folds(list(truth), k)
     base = {n: VARIANTS[n] for n in METHODS}
-    report = {"items": len(claims), "workers": len({v["outlet"] for vs in votes.values()
-                                                     for v in vs}),  # fmt: skip
+    workers = {v["outlet"] for vs in votes.values() for v in vs}
+    report = {"items": len(claims), "gold_items": len(truth), "workers": len(workers),
               "answers_per_item": sum(map(len, votes.values())) / max(len(votes), 1),
               "true_share": sum(truth.values()) / max(len(truth), 1),
               "methods": _pooled(truth, votes, claims, parts, base)}  # fmt: skip
