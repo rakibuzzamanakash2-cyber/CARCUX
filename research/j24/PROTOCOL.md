@@ -217,6 +217,17 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, result of the sparse-vote work above: on the development datasets
+  `carcux_eb` gave no gain (AUC Product 0.905 vs 0.906, Sentiment 0.990 vs 0.991, Duck
+  0.951 vs 0.952; ECE equal within 0.002), so it is **not adopted** and was not run on the
+  held-out datasets. CARCUX is unchanged. The new trust measures were then computed for the
+  unchanged methods on all datasets. CARCUX is the best calibrated method on Product (ECE
+  0.013) and Sentiment (0.028), but on the noisier held-out sets every learned method is
+  overconfident (ECE on Mozafari: CARCUX 0.152, majority 0.147; on Relevance: CARCUX 0.114,
+  majority 0.040). Because this was seen on the held-out sets, any calibration step
+  developed from it must be judged on data not yet used: the J24 human-stance test and any
+  new benchmark, not Mozafari or Relevance.
+
 - 2 November 2026, before the change below is run on any held-out dataset: work on
   sparse votes (few votes per source and per claim). Proposed change: `carcux_eb`, which
   replaces the fixed Beta prior on each source's two rates by an empirical-Bayes prior

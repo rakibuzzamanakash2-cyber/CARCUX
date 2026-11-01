@@ -22,6 +22,7 @@ from carcux_data.j24.fusion import (
     METHODS,
     SEED,
     _em,
+    carcux_eb,
     claim_sources,
     copy_clusters,
     load_votes,
@@ -58,6 +59,7 @@ VARIANTS: dict[str, tuple[Callable, dict]] = {
     "carcux_no_conf": (METHODS["carcux"], {"conf": False}),
     "carcux_no_questions": (METHODS["carcux"], {"questions": False}),
     "carcux_flat_prior": (_carcux_flat, {}),
+    "carcux_eb": (carcux_eb, {}),
 }
 
 
@@ -157,7 +159,7 @@ def benchmark(answers: Path, truth_file: Path, *, k: int = 5, positive: str = "1
     truth = {g: t for g, t in truth.items() if votes.get(g)}
     claims = sorted(set(votes) | set(truth))
     parts = folds(list(truth), k)
-    base = {n: VARIANTS[n] for n in METHODS}
+    base = {n: VARIANTS[n] for n in METHODS}  # carcux_eb: tried, not adopted (protocol)
     workers = {v["outlet"] for vs in votes.values() for v in vs}
     report = {"items": len(claims), "gold_items": len(truth), "workers": len(workers),
               "answers_per_item": sum(map(len, votes.values())) / max(len(votes), 1),
@@ -178,16 +180,19 @@ def benchmark(answers: Path, truth_file: Path, *, k: int = 5, positive: str = "1
 
 
 def table(report: dict) -> str:
-    lines = [f"{'method':22s} {'AUC':>6s} {'95% CI':>15s} {'acc':>6s} {'F1':>6s} {'Brier':>6s}"]
-    for name, m in report["methods"].items():
-        w = m["with_votes"]
-        ci = w.get("auc_95")
-        ci_s = f"[{ci[0]:.3f}, {ci[1]:.3f}]" if ci else ""
+    head = f"{'method':22s} {'AUC':>6s} {'95% CI':>15s} {'acc':>6s} {'F1':>6s} {'Brier':>6s}"
+    lines = [head + f" {'ECE':>6s} {'acc@80':>6s}"]
+
+    def row(name, w, ci_s=""):
         auc = w.get("auc")
-        lines.append(f"{name:22s} {auc if auc is None else round(auc, 3)!s:>6s} {ci_s:>15s} "
-                     f"{w.get('accuracy', 0):6.3f} {w.get('macro_f1', 0):6.3f} "
-                     f"{w.get('brier', 0):6.3f}")  # fmt: skip
+        auc_s = "" if auc is None else f"{auc:.3f}"
+        return (f"{name:22s} {auc_s:>6s} {ci_s:>15s} {w.get('accuracy', 0):6.3f} "
+                f"{w.get('macro_f1', 0):6.3f} {w.get('brier', 0):6.3f} "
+                f"{w.get('ece', 0):6.3f} {w.get('acc_at_80pct', 0):6.3f}")  # fmt: skip
+
+    for name, m in report["methods"].items():
+        ci = m["with_votes"].get("auc_95")
+        lines.append(row(name, m["with_votes"], f"[{ci[0]:.3f}, {ci[1]:.3f}]" if ci else ""))
     for name, m in report.get("methods_20pct_known", {}).items():
-        lines.append(f"{name + ' (20% known)':22s} {m['auc']:6.3f} {'':>15s} "
-                     f"{m['accuracy']:6.3f} {m['macro_f1']:6.3f} {m['brier']:6.3f}")  # fmt: skip
+        lines.append(row(name + " (20% known)", m))
     return "\n".join(lines)

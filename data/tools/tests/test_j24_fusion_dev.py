@@ -133,3 +133,25 @@ def test_tab_format_and_unlabelled_items(tmp_path):
     assert set(votes) == {"i1", "i2", "i3"}  # i3 has no gold but still teaches the EM
     assert votes["i1"][0] == {"outlet": "w1", "vote": 1.0, "weight": 1.0, "conf": 1.0,
                               "title": ""}  # fmt: skip
+
+
+def test_empirical_bayes_variant_and_trust_metrics():
+    from carcux_data.j24 import fusion as fu
+
+    rng = random.Random(11)  # noqa: S311
+    truth, votes = {}, {}
+    for i in range(200):  # many sources, each seen only a few times: the sparse case
+        t = int(rng.random() < 0.3)
+        truth[f"g{i}"] = t
+        votes[f"g{i}"] = [
+            {"outlet": f"s{rng.randrange(150)}", "weight": 1.0,
+             "vote": 1.0 if (rng.random() < 0.8) == bool(t) else -1.0}
+            for _ in range(3)
+        ]  # fmt: skip
+    claims = sorted(truth)
+    train = {g: truth[g] for g in claims[:120]}
+    assert fu.choose_strength(votes, claims, train) in fu.EB_STRENGTHS
+    s = fu.carcux_eb(votes, claims, train=train)
+    assert all(0 < s[g] < 1 for g in claims[120:])
+    m = fu.metrics([truth[g] for g in claims[120:]], [s[g] for g in claims[120:]])
+    assert 0 <= m["ece"] <= 1 and 0 <= m["acc_at_80pct"] <= 1

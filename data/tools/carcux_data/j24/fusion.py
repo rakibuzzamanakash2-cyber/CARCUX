@@ -204,8 +204,8 @@ def reliability(votes, claims, train: dict[str, int], **_) -> dict[str, float]:
 
 
 def _em(votes, claims, clamp: dict[str, int], prior: float, iters: int = 50,
-        a0: tuple[float, float] = (2.0, 1.0), learn_prior: bool = False
-        ) -> dict[str, float]:  # fmt: skip
+        a0: tuple[float, float] = (2.0, 1.0), learn_prior: bool = False,
+        eb: float | None = None) -> dict[str, float]:  # fmt: skip
     """Binary Dawid-Skene. sens = P(support | true), spec = P(oppose | false), per outlet."""
     p = majority(votes, claims)
     p.update({g: float(t) for g, t in clamp.items() if g in p})
@@ -220,8 +220,14 @@ def _em(votes, claims, clamp: dict[str, int], prior: float, iters: int = 50,
                 s_den[o] += w * p[g]
                 c_num[o] += w * (1 - p[g]) * (not sup)
                 c_den[o] += w * (1 - p[g])
-        sens = {o: (s_num[o] + a0[0]) / (s_den[o] + sum(a0)) for o in outlets}
-        spec = {o: (c_num[o] + a0[0]) / (c_den[o] + sum(a0)) for o in outlets}
+        if eb:  # empirical Bayes: shrink each source towards the pooled rates
+            ms = min(max(sum(s_num.values()) / max(sum(s_den.values()), 1e-9), 0.05), 0.95)
+            mc = min(max(sum(c_num.values()) / max(sum(c_den.values()), 1e-9), 0.05), 0.95)
+            sens = {o: (s_num[o] + eb * ms) / (s_den[o] + eb) for o in outlets}
+            spec = {o: (c_num[o] + eb * mc) / (c_den[o] + eb) for o in outlets}
+        else:
+            sens = {o: (s_num[o] + a0[0]) / (s_den[o] + sum(a0)) for o in outlets}
+            spec = {o: (c_num[o] + a0[0]) / (c_den[o] + sum(a0)) for o in outlets}
         new = {}
         for g in claims:
             if g in clamp:
@@ -277,6 +283,42 @@ def choose_prior(votes, train: dict[str, int], k: int = 5) -> tuple[str, dict[st
     return best, results
 
 
+EB_STRENGTHS = (2.0, 5.0, 10.0, 20.0, 50.0)
+
+
+def carcux_eb(votes, claims, train: dict[str, int], strength: float | None = None,
+              **_) -> dict[str, float]:  # fmt: skip
+    """CARCUX with an empirical-Bayes prior on the source rates; its strength is chosen by
+    3-fold cross-validation inside the training items unless given."""
+    base = min(max(sum(train.values()) / len(train), 0.05), 0.95) if train else 0.5
+    if strength is None:
+        strength = choose_strength(votes, claims, train)
+    return _em(votes, claims, clamp=train, prior=base, eb=strength)
+
+
+def choose_strength(votes, claims, train: dict[str, int], k: int = 3) -> float:
+    groups = sorted(g for g in train if votes.get(g))
+    if len(groups) < 2 * k or len({train[g] for g in groups}) < 2:
+        return 10.0
+    rng = random.Random(SEED)  # noqa: S311 - a reproducible split, not security
+    rng.shuffle(groups)
+    parts = [groups[i::k] for i in range(k)]
+    best, best_score = 10.0, -1.0
+    for st in EB_STRENGTHS:
+        scores = {}
+        for part in parts:
+            held = set(part)
+            s = carcux_eb(votes, claims, {g: t for g, t in train.items() if g not in held},
+                          strength=st)  # fmt: skip
+            scores.update({g: s[g] for g in part})
+        y, p = [train[g] for g in groups], [scores[g] for g in groups]
+        # log loss rewards ranking and calibration together
+        score = -sum(-math.log(max(q if t else 1 - q, 1e-6)) for t, q in zip(y, p, strict=True))
+        if score > best_score:
+            best, best_score = st, score
+    return best
+
+
 def claim_sources(claims_path: Path) -> dict[str, str]:
     """claim_group -> 'ohchr' if any of its claims comes from the OHCHR report, else
     'fact_check'."""
@@ -328,12 +370,21 @@ def metrics(y: list[int], p: list[float]) -> dict:
         f1s.append(2 * tp / (2 * tp + fp + fn) if tp + fp + fn else 0.0)
     acc = sum(a == b for a, b in zip(y, pred, strict=True)) / len(y)
     brier = sum((s - t) ** 2 for s, t in zip(p, y, strict=True)) / len(y)
+    # calibration: 10 bins of equal size, mean |predicted - observed| weighted by bin size
+    order = sorted(range(len(y)), key=lambda i: p[i])
+    bins = [order[i * len(y) // 10 : (i + 1) * len(y) // 10] for i in range(10)]
+    ece = sum(abs(sum(p[i] for i in b) - sum(y[i] for i in b)) for b in bins if b) / len(y)
+    # selective accuracy: the 80% of items the method is most sure about
+    sure = sorted(range(len(y)), key=lambda i: -abs(p[i] - 0.5))[: max(1, int(0.8 * len(y)))]
+    acc80 = sum(pred[i] == y[i] for i in sure) / len(sure)
     return {
         "n": len(y),
         "auc": auc(y, p),
         "accuracy": acc,
         "macro_f1": sum(f1s) / 2,
         "brier": brier,
+        "ece": ece,
+        "acc_at_80pct": acc80,
     }
 
 

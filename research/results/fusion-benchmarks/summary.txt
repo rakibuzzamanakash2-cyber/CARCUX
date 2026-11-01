@@ -46,3 +46,18 @@ that do not match the labelled HIT ids).
 
 Data: https://github.com/zhydhkcws/crowd_truth_infer (datasets/ and the full datasets.zip),
 https://github.com/ipeirotis/Get-Another-Label (data/). Not copied into this repository.
+
+Trust measures (2 November 2026; same runs, unchanged methods). ECE = expected calibration
+error, 10 equal-count bins (lower is better); acc@80 = accuracy on the 80% of items the
+method is most sure about.
+
+                majority        reliability     dawid_skene     carcux
+                ECE   acc@80    ECE   acc@80    ECE   acc@80    ECE   acc@80
+Product         0.201 0.923     0.063 0.967     0.024 0.968     0.013 0.971
+Sentiment       0.249 0.981     0.043 0.985     0.032 0.993     0.028 0.990
+Duck            0.215 0.849     0.121 0.919     0.090 0.942     0.091 0.942
+Mozafari        0.147 0.734     0.187 0.750     0.243 0.750     0.152 0.771
+Relevance       0.040 0.764     0.174 0.786     0.116 0.812     0.114 0.818
+
+Tried and not adopted: carcux_eb (empirical-Bayes prior on source rates), no gain on the
+development datasets (Product, Sentiment, Duck); see the protocol.
