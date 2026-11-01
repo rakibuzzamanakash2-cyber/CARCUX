@@ -121,3 +121,15 @@ def test_choose_prior_and_claim_sources(tmp_path):
     p = tmp_path / "c.jsonl"
     p.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     assert fu.claim_sources(p) == {"g": "ohchr", "h": "fact_check"}
+
+
+def test_tab_format_and_unlabelled_items(tmp_path):
+    (tmp_path / "labels.txt").write_text(
+        "w1\ti1\tYes\nw2\ti1\tYes\nw1\ti2\tNo\nw2\ti2\tNo\nw1\ti3\tYes\n", encoding="utf-8"
+    )
+    (tmp_path / "gold.txt").write_text("i1\tYes\ni2\tNo\n", encoding="utf-8")
+    truth, votes = fd.load_crowd(tmp_path / "labels.txt", tmp_path / "gold.txt", "Yes")
+    assert truth == {"i1": 1, "i2": 0}
+    assert set(votes) == {"i1", "i2", "i3"}  # i3 has no gold but still teaches the EM
+    assert votes["i1"][0] == {"outlet": "w1", "vote": 1.0, "weight": 1.0, "conf": 1.0,
+                              "title": ""}  # fmt: skip
