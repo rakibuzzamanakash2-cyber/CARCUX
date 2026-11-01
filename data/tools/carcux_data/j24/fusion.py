@@ -278,6 +278,29 @@ def metrics(y: list[int], p: list[float]) -> dict:
     }
 
 
+def intervals(truth: dict[str, int], ids: list[str], scores: dict[str, dict]) -> dict:
+    """Bootstrap intervals over test claims: AUC and Brier per method, and the AUC gain of
+    CARCUX over each other method on the same resampled claims (paired)."""
+    from carcux_data.j24.ci import interval
+
+    def stat(method, key):
+        return lambda gs: metrics([truth[g] for g in gs], [scores[method][g] for g in gs])[key]
+
+    res = {m: {"auc": interval(ids, stat(m, "auc")), "brier": interval(ids, stat(m, "brier"))}
+           for m in scores}  # fmt: skip
+    if "carcux" in scores:
+        for m in scores:
+            if m == "carcux":
+                continue
+
+            def gain(gs, m=m):
+                a, b = stat("carcux", "auc")(gs), stat(m, "auc")(gs)
+                return None if a is None or b is None else a - b
+
+            res["carcux"][f"auc_gain_over_{m}"] = interval(ids, gain)
+    return res
+
+
 def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key=None,
         log: Callable[[str], None] = print) -> dict:  # fmt: skip
     truth = truth_labels(claims_path)
@@ -300,6 +323,7 @@ def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key
             "test_with_votes": metrics([truth[g] for g in covered], [s[g] for g in covered]),
         }  # fmt: skip
         log(f"  {name}: {report['methods'][name]['test_with_votes']}")
+    report["intervals_95"] = intervals(truth, covered, scores)
     folder = out / "fusion"
     folder.mkdir(exist_ok=True)
     (folder / f"report_{stances}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")

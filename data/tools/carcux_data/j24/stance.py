@@ -287,6 +287,15 @@ def evaluate(out: Path, sheets: list[Path], key_path: Path) -> dict:
             "similarity_only": macro_f1(g_test, [predict(feats[p], sim_only) for p in test]),
         },
     }  # fmt: skip
+    from carcux_data.j24.ci import interval
+
+    units = [[lab for _, lab in labels[p]] for p in overlap]
+    pred = {p: predict(feats[p], params) for p in test}
+    report["intervals_95"] = {
+        "alpha_on_shared_pairs": interval(units, krippendorff_nominal),
+        "test_macro_f1_model": interval(test, lambda ps: macro_f1([gold[p] for p in ps],
+                                                                  [pred[p] for p in ps])),
+    }  # fmt: skip
     (out / "matches" / "stance_eval.json").write_text(json.dumps(report, indent=1),
                                                       encoding="utf-8")  # fmt: skip
     return report

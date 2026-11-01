@@ -39,6 +39,16 @@ def _jsonl(path: Path) -> list[dict]:
 
 
 def compute(out: Path, claims_path: Path) -> dict:
+    summary, tables = collect(out, claims_path)
+    folder = out / "stats"
+    folder.mkdir(exist_ok=True)
+    (folder / "summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    _write_tables(folder / "tables.xlsx", tables)
+    return summary
+
+
+def collect(out: Path, claims_path: Path) -> tuple[dict, dict[str, list[dict]]]:
+    """The summary numbers and the tables, without writing anything."""
     outlets = load_news_outlets()
     listed = Counter(u["outlet"] for u in load_urls(out))
     articles = _jsonl(out / "news" / "articles_all.jsonl")
@@ -125,13 +135,9 @@ def compute(out: Path, claims_path: Path) -> dict:
         "candidate_pairs": len(cands),
         "candidate_languages": dict(lang),
     }
-    folder = out / "stats"
-    folder.mkdir(exist_ok=True)
-    (folder / "summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
-    _write_tables(folder / "tables.xlsx", {"outlets": outlet_rows, "days": day_rows,
-                                           "claims": claim_rows, "candidates": cand_rows,
-                                           "coverage": coverage_rows})  # fmt: skip
-    return summary
+    tables = {"outlets": outlet_rows, "days": day_rows, "claims": claim_rows,
+              "candidates": cand_rows, "coverage": coverage_rows}  # fmt: skip
+    return summary, tables
 
 
 def _write_tables(path: Path, tables: dict[str, list[dict]]) -> None:

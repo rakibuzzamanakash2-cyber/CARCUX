@@ -14,6 +14,9 @@
     python -m carcux_data.j24 claims-match --out DIR --claims FILE [--top 10] [--embed]
     python -m carcux_data.j24 stance-auto --out DIR [--claims-bn FILE]
     python -m carcux_data.j24 j24-stats --out DIR --claims FILE
+    python -m carcux_data.j24 j24-release --out DIR --claims FILE [--claims-bn FILE]
+                                          [--key FILE --sheets A,B,C]
+    python -m carcux_data.j24 j24-fulltext --release DIR [--limit N]
     python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
     python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
                                    [--key FILE --sheets A,B,C]
@@ -98,6 +101,16 @@ def main(argv: list[str] | None = None) -> int:
     st = sub.add_parser("j24-stats", help="the numbers and tables for Paper 2")
     st.add_argument("--out", required=True, type=Path)
     st.add_argument("--claims", required=True, type=Path)
+    rl = sub.add_parser("j24-release", help="the public release files in DIR/release")
+    rl.add_argument("--out", required=True, type=Path)
+    rl.add_argument("--claims", required=True, type=Path)
+    rl.add_argument("--claims-bn", type=Path)
+    rl.add_argument("--key", type=Path)
+    rl.add_argument("--sheets", default="")
+    ft = sub.add_parser("j24-fulltext", help="rebuild article text from the release's "
+                        "archive links")  # fmt: skip
+    ft.add_argument("--release", required=True, type=Path)
+    ft.add_argument("--limit", type=int)
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
     fu.add_argument("--out", required=True, type=Path)
     fu.add_argument("--claims", required=True, type=Path)
@@ -254,6 +267,19 @@ def main(argv: list[str] | None = None) -> int:
 
         print(json.dumps(compute(args.out, args.claims), indent=1, ensure_ascii=False))
         print(f"tables in {args.out / 'stats' / 'tables.xlsx'}")
+        return 0
+
+    if args.command == "j24-release":
+        from carcux_data.j24.release import build
+
+        sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
+        s = build(args.out, args.claims, args.claims_bn, sheets=sheets or None, key=args.key)
+        return 1 if s["privacy_problems"] else 0
+
+    if args.command == "j24-fulltext":
+        from carcux_data.j24.release import fulltext
+
+        print(fulltext(args.release, args.release / "fulltext.jsonl", limit=args.limit))
         return 0
 
     if args.command == "fuse":
