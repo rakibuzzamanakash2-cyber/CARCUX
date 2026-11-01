@@ -217,6 +217,17 @@ and index again.
 
 ## Changes
 
+- 1 November 2026, before any stance label is seen: (1) the public release (`j24-release`)
+  holds links, archive links, metadata, claims and labels but no article text and no
+  excerpts, because the outlets hold the copyright and names in excerpts cannot yet be
+  replaced reliably in Bangla; `j24-fulltext` rebuilds the text from the archive copies.
+  Evidence text in the claims is cut to 300 characters with social-media links and handles
+  removed, and the release is refused if a privacy check finds text, notes or handles.
+  (2) Results are reported with 95% percentile bootstrap intervals (2,000 resamples, seed
+  2024): over shared pairs for Krippendorff's alpha, over test pairs for stance macro-F1,
+  and over test claims for fusion AUC and Brier, with CARCUX's AUC gain over each other
+  method computed on the same resamples (paired).
+
 - 30 October 2026, the fusion experiment for Paper 1 (`fuse`). Truth per claim group:
   OHCHR found = true, contradicted = false; fact-check true = true; false, altered or
   misleading = false; relayed, unproven, partly-true and groups with conflicting verdicts
