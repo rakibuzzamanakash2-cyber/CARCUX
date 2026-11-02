@@ -25,10 +25,10 @@ from carcux_data.j24.fusion import (
     carcux_cal,
     carcux_eb,
     claim_sources,
-    copy_clusters,
     load_votes,
     metrics,
     split,
+    stories,
     truth_labels,
 )
 
@@ -39,7 +39,7 @@ def reweight(votes: dict[str, list[dict]], *, copies: bool = True, conf: bool = 
     out = {}
     for g, vs in votes.items():
         vs = [dict(v) for v in vs if questions or v["vote"] != -0.5]
-        clusters = copy_clusters(vs) if copies else list(range(len(vs)))
+        clusters = stories(vs) if copies else list(range(len(vs)))
         sizes = defaultdict(int)
         for k in clusters:
             sizes[k] += 1
@@ -105,10 +105,17 @@ def cross_validate(out: Path, claims_path: Path, *, k: int = 5, stances: str = "
     votes = load_votes(out, stances=stances, sheets=sheets, key=key)
     votes = {g: v for g, v in votes.items() if g in truth}
     claims = sorted(truth)
+    text_votes = None
+    if (out / "matches" / "copies.jsonl").exists():
+        tv = load_votes(out, stances=stances, sheets=sheets, key=key, copies="text")
+        text_votes = {g: v for g, v in tv.items() if g in truth}
     report = {"stances": stances, "folds": k, "training_claims": len(claims),
               "with_votes": sum(1 for g in claims if votes.get(g)),
               "true_share": sum(truth.values()) / max(len(truth), 1),
               "methods": _pooled(truth, votes, claims, folds(claims, k), VARIANTS)}  # fmt: skip
+    if text_votes is not None:
+        extra = {f"{n}_text_copies": VARIANTS[n] for n in ("reliability", "carcux")}
+        report["methods"].update(_pooled(truth, text_votes, claims, folds(claims, k), extra))
     src = claim_sources(claims_path)
     covered = [g for g in claims if votes.get(g)]
     report["reference_claim_source_only"] = metrics(

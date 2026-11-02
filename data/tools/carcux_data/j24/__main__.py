@@ -20,6 +20,7 @@
     python -m carcux_data.j24 stance-eval --out DIR --key FILE --sheets A.xlsx,B.xlsx,C.xlsx
     python -m carcux_data.j24 fuse --out DIR --claims FILE [--stances auto|human]
                                    [--key FILE --sheets A,B,C]
+    python -m carcux_data.j24 j24-copies --out DIR [--score copies_check.xlsx]
     python -m carcux_data.j24 fuse-cv --out DIR --claims FILE [--stances auto|human]
     python -m carcux_data.j24 fuse-bench --answers answer.csv --truth truth.csv [--positive L]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
@@ -132,12 +133,17 @@ def main(argv: list[str] | None = None) -> int:
     fb.add_argument("--seeds", type=int, default=3)
     fb.add_argument("--sparsity", action="store_true", help="cut each item's answers to "
                     "1, 2, 3, 5 and all, and score the methods at each budget")  # fmt: skip
+    cp = sub.add_parser("j24-copies", help="find which candidate articles are one story")
+    cp.add_argument("--out", required=True, type=Path)
+    cp.add_argument("--score", type=Path, help="a judged copies_check.xlsx: print precision")
     fu = sub.add_parser("fuse", help="claim truth from the outlets' stances (Paper 1)")
     fu.add_argument("--out", required=True, type=Path)
     fu.add_argument("--claims", required=True, type=Path)
     fu.add_argument("--stances", choices=["auto", "human"], default="auto")
     fu.add_argument("--key", type=Path)
     fu.add_argument("--sheets", default="")
+    fu.add_argument("--copies", choices=["title", "text"], default="title",
+                    help="text: use the stories from j24-copies")  # fmt: skip
     fu.add_argument("--prior", choices=["auto", "beta21", "flat"], default="auto",
                     help="outlet-rate prior for CARCUX; auto chooses it by cross-validation "
                     "inside the training claims")  # fmt: skip
@@ -330,12 +336,23 @@ def main(argv: list[str] | None = None) -> int:
             args.json.write_text(json.dumps(rep, indent=1), encoding="utf-8")
         return 0
 
+    if args.command == "j24-copies":
+        from carcux_data.j24.copies import detect, score_sheet
+
+        if args.score:
+            print(json.dumps(score_sheet(args.score), indent=1))
+        else:
+            detect(args.out)
+            print(f"check sheet: {args.out / 'matches' / 'copies_check.xlsx'}")
+        return 0
+
     if args.command == "fuse":
         from carcux_data.j24.fusion import run
 
         sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
         rep = run(args.out, args.claims, stances=args.stances, sheets=sheets, key=args.key,
-                  prior=args.prior, log=lambda m: print(m, flush=True))  # fmt: skip
+                  prior=args.prior, copies=args.copies,
+                  log=lambda m: print(m, flush=True))  # fmt: skip
         print(json.dumps(rep, indent=1))
         return 0
 

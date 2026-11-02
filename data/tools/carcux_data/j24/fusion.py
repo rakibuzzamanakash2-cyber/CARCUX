@@ -100,6 +100,13 @@ def copy_clusters(articles: list[dict]) -> list[int]:
     return [find(i) for i in range(len(articles))]
 
 
+def stories(votes: list[dict]) -> list:
+    """A story id per vote: from `j24-copies` when the votes carry one, else the title rule."""
+    if votes and all("story" in v for v in votes):
+        return [v["story"] for v in votes]
+    return copy_clusters(votes)
+
+
 def load_votes(
     out: Path,
     *,
@@ -107,8 +114,11 @@ def load_votes(
     sheets: list[Path] | None = None,
     key: Path | None = None,
     params: dict | None = None,
+    copies: str = "title",
 ) -> dict[str, list[dict]]:
-    """claim_group -> votes [{outlet, vote, weight}] from the candidates and their stances."""
+    """claim_group -> votes [{outlet, vote, weight}] from the candidates and their stances.
+    copies="title" joins near-identical titles; "text" uses the stories found by
+    `j24-copies` (matches/copies.jsonl)."""
     cands = [json.loads(x) for x in (out / "matches" / "candidates.jsonl")
              .read_text("utf-8").splitlines() if x.strip()]  # fmt: skip
     for n, c in enumerate(cands, 1):
@@ -130,6 +140,12 @@ def load_votes(
             counts = Counter(lab for _, lab in given).most_common()
             if pid not in examples and not (len(counts) > 1 and counts[0][1] == counts[1][1]):
                 human[pid] = counts[0][0]
+    story: dict[str, str] = {}
+    if copies == "text":
+        for line in (out / "matches" / "copies.jsonl").read_text("utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                story[r["pair_id"]] = r["story"]
     by_claim: dict[str, list[dict]] = defaultdict(list)
     for c in cands:
         if stances == "human":
@@ -146,9 +162,11 @@ def load_votes(
         if label in VOTE:
             vote = {"outlet": c["outlet"], "title": c.get("title", ""), "vote": VOTE[label],
                     "conf": conf}  # fmt: skip
+            if story:
+                vote["story"] = story.get(c["pair_id"], c["pair_id"])
             by_claim[c["claim_group"]].append(vote)
     for votes in by_claim.values():
-        clusters = copy_clusters(votes)
+        clusters = stories(votes)
         sizes = defaultdict(int)
         for k in clusters:
             sizes[k] += 1
@@ -479,9 +497,10 @@ def intervals(truth: dict[str, int], ids: list[str], scores: dict[str, dict]) ->
 
 
 def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key=None,
-        prior: str = "auto", log: Callable[[str], None] = print) -> dict:  # fmt: skip
+        prior: str = "auto", copies: str = "title",
+        log: Callable[[str], None] = print) -> dict:  # fmt: skip
     truth = truth_labels(claims_path)
-    votes = load_votes(out, stances=stances, sheets=sheets, key=key)
+    votes = load_votes(out, stances=stances, sheets=sheets, key=key, copies=copies)
     claims = sorted(set(truth) | set(votes))
     test = split(list(truth))
     train = {g: t for g, t in truth.items() if g not in test}
@@ -495,6 +514,7 @@ def run(out: Path, claims_path: Path, *, stances: str = "auto", sheets=None, key
         prior, inner = choose_prior(votes, train)
         report["prior_cv_auc"] = inner
     report["prior"] = prior
+    report["copies"] = copies
     src = claim_sources(claims_path)
     report["reference_claim_source_only"] = metrics(
         [truth[g] for g in covered], [1.0 if src.get(g) == "ohchr" else 0.0 for g in covered]
