@@ -217,6 +217,20 @@ and index again.
 
 ## Changes
 
+- 2 November 2026, before any stance label is seen and before the detector below is run
+  on J24: copies from article text. The title rule (60% shared title words) finds only 1.7%
+  of the candidate articles to be copies, which is implausibly low for outlets that rewrite
+  agency reports. `j24-copies` compares the text of the articles of each claim (first 2,000
+  characters, character 4-gram cosine): two articles are one story if the cosine is at least
+  0.6 (the platform detector's default, not tuned here), or if both credit the same news
+  agency (BSS, UNB, AFP, Reuters, AP, PTI, IANS, ANI) and the cosine is at least 0.3, or if
+  the title rule joins them. It writes a check sheet: 60 pairs it calls copies and 60 near
+  misses (cosine 0.35–0.6), drawn with seed 2024, to be judged by a person (same story or
+  not) without seeing the detector's reason; precision and the share of near misses that
+  are copies are reported. Whether fusion uses text copies instead of title copies on the
+  J24 test is decided by `fuse-cv` on the training claims only, with human stances, before
+  the test split is used.
+
 - 2 November 2026, result of the calibration step above: **not adopted**. The first
   Platt fit diverged when training scores separated the classes (a ≈ 10^5 on Duck); it was
   fixed (ridge towards the identity, damped Newton, a in [0.05, 3], b in [-5, 5]) before
