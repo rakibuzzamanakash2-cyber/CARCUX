@@ -116,3 +116,18 @@ def test_headline_lists_and_side_cards_are_not_article_text():
     art = read_article(html.encode(), with_text=True)
     assert "other headline" not in art["text"] and "side card" not in art["text"]
     assert art["text"].startswith("SYNTHETIC: students")  # "story-card" is kept
+
+
+def test_gunzip_refuses_a_zip_bomb():
+    import gzip
+
+    import pytest
+
+    from carcux_data.j24.fetch import gunzip
+
+    assert gunzip(gzip.compress(b"SYNTHETIC page")) == b"SYNTHETIC page"
+    bomb = gzip.compress(b"\0" * (5 * 1024 * 1024))  # 5 MB of zeros, a few KB zipped
+    with pytest.raises(OSError):
+        gunzip(bomb, limit=1024 * 1024)
+    with pytest.raises(OSError):
+        gunzip(b"not gzip at all")

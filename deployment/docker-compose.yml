@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: carcux        # development only
       POSTGRES_DB: carcux
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"   # this computer only: dev password, never on the network
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"   # Redis has no password here
 
   backend:
     build: ../backend
@@ -45,7 +45,7 @@ services:
     volumes:
       - media_data:/app/media
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"   # the frontend reaches the API inside Docker
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
   mailpit:
     image: axllent/mailpit:latest  # development only
     ports:
-      - "8025:8025"
+      - "127.0.0.1:8025:8025"
 
   # Reads enabled sources on their schedules. Needs internet access.
   ingest:

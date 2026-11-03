@@ -10,7 +10,6 @@ date in its address. Undated articles are counted and left out.
 
 from __future__ import annotations
 
-import gzip
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -18,7 +17,7 @@ from datetime import date
 from urllib.parse import urlsplit
 
 from carcux_data.j24.extract import SCOPE_TERMS
-from carcux_data.j24.fetch import Disallowed, Fetcher
+from carcux_data.j24.fetch import Disallowed, Fetcher, gunzip
 
 COMMON = ("/sitemap.xml", "/sitemap_index.xml", "/sitemap-index.xml", "/news-sitemap.xml")
 MAX_SITEMAPS = 200  # per outlet; the rest are reported, not read
@@ -102,7 +101,7 @@ def _text(fetcher: Fetcher, url: str) -> str | None:
         return None
     if body[:2] == b"\x1f\x8b":
         try:
-            body = gzip.decompress(body)
+            body = gunzip(body)
         except OSError:
             return None
     return body.decode("utf-8", "replace")

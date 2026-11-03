@@ -49,7 +49,7 @@ HANDLE = re.compile(r"(?<![\w.])@[A-Za-z0-9_.]{3,}")
 
 
 def article_id(url: str) -> str:
-    return "a" + hashlib.sha1(url.encode()).hexdigest()[:12]  # noqa: S324 - an id, not security
+    return "a" + hashlib.sha1(url.encode(), usedforsecurity=False).hexdigest()[:12]
 
 
 def clean(text: str | None, limit: int | None = EXCERPT) -> str:
