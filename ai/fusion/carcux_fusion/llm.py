@@ -39,6 +39,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -121,6 +122,8 @@ def parse(reply: str) -> dict:
 
 
 def _post(url: str, body: dict, headers: dict, timeout: float) -> dict:
+    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
+        raise ValueError(f"not an http(s) address: {url}")
     req = urllib.request.Request(  # noqa: S310 (a configured local or API URL)
         url, json.dumps(body).encode(), {"Content-Type": "application/json", **headers}
     )

@@ -210,7 +210,9 @@ def _embed(texts: list[str], prefix: str, cache: Path | None, log) -> list[list[
         if len(arr) == len(texts):
             return arr
     log(f"  embedding {len(texts)} texts with {MODEL} (this takes a while on a CPU)")
-    model = SentenceTransformer(MODEL, device="cpu")
+    from carcux_data.j24.stance import EMBED_REVISION
+
+    model = SentenceTransformer(MODEL, device="cpu", revision=EMBED_REVISION)
     arr = model.encode([prefix + t for t in texts], batch_size=32, normalize_embeddings=True,
                        show_progress_bar=True, convert_to_numpy=True)  # fmt: skip
     if cache:

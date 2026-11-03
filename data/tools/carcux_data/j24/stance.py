@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import random
 import re
 from collections import Counter, defaultdict
@@ -32,6 +33,11 @@ from carcux_data.j24.match import is_bangla, load_texts, tokens
 LABELS = ("repeats", "questions", "corrects", "mentions", "unrelated")
 NLI_MODEL = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
 EMBED_MODEL = "intfloat/multilingual-e5-small"
+# Model downloads can be pinned to a commit of the model repository (supply chain: a
+# changed model would silently change every result). Set CARCUX_NLI_REVISION and
+# CARCUX_EMBED_REVISION to the commit hashes recorded in the protocol; unset uses main.
+NLI_REVISION = os.environ.get("CARCUX_NLI_REVISION") or None
+EMBED_REVISION = os.environ.get("CARCUX_EMBED_REVISION") or None
 SENTENCES = 8  # sentences per article kept after a word-overlap filter
 TOP = 3  # of those, the most similar to the claim, put to the NLI model
 DEV_SHARE, SEED = 0.2, 2024
@@ -71,10 +77,13 @@ def _models(log):  # pragma: no cover - needs the models, run on the user's mach
     from sentence_transformers import SentenceTransformer
     from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-    log(f"  loading {EMBED_MODEL} and {NLI_MODEL}")
-    emb = SentenceTransformer(EMBED_MODEL, device="cpu")
-    tok = AutoTokenizer.from_pretrained(NLI_MODEL)
-    mdl = AutoModelForSequenceClassification.from_pretrained(NLI_MODEL)
+    log(
+        f"  loading {EMBED_MODEL}@{EMBED_REVISION or 'main'} and "
+        f"{NLI_MODEL}@{NLI_REVISION or 'main'}"
+    )
+    emb = SentenceTransformer(EMBED_MODEL, device="cpu", revision=EMBED_REVISION)
+    tok = AutoTokenizer.from_pretrained(NLI_MODEL, revision=NLI_REVISION)  # nosec B615
+    mdl = AutoModelForSequenceClassification.from_pretrained(NLI_MODEL, revision=NLI_REVISION)  # nosec B615
     nli = pipeline("text-classification", model=mdl, tokenizer=tok, device=-1, top_k=None,
                    truncation=True, max_length=256)  # fmt: skip
 

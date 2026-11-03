@@ -5,7 +5,7 @@ description = "CARCUX module 2: features from images, video and audio (hashes fo
 requires-python = ">=3.12"
 # Pillow and numpy only; OCR needs the tesseract program (with Bangla), video the ffmpeg
 # program. The heavy models are optional extras, run where there is a GPU.
-dependencies = ["pillow>=10.4", "numpy>=1.26"]
+dependencies = ["pillow>=13.0", "numpy>=1.26"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]

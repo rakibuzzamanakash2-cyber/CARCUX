@@ -19,7 +19,6 @@ Outputs, in the folder given with --out (working files, never published as they 
 from __future__ import annotations
 
 import csv
-import gzip
 import html as htmllib
 import json
 import re
@@ -33,7 +32,7 @@ from urllib.parse import unquote, urlencode, urlsplit, urlunsplit
 
 from carcux_data.j24 import WINDOW
 from carcux_data.j24.extract import SCOPE_TERMS
-from carcux_data.j24.fetch import Disallowed, Fetcher
+from carcux_data.j24.fetch import Disallowed, Fetcher, gunzip
 
 CDX = "https://web.archive.org/cdx/search/cdx"
 WAYBACK = "https://web.archive.org/web"
@@ -525,7 +524,7 @@ MIN_TEXT = 300  # fewer characters than this from paragraphs: look for the text 
 def read_article(html: bytes, with_text: bool = False) -> dict:
     if html[:2] == b"\x1f\x8b":  # some captures (Ittefaq) were saved still compressed
         try:
-            html = gzip.decompress(html)
+            html = gunzip(html)
         except (OSError, EOFError):
             pass
     raw = html.decode("utf-8", "replace")

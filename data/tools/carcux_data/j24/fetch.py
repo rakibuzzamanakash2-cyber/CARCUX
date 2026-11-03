@@ -47,6 +47,22 @@ def urllib_opener(url: str, headers: dict[str, str]) -> Response:
         return Response(e.code, {k.lower(): v for k, v in (e.headers or {}).items()}, e.read())
 
 
+MAX_UNZIPPED = 64 * 1024 * 1024  # a page or sitemap larger than this once unzipped is refused
+
+
+def gunzip(data: bytes, limit: int = MAX_UNZIPPED) -> bytes:
+    """gzip.decompress with a size cap, so a small hostile file cannot expand to fill
+    memory (a "zip bomb"). Raises OSError when the data is not gzip or is too large."""
+    d = zlib.decompressobj(wbits=31)
+    try:
+        out = d.decompress(data, limit)
+    except zlib.error as exc:
+        raise OSError(str(exc)) from exc
+    if d.unconsumed_tail:
+        raise OSError(f"unzipped data larger than {limit} bytes")
+    return out
+
+
 class Disallowed(Exception):
     """robots.txt asks robots not to fetch this address."""
 

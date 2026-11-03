@@ -3,15 +3,17 @@ linking signals to events, and managing sources."""
 
 import json
 import re
+import socket
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
 from pathlib import Path
 
+import httpx
 import pytest
 from sqlalchemy import select
 
 from app.ingest import gdacs, reliefweb, rss, runner
-from app.ingest.base import FetchError, Request, _check_url, excerpt, parse_date
+from app.ingest.base import FetchError, Request, _check_url, excerpt, fetch, parse_date
 from app.ingest.classify import classify
 from app.ingest.places import best_place
 from app.models.audit import AuditLog
@@ -486,3 +488,44 @@ def test_dataset_vocabulary_is_shared():
 
     assert set(LANGUAGES) == set(common["language"]["enum"])
     assert {t.value for t in SourceType} <= set(common["source_type"]["enum"])
+
+
+def _resolver(*answers):
+    """A getaddrinfo that answers with the given addresses in turn, and counts calls."""
+    calls = []
+
+    def fake(host, port, *a, **k):
+        ip = answers[min(len(calls), len(answers) - 1)]
+        calls.append(host)
+        fam = socket.AF_INET6 if ":" in ip else socket.AF_INET
+        return [(fam, socket.SOCK_STREAM, 6, "", (ip, port))]
+
+    return fake, calls
+
+
+def test_fetch_connects_to_the_address_it_checked(monkeypatch):
+    fake, calls = _resolver("93.184.216.34", "127.0.0.1")  # a rebinding name
+    monkeypatch.setattr(socket, "getaddrinfo", fake)
+    seen = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen.append((req.url.host, req.headers["host"], req.extensions.get("sni_hostname")))
+        return httpx.Response(200, content=b"ok")
+
+    body = fetch(Request("https://feeds.example.org/rss"), timeout=5, max_bytes=1000,
+                 allow_private=False, transport=httpx.MockTransport(handler))  # fmt: skip
+    assert body == b"ok"
+    assert seen == [("93.184.216.34", "feeds.example.org", "feeds.example.org")]
+    assert calls == ["feeds.example.org"]  # resolved once; the second answer is never used
+
+
+def test_redirect_to_a_private_address_is_refused(monkeypatch):
+    fake, _ = _resolver("93.184.216.34", "10.0.0.5")
+    monkeypatch.setattr(socket, "getaddrinfo", fake)
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"location": "http://internal.example.org/x"})
+
+    with pytest.raises(FetchError, match="private or local"):
+        fetch(Request("https://feeds.example.org/rss"), timeout=5, max_bytes=1000,
+              allow_private=False, transport=httpx.MockTransport(handler))  # fmt: skip
