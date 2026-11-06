@@ -38,6 +38,7 @@ class AuditAction:
     SOURCE_FETCHED = "source.fetched"
     DATASET_EXPORTED = "dataset.exported"
     SIGNALS_IMPORTED = "signal.imported"
+    SIGNALS_REMOVED = "signal.removed"  # deleted or dismissed in bulk from the command line
     EVIDENCE_JUDGED = "event.evidence_judged"
     EVIDENCE_ADJUDICATED = "event.evidence_adjudicated"
     SOURCE_BACKFILLED = "source.backfilled"

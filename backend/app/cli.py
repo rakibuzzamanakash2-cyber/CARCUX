@@ -13,6 +13,12 @@ Read public sources (GDACS, news feeds, ReliefWeb):
     python -m app.cli add-outlets              # add the news outlets, turn on working feeds
     python -m app.cli add-outlets --dry-run    # only show which feeds work
 
+Remove signals (lists them first; nothing changes without --dismiss or --delete):
+
+    python -m app.cli remove-signals --by-hand                  # entered or imported by people
+    python -m app.cli remove-signals --source prothomalo-bn --before 2026-11-01
+    python -m app.cli remove-signals --title "test" --delete    # erase for good
+
 Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
 
     python -m app.cli export-dataset out/            # events with ground truth, linked items
@@ -166,6 +172,83 @@ def add_outlets(dry_run: bool) -> int:
         engine.dispose()
     print(f"{working} of {len(outlets.OUTLETS)} outlets have a working feed"
           + (" (nothing saved: dry run)" if dry_run else "."))  # fmt: skip
+    return 0
+
+
+def remove_signals(args) -> int:
+    """List the signals that match, then dismiss them (hidden, reversible) or delete them.
+    Signals used as evidence for an event are never deleted, only listed."""
+    from datetime import date, datetime, time, timedelta, timezone
+
+    from sqlalchemy import exists, select
+
+    from app.models.event import EventEvidence
+    from app.models.signal import Signal, SignalStatus, Source
+
+    if not (args.by_hand or args.source or args.before or args.after or args.title or args.id):
+        print("Say which signals: --by-hand, --source, --before, --after, --title or --id.",
+              file=sys.stderr)  # fmt: skip
+        return 2
+    dhaka = timezone(timedelta(hours=6))
+
+    def day(text: str) -> datetime:
+        return datetime.combine(date.fromisoformat(text), time(0), tzinfo=dhaka)
+
+    q = select(Signal).join(Source)
+    if args.by_hand:
+        q = q.where(Signal.entered_by_id.is_not(None))
+    if args.source:
+        q = q.where(Source.key == args.source)
+    if args.before:
+        q = q.where(Signal.published_at < day(args.before))
+    if args.after:
+        q = q.where(Signal.published_at >= day(args.after))
+    if args.title:
+        q = q.where(Signal.title.ilike(f"%{args.title}%"))
+    if args.id:
+        q = q.where(Signal.id.in_(args.id))
+    linked = exists().where(EventEvidence.signal_id == Signal.id)
+
+    engine = make_engine(get_settings().database_url)
+    try:
+        with make_session_factory(engine)() as db:
+            rows = db.execute(q.add_columns(linked).order_by(Signal.published_at)).all()
+            free = [s for s, used in rows if not used]
+            used = [s for s, is_used in rows if is_used]
+            for s, is_used in rows:
+                mark = "EVIDENCE " if is_used else ""
+                print(f"{mark}{s.published_at:%Y-%m-%d} {s.source.key:15s} {s.status.value:9s} "
+                      f"{s.title[:80]}  [{s.id}]")  # fmt: skip
+            print(f"{len(rows)} match; {len(used)} are evidence for an event and are kept.")
+            if not (args.dismiss or args.delete):
+                print("Nothing changed. Add --dismiss (hide, can be undone) or --delete (erase).")
+                return 0
+            if not free:
+                return 0
+            ids = [str(s.id) for s in free]
+            if args.delete:
+                week = datetime.now(dhaka) - timedelta(days=7)
+                refetch = [s for s in free if s.entered_by_id is None and s.published_at >= week]
+                if refetch:
+                    print(
+                        f"Note: {len(refetch)} of these came from a feed in the last 7 days; "
+                        "the next read will add them again. Use --dismiss for those."
+                    )
+                for s in free:
+                    db.delete(s)
+                done = "deleted"
+            else:
+                for s in free:
+                    s.status = SignalStatus.DISMISSED
+                    s.review_note = (s.review_note or "") + " [dismissed from the command line]"
+                done = "dismissed"
+            audit.record(db, audit.AuditAction.SIGNALS_REMOVED, target_type="signal",
+                         details={"how": done, "count": len(ids), "ids": ids[:500],
+                                  "via": "cli"})  # fmt: skip
+            db.commit()
+            print(f"{len(ids)} signal(s) {done}.")
+    finally:
+        engine.dispose()
     return 0
 
 
@@ -418,6 +501,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("end", help="last day, e.g. 2024-09-10")
     p = sub.add_parser("add-outlets", help="add the news outlets and turn on working feeds")
     p.add_argument("--dry-run", action="store_true", help="only show which feeds work")
+    p = sub.add_parser("remove-signals", help="list, dismiss or delete signals")
+    p.add_argument("--by-hand", action="store_true", help="entered, linked or imported by people")
+    p.add_argument("--source", help="source key, e.g. prothomalo-bn")
+    p.add_argument("--before", help="published before this day (Dhaka), e.g. 2026-11-01")
+    p.add_argument("--after", help="published on or after this day (Dhaka)")
+    p.add_argument("--title", help="headline contains this text")
+    p.add_argument("--id", action="append", help="one signal id (repeat for more)")
+    act = p.add_mutually_exclusive_group()
+    act.add_argument("--dismiss", action="store_true", help="hide them (can be undone)")
+    act.add_argument("--delete", action="store_true", help="erase them for good")
     p = sub.add_parser("export-dataset", help="write the CARCUX-BD dataset files")
     p.add_argument("directory")
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
@@ -441,6 +534,8 @@ def main(argv: list[str] | None = None) -> int:
         return backfill(args.source, args.start, args.end)
     if args.command == "add-outlets":
         return add_outlets(args.dry_run)
+    if args.command == "remove-signals":
+        return remove_signals(args)
     if args.command == "export-dataset":
         return export_dataset(args.directory, args.all)
     if args.command == "ingest":
