@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import { verifyStaff } from "@/lib/dal";
+import { mapWindowStart, parseMapWindow } from "@/lib/map-window";
 import {
   REPORT_REVIEWERS,
   REPORT_SUBMITTERS,
@@ -12,24 +13,16 @@ import { Situation } from "./situation";
 
 export const metadata = { title: "Situation map" };
 
-/** Field reports on the map: the last two days. */
-function reportWindowStart(): string {
-  return new Date(Date.now() - 48 * 3600 * 1000).toISOString();
-}
-
-/** Public signals on the map: placed ones from the last three days, not dismissed. */
-function signalWindowStart(): string {
-  return new Date(Date.now() - 72 * 3600 * 1000).toISOString();
-}
-
 export default async function SituationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ denied?: string }>;
+  searchParams: Promise<{ denied?: string; window?: string }>;
 }) {
-  const [user, { denied }] = await Promise.all([verifyStaff(), searchParams]);
+  const [user, params] = await Promise.all([verifyStaff(), searchParams]);
+  const { denied } = params;
+  const timeWindow = parseMapWindow(params.window);
   const reviewer = REPORT_REVIEWERS.includes(user.role);
-  const since = reportWindowStart();
+  const since = mapWindowStart(timeWindow);
 
   const [events, reports, signals] = await Promise.all([
     api<EventPage>("/events?status=active&status=monitoring&limit=200"),
@@ -37,7 +30,7 @@ export default async function SituationPage({
       ? api<FieldReportPage>(`/field-reports?limit=200&since=${encodeURIComponent(since)}`)
       : Promise.resolve(null),
     api<SignalPage>(
-      `/signals?located=true&status=new&status=reviewed&limit=300&since=${encodeURIComponent(signalWindowStart())}`,
+      `/signals?located=true&status=new&status=reviewed&limit=500&since=${encodeURIComponent(since)}`,
     ),
   ]);
 
@@ -57,6 +50,8 @@ export default async function SituationPage({
         signals={signals.items}
         canSubmit={REPORT_SUBMITTERS.includes(user.role)}
         canSeeReports={reviewer}
+        timeWindow={timeWindow}
+        loadedAt={new Date().toISOString()}
       />
     </main>
   );
