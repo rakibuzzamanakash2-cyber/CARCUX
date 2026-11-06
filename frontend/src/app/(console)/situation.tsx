@@ -142,7 +142,7 @@ export function Situation({
   const [family, setFamily] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showReports, setShowReports] = useState(true);
-  const [streetDetail, setStreetDetail] = useState(false);
+  const [streetDetail, setStreetDetail] = useState(true);
   const [legend, setLegend] = useState(false);
 
   const visible = useMemo(
@@ -175,7 +175,8 @@ export function Situation({
           streetDetail={streetDetail}
         />
 
-        <div className="absolute top-3 left-3 z-[500] flex flex-col items-start gap-2">
+        {/* Beside Leaflet's zoom buttons, which sit at the top left. */}
+        <div className="absolute top-3 left-14 z-[500] flex flex-col items-start gap-2">
           <nav
             aria-label="Time on the map"
             className="flex overflow-hidden rounded-lg border border-white/20 bg-night/90 shadow-lg shadow-black/30"
@@ -224,7 +225,7 @@ export function Situation({
             type="button"
             aria-pressed={streetDetail}
             onClick={() => setStreetDetail((v) => !v)}
-            title="Street-level map tiles from OpenStreetMap (needs internet)"
+            title="Detailed street map from OpenStreetMap (needs internet). Off: simple offline map"
             className={toggle(streetDetail)}
           >
             <Layers size={16} strokeWidth={1.9} aria-hidden="true" />

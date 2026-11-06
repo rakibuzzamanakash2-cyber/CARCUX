@@ -23,7 +23,6 @@ import { precisionText, SEVERITY_COLOR } from "@/lib/signals";
 import type { CarcuxEvent, FieldReport, Priority, Signal } from "@/lib/types";
 
 const BANGLADESH = L.latLngBounds([20.6, 88.0], [26.65, 92.7]);
-const BOUNDS = L.latLngBounds([19.6, 86.0], [27.8, 94.8]);
 const SIZE: Record<Priority, number> = {
   critical: 22,
   high: 18,
@@ -79,6 +78,25 @@ function signalIcon(signal: Signal): L.DivIcon {
   });
 }
 
+/** Leaflet measures its box once; the map sits in a grid that settles after the first
+ * paint (and changes with the window), which leaves grey or half-drawn tiles. Re-measure
+ * after mounting and whenever the box changes size. */
+function KeepSized() {
+  const map = useMap();
+  useEffect(() => {
+    const el = map.getContainer();
+    const fit = () => map.invalidateSize({ pan: false });
+    const t = setTimeout(fit, 200);
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => {
+      clearTimeout(t);
+      observer.disconnect();
+    };
+  }, [map]);
+  return null;
+}
+
 function FlyTo({ target }: { target: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
@@ -122,6 +140,18 @@ function Cities({ cities }: { cities: CityFeature[] }) {
   );
 }
 
+/** Over the street map only the country border and division lines are drawn. */
+function overlayStyle(feature?: Feature<Geometry, BasemapProps>): L.PathOptions {
+  switch (feature?.properties.kind) {
+    case "country":
+      return { color: "#3ddc84", weight: 1.8, opacity: 0.9, fill: false };
+    case "division":
+      return { color: "#d7eadd", weight: 0.9, opacity: 0.45, dashArray: "4 4", fill: false };
+    default:
+      return { stroke: false, fill: false };
+  }
+}
+
 function basemapStyle(feature?: Feature<Geometry, BasemapProps>): L.PathOptions {
   switch (feature?.properties.kind) {
     case "country":
@@ -160,6 +190,7 @@ export interface MapViewProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   showReports: boolean;
+  /** The detailed street map (online tiles); off gives the simple offline map. */
   streetDetail: boolean;
 }
 
@@ -205,28 +236,30 @@ export default function MapView({
   return (
     <MapContainer
       bounds={BANGLADESH}
-      minZoom={6}
-      maxZoom={17}
-      maxBounds={BOUNDS}
-      maxBoundsViscosity={0.8}
+      minZoom={3}
+      maxZoom={18}
+      worldCopyJump
       zoomControl
       attributionControl
       className="h-full w-full"
     >
-      {areas && (
-        <GeoJSON
-          data={areas}
-          style={basemapStyle as L.StyleFunction}
-          interactive={false}
-          attribution="Basemap: Natural Earth"
-        />
-      )}
+      <KeepSized />
       {streetDetail && (
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           subdomains="abcd"
-          opacity={0.85}
+          maxZoom={18}
+          keepBuffer={4}
+        />
+      )}
+      {areas && (
+        <GeoJSON
+          key={streetDetail ? "overlay" : "basemap"}
+          data={areas}
+          style={(streetDetail ? overlayStyle : basemapStyle) as L.StyleFunction}
+          interactive={false}
+          attribution="Borders: Natural Earth"
         />
       )}
       {!streetDetail && <Cities cities={cities} />}
