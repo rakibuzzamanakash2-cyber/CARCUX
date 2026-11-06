@@ -168,7 +168,23 @@ a {
 /* The OpenStreetMap tiles are drawn for daylight; this turns them into the console's
    night style (dark land, light roads and labels) without a paid dark tile service. */
 .leaflet-tile-pane .tiles-night {
-  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.55);
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.85) saturate(0.35);
+}
+
+/* A group of public signals that would overlap at this zoom. */
+.signal-cluster {
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2.5px solid #7cc7ff;
+  background: rgba(10, 33, 23, 0.88);
+  box-shadow:
+    0 0 0 4px rgba(124, 199, 255, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .leaflet-tooltip.city-label {

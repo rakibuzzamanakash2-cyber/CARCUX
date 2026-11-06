@@ -196,7 +196,8 @@ export function Situation({
           </nav>
           <p className="flex items-center gap-1.5 rounded-md bg-night/80 px-2.5 py-1 text-xs text-night-muted">
             <Clock size={13} strokeWidth={1.9} aria-hidden="true" />
-            Updated {clock(loadedAt)} · refreshes every 2 min
+            Updated {clock(loadedAt)} · {signals.length} signals · {events.length} events ·
+            refreshes every 2 min
           </p>
         </div>
 
