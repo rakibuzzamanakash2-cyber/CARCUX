@@ -10,6 +10,8 @@ Read public sources (GDACS, news feeds, ReliefWeb):
     python -m app.cli ingest --source gdacs    # one source, now
     python -m app.cli ingest --loop            # forever (the ingest worker container)
     python -m app.cli backfill gdacs 2024-08-15 2024-09-10   # a past period
+    python -m app.cli add-outlets              # add the news outlets, turn on working feeds
+    python -m app.cli add-outlets --dry-run    # only show which feeds work
 
 Export the CARCUX-BD dataset (JSON Lines, validated with data/tools):
 
@@ -109,6 +111,62 @@ def ingest(once: bool, source_key: str | None, loop_forever: bool) -> int:
     finally:
         engine.dispose()
     return 2
+
+
+def add_outlets(dry_run: bool) -> int:
+    """Add the news outlets that are missing, find a working feed for each, and turn on
+    the ones that work. Outlets already present get their feed address repaired."""
+    from urllib.parse import urlsplit
+
+    from sqlalchemy import select
+
+    from app.ingest import outlets, runner
+    from app.models.signal import Adapter, Source, SourceType
+
+    settings = get_settings()
+    fetcher = runner.default_fetcher(settings)
+    engine = make_engine(settings.database_url)
+    factory = make_session_factory(engine)
+    working = 0
+    try:
+        with factory() as db:
+            for o in outlets.OUTLETS:
+                found = outlets.find_feed(o, fetcher)
+                source = db.scalar(select(Source).where(Source.key == o.key))
+                state = "new" if source is None else "present"
+                if found:
+                    working += 1
+                    what = f"works: {found.items} items, newest {found.newest:%Y-%m-%d} {found.url}"
+                else:
+                    what = "no working feed found"
+                print(f"{o.key:15s} {state:8s} {what}")
+                if dry_run:
+                    continue
+                if source is None:
+                    source = Source(
+                        key=o.key, name=o.name, source_type=SourceType.NEWS,
+                        adapter=Adapter.RSS, domain=urlsplit(o.home).hostname,
+                        language=o.language, interval_minutes=o.interval,
+                    )  # fmt: skip
+                    db.add(source)
+                if source.adapter != Adapter.RSS:
+                    continue
+                if found:
+                    source.url = found.url
+                    source.enabled = True
+                    source.last_error = None
+                else:
+                    source.url = source.url or (o.feeds[0] if o.feeds else o.home)
+                    if source.last_success_at is None:
+                        source.enabled = False
+                        source.last_error = "No working feed found by add-outlets"
+            if not dry_run:
+                db.commit()
+    finally:
+        engine.dispose()
+    print(f"{working} of {len(outlets.OUTLETS)} outlets have a working feed"
+          + (" (nothing saved: dry run)" if dry_run else "."))  # fmt: skip
+    return 0
 
 
 def export_dataset(directory: str, include_unlinked: bool) -> int:
@@ -358,6 +416,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("source", help="source key, e.g. gdacs or reliefweb")
     p.add_argument("start", help="first day, e.g. 2024-08-15")
     p.add_argument("end", help="last day, e.g. 2024-09-10")
+    p = sub.add_parser("add-outlets", help="add the news outlets and turn on working feeds")
+    p.add_argument("--dry-run", action="store_true", help="only show which feeds work")
     p = sub.add_parser("export-dataset", help="write the CARCUX-BD dataset files")
     p.add_argument("directory")
     p.add_argument("--all", action="store_true", help="include unlinked reports and signals")
@@ -379,6 +439,8 @@ def main(argv: list[str] | None = None) -> int:
         return create_admin(args.email, args.name)
     if args.command == "backfill":
         return backfill(args.source, args.start, args.end)
+    if args.command == "add-outlets":
+        return add_outlets(args.dry_run)
     if args.command == "export-dataset":
         return export_dataset(args.directory, args.all)
     if args.command == "ingest":
