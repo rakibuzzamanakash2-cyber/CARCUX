@@ -15,12 +15,14 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { AssessmentText } from "@/components/event-badges";
 import { eventTypeIcon } from "@/lib/event-icons";
 import { eventTypeLabel } from "@/lib/event-types";
 import { FAMILIES, FAMILY_SHAPE, PRIORITY_COLOR, priorityLabel } from "@/lib/events";
+import { MAP_WINDOWS, type MapWindow } from "@/lib/map-window";
 import { SEVERITY_COLOR } from "@/lib/signals";
 import type { CarcuxEvent, FieldReport, Priority, Signal } from "@/lib/types";
 
@@ -69,6 +71,39 @@ function ShapeKey({ shape, color }: { shape: string; color: string }) {
   );
 }
 
+/** New signals and reports arrive all day, so the map reloads its data every two minutes
+ * while the page is open and visible, and at once when the tab comes back into view. */
+const REFRESH_MS = 2 * 60 * 1000;
+
+function useAutoRefresh() {
+  const router = useRouter();
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    const id = setInterval(tick, REFRESH_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [router]);
+}
+
+function clock(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Dhaka",
+  });
+}
+
+const WINDOW_NOTE: Record<MapWindow, string> = {
+  today: "since midnight",
+  "3d": "last 3 days",
+  "7d": "last 7 days",
+};
+
 /** A north arrow, for people reading the map as a map. */
 function NorthArrow() {
   return (
@@ -91,13 +126,18 @@ export function Situation({
   signals,
   canSubmit,
   canSeeReports,
+  timeWindow,
+  loadedAt,
 }: {
   events: CarcuxEvent[];
   reports: FieldReport[];
   signals: Signal[];
   canSubmit: boolean;
   canSeeReports: boolean;
+  timeWindow: MapWindow;
+  loadedAt: string;
 }) {
+  useAutoRefresh();
   const [showSignals, setShowSignals] = useState(true);
   const [family, setFamily] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -134,6 +174,30 @@ export function Situation({
           showReports={canSeeReports && showReports}
           streetDetail={streetDetail}
         />
+
+        <div className="absolute top-3 left-3 z-[500] flex flex-col items-start gap-2">
+          <nav
+            aria-label="Time on the map"
+            className="flex overflow-hidden rounded-lg border border-white/20 bg-night/90 shadow-lg shadow-black/30"
+          >
+            {(Object.keys(MAP_WINDOWS) as MapWindow[]).map((w) => (
+              <Link
+                key={w}
+                href={w === "3d" ? "/" : `/?window=${w}`}
+                aria-current={w === timeWindow ? "page" : undefined}
+                className={`px-3.5 py-2 text-sm font-semibold transition-colors ${
+                  w === timeWindow ? "bg-forest-2 text-white" : "text-night-ink hover:bg-night-3"
+                }`}
+              >
+                {MAP_WINDOWS[w]}
+              </Link>
+            ))}
+          </nav>
+          <p className="flex items-center gap-1.5 rounded-md bg-night/80 px-2.5 py-1 text-xs text-night-muted">
+            <Clock size={13} strokeWidth={1.9} aria-hidden="true" />
+            Updated {clock(loadedAt)} · refreshes every 2 min
+          </p>
+        </div>
 
         <div className="absolute top-3 right-3 z-[500] flex flex-col items-end gap-2">
           {canSeeReports && (
@@ -204,7 +268,7 @@ export function Situation({
                 {canSeeReports && showReports && (
                   <span className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#3ddc84]" />
-                    Report, 48 h
+                    Report, {WINDOW_NOTE[timeWindow]}
                   </span>
                 )}
                 {showSignals && (
@@ -218,7 +282,7 @@ export function Situation({
                         style={{ background: SEVERITY_COLOR.unknown }}
                       />
                     </span>
-                    Signal, 72 h
+                    Signal, {WINDOW_NOTE[timeWindow]}
                   </span>
                 )}
               </p>
