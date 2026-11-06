@@ -98,3 +98,22 @@ def test_other_sites_announced_on_the_home_page_are_not_followed():
 def test_outlet_keys_are_unique_and_short():
     keys = [o.key for o in outlets.OUTLETS]
     assert len(keys) == len(set(keys)) and all(len(k) <= 40 for k in keys)
+
+
+def test_an_english_outlet_does_not_take_the_bangla_edition_feed():
+    o = outlets.Outlet("x", "X", "https://news.example.com", "en")
+    bangla = NEWS_SITEMAP
+    fetch, asked = site({"https://news.example.com/bangla/googlenews.xml": bangla,
+                         "https://news.example.com/robots.txt":
+                             b"Sitemap: https://news.example.com/bangla/googlenews.xml\n",
+                         "https://news.example.com/googlenews.xml": NEWS_SITEMAP})  # fmt: skip
+    found = outlets.find_feed(o, fetch, NOW)
+    assert found and found.url == "https://news.example.com/googlenews.xml"
+    assert "https://news.example.com/bangla/googlenews.xml" not in asked
+
+
+def test_common_news_sitemap_names_are_tried():
+    o = outlets.Outlet("x", "X", "https://news.example.com", "bn")
+    fetch, _ = site({"https://news.example.com/news_sitemap.xml": NEWS_SITEMAP})
+    found = outlets.find_feed(o, fetch, NOW)
+    assert found and found.url == "https://news.example.com/news_sitemap.xml"
