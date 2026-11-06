@@ -117,3 +117,25 @@ def test_common_news_sitemap_names_are_tried():
     fetch, _ = site({"https://news.example.com/news_sitemap.xml": NEWS_SITEMAP})
     found = outlets.find_feed(o, fetch, NOW)
     assert found and found.url == "https://news.example.com/news_sitemap.xml"
+
+
+def test_dated_address_uses_today_in_dhaka():
+    late_utc = datetime(2026, 11, 5, 19, 30, tzinfo=UTC)  # already 6 November in Dhaka
+    url = "https://news.example.com/daily-sitemap/{date}/sitemap.xml"
+    assert (
+        rss.expand(url, late_utc) == "https://news.example.com/daily-sitemap/2026-11-06/sitemap.xml"
+    )
+    assert rss.expand("https://news.example.com/rss.xml", late_utc).endswith("/rss.xml")
+    source = Source(key="x", name="x", language="bn", url=url)
+    assert "{date}" not in rss.request(source, None).url
+
+
+def test_dated_sitemap_is_found_and_kept_as_a_template():
+    url = "https://news.example.com/daily-sitemap/{date}/sitemap.xml"
+    o = outlets.Outlet("x", "X", "https://news.example.com", "bn", (url,))
+    fetch, asked = site(
+        {"https://news.example.com/daily-sitemap/2026-11-06/sitemap.xml": NEWS_SITEMAP}
+    )
+    found = outlets.find_feed(o, fetch, NOW)
+    assert found and found.url == url  # saved with {date}, filled at every read
+    assert "https://news.example.com/daily-sitemap/2026-11-06/sitemap.xml" in asked
