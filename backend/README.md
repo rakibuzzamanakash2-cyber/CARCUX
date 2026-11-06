@@ -10,7 +10,7 @@ From the repository root:
 docker compose -f deployment/docker-compose.yml up --build
 ```
 
-This starts PostgreSQL + PostGIS (5432), Redis (6379) and the API (8000), and applies database migrations on start-up. Then create the first admin:
+This starts PostgreSQL + PostGIS and Redis (inside Docker only, not on your computer's ports) and the API (http://localhost:8000), and applies database migrations on start-up. Then create the first admin:
 
 ```bash
 docker compose -f deployment/docker-compose.yml exec backend python -m app.cli create-admin --email you@example.com --name "Your Name"
@@ -18,7 +18,7 @@ docker compose -f deployment/docker-compose.yml exec backend python -m app.cli c
 
 ## Run locally (Python)
 
-Needs a running PostgreSQL (e.g. `docker compose -f deployment/docker-compose.yml up db`).
+Needs a PostgreSQL with PostGIS on your computer's ports. The compose database is not published by default; to use it, uncomment the `ports` line under `db` in `deployment/docker-compose.yml` (it uses 5433, so it does not clash with a PostgreSQL already installed) and point `CARCUX_DATABASE_URL` at `localhost:5433`.
 
 ```bash
 cd backend

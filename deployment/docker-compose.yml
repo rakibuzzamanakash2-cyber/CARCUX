@@ -11,8 +11,10 @@ services:
       POSTGRES_USER: carcux
       POSTGRES_PASSWORD: carcux        # development only
       POSTGRES_DB: carcux
-    ports:
-      - "127.0.0.1:5432:5432"   # this computer only: dev password, never on the network
+    # Not published: the backend and worker reach it inside Docker as db:5432. Publishing
+    # it clashed with a PostgreSQL already installed on Windows ("access permissions").
+    # To open it to tools on this computer, uncomment:
+    # ports: ["127.0.0.1:5433:5432"]
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,8 +24,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6379:6379"   # Redis has no password here
+    # Not published either (no password); the backend reaches it as redis:6379.
 
   backend:
     build: ../backend
