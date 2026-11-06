@@ -5,7 +5,7 @@ Only items about a disaster or disruption that name a place in Bangladesh are ke
 headline, a short excerpt and the link, never the article itself.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 from defusedxml import ElementTree
 
@@ -25,10 +25,22 @@ SUMMARY_CHARS = 600
 MAX_AGE = timedelta(days=7)
 
 
+DHAKA = timezone(timedelta(hours=6))
+
+
+def expand(url: str, now: datetime | None = None) -> str:
+    """Fill a dated address: some outlets publish one sitemap per day, e.g.
+    .../daily-sitemap/{date}/sitemap.xml, where {date} is today in Dhaka (YYYY-MM-DD)."""
+    if "{date}" not in url:
+        return url
+    today = (now or datetime.now(UTC)).astimezone(DHAKA).date()
+    return url.replace("{date}", today.isoformat())
+
+
 def request(source: Source, _settings) -> Request:
     if not source.url:
         raise ValueError("This source has no feed address")
-    return Request(source.url)
+    return Request(expand(source.url))
 
 
 def _child(el, *names: str) -> str:

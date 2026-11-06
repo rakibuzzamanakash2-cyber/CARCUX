@@ -22,7 +22,7 @@ from urllib.parse import urljoin, urlsplit
 from defusedxml import ElementTree
 
 from app.ingest.base import FetchError, Request, parse_date
-from app.ingest.rss import entries
+from app.ingest.rss import entries, expand
 
 FRESH = timedelta(days=7)
 COMMON_PATHS = (
@@ -57,8 +57,10 @@ OUTLETS: tuple[Outlet, ...] = (
     Outlet("bdnews24-bn", "bdnews24.com (Bangla)", "https://bangla.bdnews24.com", "bn"),
     Outlet("jugantor", "Jugantor", "https://www.jugantor.com", "bn",
            ("https://www.jugantor.com/feed/rss.xml",)),
+    # One Google News sitemap per day; {date} is today in Dhaka.
     Outlet("kalerkantho", "Kaler Kantho", "https://www.kalerkantho.com", "bn",
-           ("https://www.kalerkantho.com/rss.xml",)),
+           ("https://www.kalerkantho.com/daily-sitemap/{date}/sitemap.xml",
+            "https://www.kalerkantho.com/rss.xml")),
     Outlet("jagonews24", "Jago News 24", "https://www.jagonews24.com", "bn",
            ("https://www.jagonews24.com/rss/rss.xml",)),
     Outlet("banglanews24", "Banglanews24", "https://www.banglanews24.com", "bn",
@@ -104,7 +106,7 @@ def check_feed(url: str, fetcher, now: datetime | None = None) -> Found | None:
     """The feed at `url` if it parses and has an item from the last week."""
     now = now or datetime.now(UTC)
     try:
-        body = fetcher(Request(url))
+        body = fetcher(Request(expand(url, now)))
         rows = entries(ElementTree.fromstring(body))
     except (FetchError, ElementTree.ParseError, ValueError, UnicodeError):
         return None
