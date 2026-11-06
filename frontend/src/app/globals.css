@@ -165,6 +165,12 @@ a {
 .leaflet-tooltip.carcux-tip::before {
   display: none;
 }
+/* The OpenStreetMap tiles are drawn for daylight; this turns them into the console's
+   night style (dark land, light roads and labels) without a paid dark tile service. */
+.leaflet-tile-pane .tiles-night {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.55);
+}
+
 .leaflet-tooltip.city-label {
   background: transparent;
   border: 0;
