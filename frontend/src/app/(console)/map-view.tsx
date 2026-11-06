@@ -11,6 +11,7 @@ import {
   GeoJSON,
   MapContainer,
   Marker,
+  Polygon,
   TileLayer,
   Tooltip,
   ScaleControl,
@@ -95,6 +96,120 @@ function KeepSized() {
     };
   }, [map]);
   return null;
+}
+
+/** A dim veil over everything outside Bangladesh, so the country stands out on the street
+ * map while the neighbours stay readable when zoomed out. The country's outlines are the
+ * holes in a polygon that covers the world. */
+function outsideMask(
+  basemap: FeatureCollection<Geometry, BasemapProps> | null,
+): L.LatLngExpression[][] | null {
+  const country = basemap?.features.find((f) => f.properties.kind === "country");
+  if (!country) return null;
+  const g = country.geometry;
+  const polys =
+    g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
+  // Wider than one world, so the veil still covers the screen when zoomed far out.
+  const world: L.LatLngExpression[] = [
+    [-85, -720],
+    [-85, 720],
+    [85, 720],
+    [85, -720],
+  ];
+  const holes = polys.map((p) => p[0].map(([lon, lat]) => [lat, lon] as L.LatLngTuple));
+  return [world, ...holes];
+}
+
+type Cluster = { key: string; lat: number; lon: number; items: Signal[] };
+
+/** Signals that would overlap on screen are drawn as one bubble with a count, re-grouped
+ * at every zoom; clicking a bubble zooms in to its signals. */
+function groupSignals(map: L.Map, signals: Signal[], radiusPx = 34): Cluster[] {
+  const clusters: (Cluster & { x: number; y: number })[] = [];
+  for (const s of signals) {
+    const p = map.latLngToLayerPoint([s.latitude!, s.longitude!]);
+    const near = clusters.find((c) => Math.hypot(c.x - p.x, c.y - p.y) < radiusPx);
+    if (near) {
+      near.items.push(s);
+      const n = near.items.length;
+      near.x += (p.x - near.x) / n;
+      near.y += (p.y - near.y) / n;
+      near.lat += (s.latitude! - near.lat) / n;
+      near.lon += (s.longitude! - near.lon) / n;
+    } else {
+      clusters.push({ key: s.id, lat: s.latitude!, lon: s.longitude!, items: [s], x: p.x, y: p.y });
+    }
+  }
+  return clusters;
+}
+
+function clusterIcon(n: number): L.DivIcon {
+  const size = n < 10 ? 30 : n < 50 ? 36 : 44;
+  const html = `<div class="signal-cluster" style="width:${size}px;height:${size}px">${n}</div>`;
+  return L.divIcon({
+    html,
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function SignalLayer({ signals, onOpen }: { signals: Signal[]; onOpen: (id: string) => void }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
+  // zoom is a dependency on purpose: the screen distances change with it
+  const clusters = useMemo(() => groupSignals(map, signals), [map, signals, zoom]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <>
+      {clusters.map((c) =>
+        c.items.length === 1 ? (
+          <Marker
+            key={c.key}
+            position={[c.lat, c.lon]}
+            icon={signalIcon(c.items[0])}
+            zIndexOffset={-100}
+            eventHandlers={{ click: () => onOpen(c.items[0].id) }}
+            title={c.items[0].title}
+          >
+            <Tooltip className="carcux-tip" direction="top" offset={[0, -8]}>
+              <span className="block max-w-64 truncate">{c.items[0].title}</span>
+              <span className="text-xs text-muted">
+                {c.items[0].source.name}
+                {c.items[0].place_name ? `, ${c.items[0].place_name}` : ""}{" "}
+                {precisionText(c.items[0].precision_m)}
+              </span>
+            </Tooltip>
+          </Marker>
+        ) : (
+          <Marker
+            key={`cluster-${c.key}`}
+            position={[c.lat, c.lon]}
+            icon={clusterIcon(c.items.length)}
+            zIndexOffset={-50}
+            eventHandlers={{
+              click: () =>
+                map.flyToBounds(
+                  L.latLngBounds(c.items.map((s) => [s.latitude!, s.longitude!])).pad(0.4),
+                  { maxZoom: 14, duration: 0.6 },
+                ),
+            }}
+            title={`${c.items.length} signals`}
+          >
+            <Tooltip className="carcux-tip" direction="top" offset={[0, -12]}>
+              <span className="block font-semibold">{c.items.length} public signals</span>
+              {c.items.slice(0, 3).map((s) => (
+                <span key={s.id} className="block max-w-64 truncate text-xs">
+                  {s.title}
+                </span>
+              ))}
+              <span className="text-xs text-muted">Click to zoom in</span>
+            </Tooltip>
+          </Marker>
+        ),
+      )}
+    </>
+  );
 }
 
 function FlyTo({ target }: { target: [number, number] | null }) {
@@ -230,6 +345,7 @@ export default function MapView({
     [basemap],
   );
 
+  const mask = useMemo(() => outsideMask(basemap), [basemap]);
   const selected = events.find((e) => e.id === selectedId);
   const target: [number, number] | null = selected ? [selected.latitude, selected.longitude] : null;
 
@@ -251,6 +367,13 @@ export default function MapView({
           maxZoom={19}
           keepBuffer={4}
           className="tiles-night"
+        />
+      )}
+      {streetDetail && mask && (
+        <Polygon
+          positions={mask}
+          interactive={false}
+          pathOptions={{ stroke: false, fillColor: "#04110b", fillOpacity: 0.55 }}
         />
       )}
       {areas && (
@@ -287,24 +410,7 @@ export default function MapView({
           </CircleMarker>
         ))}
 
-      {signals.map((s) => (
-        <Marker
-          key={s.id}
-          position={[s.latitude!, s.longitude!]}
-          icon={signalIcon(s)}
-          zIndexOffset={-100}
-          eventHandlers={{ click: () => router.push(`/signals/${s.id}`) }}
-          title={s.title}
-        >
-          <Tooltip className="carcux-tip" direction="top" offset={[0, -8]}>
-            <span className="block max-w-64 truncate">{s.title}</span>
-            <span className="text-xs text-muted">
-              {s.source.name}
-              {s.place_name ? `, ${s.place_name}` : ""} {precisionText(s.precision_m)}
-            </span>
-          </Tooltip>
-        </Marker>
-      ))}
+      <SignalLayer signals={signals} onOpen={(id) => router.push(`/signals/${id}`)} />
 
       {events.map((e) => (
         <Marker
