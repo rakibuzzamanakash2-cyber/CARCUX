@@ -25,8 +25,13 @@ from app.ingest.base import FetchError, Request, parse_date
 from app.ingest.rss import entries
 
 FRESH = timedelta(days=7)
-COMMON_PATHS = ("/feed", "/feed/", "/rss.xml", "/rss", "/feed/rss.xml", "/rss/rss.xml",
-                "/feeds/rss.xml", "/index.xml")  # fmt: skip
+COMMON_PATHS = (
+    "/feed", "/feed/", "/rss.xml", "/rss", "/feed/rss.xml", "/rss/rss.xml", "/feeds/rss.xml",
+    "/index.xml", "/rss/latest-news", "/rss/all-news",
+    # Google News sitemaps: the names Bangladeshi outlets use most
+    "/news_sitemap.xml", "/googlenews.xml", "/news-sitemap.xml", "/sitemap-news.xml",
+    "/sitemap/news.xml", "/sitemaps/news.xml",
+)  # fmt: skip
 
 
 @dataclass(frozen=True)
@@ -75,7 +80,10 @@ OUTLETS: tuple[Outlet, ...] = (
     Outlet("bdnews24-en", "bdnews24.com", "https://bdnews24.com", "en",
            ("https://bdnews24.com/?widgetName=rssfeed&widgetId=1150&getXmlFeed=true",)),
     Outlet("dhakatribune", "Dhaka Tribune", "https://www.dhakatribune.com", "en"),
-    Outlet("tbsnews", "The Business Standard", "https://www.tbsnews.net", "en"),
+    Outlet("tbsnews", "The Business Standard", "https://www.tbsnews.net", "en",
+           ("https://www.tbsnews.net/googlenews.xml",)),
+    Outlet("tbsnews-bn", "The Business Standard (Bangla)", "https://www.tbsnews.net/bangla", "bn",
+           ("https://www.tbsnews.net/bangla/googlenews.xml",)),
     Outlet("newage", "New Age", "https://www.newagebd.net", "en"),
     Outlet("dailysun", "Daily Sun", "https://www.daily-sun.com", "en"),
 )  # fmt: skip
@@ -113,6 +121,17 @@ def _same_site(url: str, home: str) -> bool:
     return a == b or a.endswith("." + base) or a == base
 
 
+def _other_language(url: str, language: str) -> bool:
+    """A Bangla edition's feed for an English outlet, or the reverse (e.g. /bangla/...)."""
+    parts = urlsplit(url)
+    host, path = (parts.hostname or "").lower(), parts.path.lower()
+    if language == "en":
+        return host.startswith("bangla.") or path.startswith("/bangla")
+    if language == "bn":
+        return host.startswith(("en.", "english.")) or path.startswith("/english")
+    return False
+
+
 def candidates(outlet: Outlet, fetcher) -> list[str]:
     """Addresses to try, in order, without duplicates."""
     out = list(outlet.feeds)
@@ -134,9 +153,13 @@ def candidates(outlet: Outlet, fetcher) -> list[str]:
         pass
     seen, ordered = set(), []
     for u in out:
-        if u not in seen and (u in outlet.feeds or _same_site(u, outlet.home)):
-            seen.add(u)
-            ordered.append(u)
+        listed = u in outlet.feeds
+        if u in seen or not (listed or _same_site(u, outlet.home)):
+            continue
+        if not listed and _other_language(u, outlet.language):
+            continue
+        seen.add(u)
+        ordered.append(u)
     return ordered
 
 
