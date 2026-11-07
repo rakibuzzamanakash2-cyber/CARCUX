@@ -188,3 +188,38 @@ def test_platt_stays_bounded_and_softens_overconfidence():
     assert 0.05 <= a < 1  # confidence is softened
     sep = fu.fit_platt([1, 0] * 50, [0.999, 0.001] * 50)  # perfectly separable
     assert sep[0] <= 3.0 and abs(sep[1]) <= 5.0
+
+
+def test_simulation_on_a_synthetic_structure(tmp_path, monkeypatch):
+    import json
+
+    rng = random.Random(21)  # noqa: S311
+    truth, cands, copies = {}, [], []
+    outlets = [f"o{i}" for i in range(12)]
+    n = 0
+    for g in range(60):
+        gid = f"g{g}"
+        truth[gid] = int(rng.random() < 0.3)
+        origin = None
+        for j in range(8):
+            n += 1
+            pid = f"p{n:05d}"
+            cands.append({"pair_id": pid, "claim_group": gid, "outlet": rng.choice(outlets),
+                          "title": f"SYNTHETIC {gid} {j}"})  # fmt: skip
+            story = origin if (origin and j % 4 == 1) else pid  # some articles are copies
+            origin = origin or pid
+            copies.append({"pair_id": pid, "story": story})
+    (tmp_path / "matches").mkdir()
+    for name, rows in (("candidates.jsonl", cands), ("copies.jsonl", copies)):
+        (tmp_path / "matches" / name).write_text(
+            "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
+        )
+    monkeypatch.setattr(fd, "truth_labels", lambda p: truth)
+    monkeypatch.setattr(fd, "split", lambda groups: set(sorted(groups)[:15]))
+    rep = fd.simulate(tmp_path, tmp_path / "c.jsonl", seeds=2, log=lambda m: None)
+    assert rep["structure"]["training_claims"] == 45
+    assert rep["structure"]["stories"] < rep["structure"]["articles"]
+    real = rep["with real copying"]
+    assert set(real) == set(fd.SIM_VARIANTS)
+    assert real["carcux (text copies)"]["auc"][0] > 0.5
+    assert (tmp_path / "fusion" / "sim_preview.json").exists()
