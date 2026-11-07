@@ -22,6 +22,7 @@
                                    [--key FILE --sheets A,B,C]
     python -m carcux_data.j24 j24-copies --out DIR [--score copies_check.xlsx]
     python -m carcux_data.j24 fuse-cv --out DIR --claims FILE [--stances auto|human]
+    python -m carcux_data.j24 fuse-sim --out DIR --claims FILE [--seeds 20]
     python -m carcux_data.j24 fuse-bench --answers answer.csv --truth truth.csv [--positive L]
     python -m carcux_data.j24 news-fetch --out DIR [--outlets a,b] [--since D --until D]
                                          [--limit N] [--text-from wayback|live]
@@ -122,6 +123,11 @@ def main(argv: list[str] | None = None) -> int:
     cv.add_argument("--key", type=Path)
     cv.add_argument("--sheets", default="")
     cv.add_argument("--folds", type=int, default=5)
+    fs = sub.add_parser("fuse-sim", help="PREVIEW: simulated stances on J24's real structure "
+                        "(training claims only)")  # fmt: skip
+    fs.add_argument("--out", required=True, type=Path)
+    fs.add_argument("--claims", required=True, type=Path)
+    fs.add_argument("--seeds", type=int, default=20)
     fb = sub.add_parser("fuse-bench", help="the fusion methods on a crowdsourcing dataset")
     fb.add_argument("--answers", required=True, type=Path)
     fb.add_argument("--truth", required=True, type=Path)
@@ -318,6 +324,12 @@ def main(argv: list[str] | None = None) -> int:
         sheets = [Path(p.strip()) for p in args.sheets.split(",") if p.strip()]
         cross_validate(args.out, args.claims, k=args.folds, stances=args.stances,
                        sheets=sheets, key=args.key)  # fmt: skip
+        return 0
+
+    if args.command == "fuse-sim":
+        from carcux_data.j24.fusion_dev import simulate
+
+        simulate(args.out, args.claims, seeds=args.seeds)
         return 0
 
     if args.command == "fuse-bench":

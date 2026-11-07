@@ -251,3 +251,137 @@ def table(report: dict) -> str:
     for name, m in report.get("methods_20pct_known", {}).items():
         lines.append(row(name + " (20% known)", m))
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------------------
+# Semi-synthetic preview: J24's real structure, simulated stances (see the protocol).
+
+SIM_VOTE_RATE = 0.5  # share of story origins that take a firm stance
+SIM_QUESTION_SHARE = 0.15  # firm stances softened to "questions"
+SIM_AMPLIFIERS = 3  # outlets that tend to repeat what they are told
+
+
+def _structure(out: Path, claims_path: Path) -> tuple[dict[str, int], dict[str, list[dict]]]:
+    """Training claim groups with truth, and per claim its candidate articles as
+    {outlet, title, story} (story from j24-copies when present, else the article itself)."""
+    truth_all = truth_labels(claims_path)
+    test = split(list(truth_all))
+    truth = {g: t for g, t in truth_all.items() if g not in test}
+    story: dict[str, str] = {}
+    cp = out / "matches" / "copies.jsonl"
+    if cp.exists():
+        for line in cp.read_text("utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                story[r["pair_id"]] = r["story"]
+    arts: dict[str, list[dict]] = defaultdict(list)
+    path = out / "matches" / "candidates.jsonl"
+    for n, line in enumerate(path.read_text("utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        c = json.loads(line)
+        if c["claim_group"] not in truth:
+            continue
+        pid = c.get("pair_id") or f"p{n:05d}"
+        arts[c["claim_group"]].append({"outlet": c["outlet"], "title": c.get("title", ""),
+                                       "story": story.get(pid, pid)})  # fmt: skip
+    return truth, dict(arts)
+
+
+def simulate_votes(truth: dict[str, int], arts: dict[str, list[dict]], seed: int,
+                   copying: bool = True) -> dict[str, list[dict]]:  # fmt: skip
+    """Stances for every article: each story's origin decides (with its outlet's accuracy),
+    and its copies repeat it; with copying=False every article decides on its own."""
+    rng = random.Random(seed)  # noqa: S311 - a reproducible simulation, not security
+    outlets = sorted({a["outlet"] for v in arts.values() for a in v})
+    amplifiers = set(rng.sample(outlets, min(SIM_AMPLIFIERS, len(outlets))))
+    acc = {o: rng.uniform(0.35, 0.50) if o in amplifiers else rng.uniform(0.65, 0.90)
+           for o in outlets}  # fmt: skip
+    votes: dict[str, list[dict]] = {}
+    for g, items in arts.items():
+        decided: dict[str, float | None] = {}
+        out = []
+        for a in items:
+            key = a["story"] if copying else id(a)
+            if key not in decided:
+                if rng.random() >= SIM_VOTE_RATE:
+                    decided[key] = None  # mentions or unrelated: no vote
+                else:
+                    right = rng.random() < acc[a["outlet"]]
+                    says_true = (truth[g] == 1) == right
+                    v = 1.0 if says_true else -1.0
+                    if rng.random() < SIM_QUESTION_SHARE:
+                        v = -0.5 if says_true is False else 1.0
+                    decided[key] = v
+            if decided[key] is not None:
+                out.append({"outlet": a["outlet"], "title": a["title"], "vote": decided[key],
+                            "conf": 1.0, "story": a["story"]})  # fmt: skip
+        votes[g] = out
+    return votes
+
+
+def _weighted(votes: dict[str, list[dict]], mode: str) -> dict[str, list[dict]]:
+    """mode: 'none' (every article counts), 'title' (title rule), 'text' (stories)."""
+    if mode == "none":
+        return reweight(votes, copies=False)
+    if mode == "title":
+        stripped = {g: [{k: v for k, v in x.items() if k != "story"} for x in vs]
+                    for g, vs in votes.items()}  # fmt: skip
+        return reweight(stripped)
+    return reweight(votes)
+
+
+SIM_VARIANTS = {
+    "majority": ("majority", "none"),
+    "reliability": ("reliability", "none"),
+    "dawid_skene": ("dawid_skene", "none"),
+    "carcux (no copy discount)": ("carcux", "none"),
+    "carcux (title copies)": ("carcux", "title"),
+    "carcux (text copies)": ("carcux", "text"),
+}
+
+
+def simulate(out: Path, claims_path: Path, *, seeds: int = 20, k: int = 5,
+             log: Callable[[str], None] = print) -> dict:  # fmt: skip
+    import statistics
+
+    truth, arts = _structure(out, claims_path)
+    claims = sorted(truth)
+    parts = folds(claims, k)
+    keys = ("auc", "brier", "ece")
+    report: dict[str, dict] = {}
+    for copying in (True, False):
+        runs: dict[str, dict[str, list[float]]] = {n: {x: [] for x in keys} for n in SIM_VARIANTS}
+        for seed in range(seeds):
+            votes = simulate_votes(truth, arts, SEED + seed, copying=copying)
+            for name, (method, mode) in SIM_VARIANTS.items():
+                vv = _weighted(votes, mode)
+                fn = METHODS[method]
+                scores = {}
+                for part in parts:
+                    held = set(part)
+                    s = fn(vv, claims, train={g: t for g, t in truth.items() if g not in held})
+                    scores.update({g: s[g] for g in part})
+                m = metrics([truth[g] for g in claims], [scores[g] for g in claims])
+                for x in keys:
+                    if m.get(x) is not None:
+                        runs[name][x].append(m[x])
+        label = "with real copying" if copying else "copies made independent"
+        report[label] = {n: {x: [round(statistics.mean(v), 4),
+                                 round(statistics.pstdev(v), 4)] for x, v in r.items() if v}
+                         for n, r in runs.items()}  # fmt: skip
+    n_art = sum(len(v) for v in arts.values())
+    n_story = sum(len({a["story"] for a in v}) for v in arts.values())
+    share = round(sum(truth.values()) / max(len(truth), 1), 3)
+    report["structure"] = {"training_claims": len(claims), "articles": n_art,
+                           "stories": n_story, "true_share": share, "seeds": seeds}  # fmt: skip
+    folder = out / "fusion"
+    folder.mkdir(exist_ok=True)
+    (folder / "sim_preview.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
+    log(f"SIMULATED stances on J24's real structure: {report['structure']}")
+    for label in ("with real copying", "copies made independent"):
+        log(f"\n{label}:  mean ± SD over {seeds} seeds (5-fold, training claims only)")
+        log(f"{'method':28s} {'AUC':>14s} {'Brier':>14s} {'ECE':>14s}")
+        for n, m in report[label].items():
+            log(f"{n:28s} " + " ".join(f"{m[x][0]:.3f} ± {m[x][1]:.3f}" for x in keys))
+    return report
