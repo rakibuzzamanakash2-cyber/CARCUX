@@ -217,6 +217,19 @@ and index again.
 
 ## Changes
 
+- 7 November 2026, before it is run: a semi-synthetic preview of the fusion results
+  (`fuse-sim`). It keeps J24's real structure (the training claim groups and their truth,
+  the outlets of each claim's candidate articles, and the text-copy stories) and replaces
+  the stances by simulated ones: each outlet gets an accuracy (most 0.65–0.90, three
+  "amplifier" outlets 0.35–0.50, drawn per seed), each story's origin article takes a stance
+  with probability 0.5 (repeats or corrects, 15% of firm stances softened to questions),
+  correct with the outlet's accuracy, and every copy repeats its origin's stance. The four
+  methods and CARCUX with title or text copies are scored by 5-fold cross-validation on the
+  training claims only, 20 seeds, reporting mean AUC, Brier and ECE with their spread, and
+  also with copies made independent, to show what copying does. It is a simulation under
+  stated assumptions: it previews behaviour on J24's sparsity and copying and is not a
+  result; nothing is tuned on it, and the test split is not read.
+
 - 2 November 2026, before any stance label is seen and before the detector below is run
   on J24: copies from article text. The title rule (60% shared title words) finds only 1.7%
   of the candidate articles to be copies, which is implausibly low for outlets that rewrite
