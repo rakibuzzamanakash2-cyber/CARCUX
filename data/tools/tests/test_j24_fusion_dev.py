@@ -223,3 +223,14 @@ def test_simulation_on_a_synthetic_structure(tmp_path, monkeypatch):
     assert set(real) == set(fd.SIM_VARIANTS)
     assert real["carcux (text copies)"]["auc"][0] > 0.5
     assert (tmp_path / "fusion" / "sim_preview.json").exists()
+    assert len(rep["paired"]["tests"]) == 12
+    assert all(t["p"] <= t["p_holm"] <= 1 for t in rep["paired"]["tests"])
+
+
+def test_exact_wilcoxon_and_holm():
+    assert abs(fd.wilcoxon_exact([1.0] * 10) - 2 / 2**10) < 1e-12  # all ten one way
+    assert fd.wilcoxon_exact([0.0, 0.0]) == 1.0
+    assert fd.wilcoxon_exact([1, -1, 2, -2]) == 1.0  # balanced
+    # matches scipy.stats.wilcoxon([1, 2, 3, 4, -5], method="exact") = 0.625
+    assert abs(fd.wilcoxon_exact([1, 2, 3, 4, -5]) - 0.625) < 1e-12
+    assert fd.holm([0.01, 0.04, 0.03]) == [0.03, 0.06, 0.06]

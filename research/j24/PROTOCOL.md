@@ -217,6 +217,15 @@ and index again.
 
 ## Changes
 
+- 7 November 2026, after the first `fuse-sim` run (whose means are known) and before this
+  paired analysis: `fuse-sim` also reports paired comparisons over the seeds, since every
+  method sees the same simulated stances in a seed. Two comparisons are fixed now:
+  CARCUX with text copies against reliability (the best baseline), and against CARCUX with
+  no copy discount (what the discount adds), each on AUC, Brier and ECE, in both scenarios
+  (12 tests). For each: wins out of the seeds, the mean paired difference, and a two-sided
+  exact Wilcoxon signed-rank p-value, Holm-corrected over the 12. The run is the same
+  (same seeds); it is still a simulation preview, not a result, and the comparisons were
+  chosen after seeing the means, which the report states.
 - 7 November 2026, before it is run: a semi-synthetic preview of the fusion results
   (`fuse-sim`). It keeps J24's real structure (the training claim groups and their truth,
   the outlets of each claim's candidate articles, and the text-copy stories) and replaces

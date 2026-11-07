@@ -341,6 +341,64 @@ SIM_VARIANTS = {
 }
 
 
+SIM_PAIRS = (
+    ("carcux (text copies)", "reliability"),
+    ("carcux (text copies)", "carcux (no copy discount)"),
+)
+HIGHER_IS_BETTER = {"auc": True, "brier": False, "ece": False}
+
+
+def wilcoxon_exact(diffs: list[float]) -> float:
+    """Two-sided exact Wilcoxon signed-rank p-value (zeros dropped, ties get mean ranks)."""
+    d = [x for x in diffs if abs(x) > 1e-12]
+    n = len(d)
+    if n == 0:
+        return 1.0
+    order = sorted(range(n), key=lambda i: abs(d[i]))
+    ranks = [0.0] * n
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and abs(abs(d[order[j + 1]]) - abs(d[order[i]])) <= 1e-12:
+            j += 1
+        for t in range(i, j + 1):
+            ranks[order[t]] = (i + j) / 2 + 1
+        i = j + 1
+    twice = [round(2 * r) for r in ranks]  # integer ranks for counting
+    total = sum(twice)
+    counts = [0] * (total + 1)
+    counts[0] = 1
+    for r in twice:  # distribution of the positive rank sum under the null
+        for v in range(total, r - 1, -1):
+            counts[v] += counts[v - r]
+    w = sum(t for t, x in zip(twice, d, strict=True) if x > 0)
+    lo = min(w, total - w)
+    tail = sum(counts[: lo + 1]) / 2**n
+    return min(1.0, 2 * tail)
+
+
+def holm(ps: list[float]) -> list[float]:
+    order = sorted(range(len(ps)), key=lambda i: ps[i])
+    out, best = [0.0] * len(ps), 0.0
+    for rank, i in enumerate(order):
+        best = max(best, min(1.0, (len(ps) - rank) * ps[i]))
+        out[i] = best
+    return out
+
+
+def paired(runs: dict[str, dict[str, list[float]]]) -> list[dict]:
+    rows = []
+    for a, b in SIM_PAIRS:
+        for x, up in HIGHER_IS_BETTER.items():
+            va, vb = runs[a][x], runs[b][x]
+            diffs = [p - q for p, q in zip(va, vb, strict=True)]
+            wins = sum((dd > 0) if up else (dd < 0) for dd in diffs)
+            rows.append({"a": a, "b": b, "metric": x, "wins": wins, "seeds": len(diffs),
+                         "mean_diff": round(sum(diffs) / max(len(diffs), 1), 4),
+                         "p": wilcoxon_exact(diffs)})  # fmt: skip
+    return rows
+
+
 def simulate(out: Path, claims_path: Path, *, seeds: int = 20, k: int = 5,
              log: Callable[[str], None] = print) -> dict:  # fmt: skip
     import statistics
@@ -350,6 +408,7 @@ def simulate(out: Path, claims_path: Path, *, seeds: int = 20, k: int = 5,
     parts = folds(claims, k)
     keys = ("auc", "brier", "ece")
     report: dict[str, dict] = {}
+    tests: list[dict] = []
     for copying in (True, False):
         runs: dict[str, dict[str, list[float]]] = {n: {x: [] for x in keys} for n in SIM_VARIANTS}
         for seed in range(seeds):
@@ -370,6 +429,11 @@ def simulate(out: Path, claims_path: Path, *, seeds: int = 20, k: int = 5,
         report[label] = {n: {x: [round(statistics.mean(v), 4),
                                  round(statistics.pstdev(v), 4)] for x, v in r.items() if v}
                          for n, r in runs.items()}  # fmt: skip
+        tests += [{"scenario": label, **row} for row in paired(runs)]
+    for row, adj in zip(tests, holm([t["p"] for t in tests]), strict=True):
+        row["p"], row["p_holm"] = round(row["p"], 5), round(adj, 5)
+    report["paired"] = {"note": "comparisons chosen after the first run's means were seen",
+                        "tests": tests}  # fmt: skip
     n_art = sum(len(v) for v in arts.values())
     n_story = sum(len({a["story"] for a in v}) for v in arts.values())
     share = round(sum(truth.values()) / max(len(truth), 1), 3)
@@ -384,4 +448,18 @@ def simulate(out: Path, claims_path: Path, *, seeds: int = 20, k: int = 5,
         log(f"{'method':28s} {'AUC':>14s} {'Brier':>14s} {'ECE':>14s}")
         for n, m in report[label].items():
             log(f"{n:28s} " + " ".join(f"{m[x][0]:.3f} ± {m[x][1]:.3f}" for x in keys))
+    log(
+        f"\npaired over the {seeds} seeds (wins = CARCUX text copies better; exact Wilcoxon, "
+        "Holm over all 12; chosen after the first run)"
+    )
+    log(
+        f"{'scenario':24s} {'against':26s} {'metric':6s} {'wins':>6s} {'mean diff':>10s} "
+        f"{'p':>8s} {'Holm p':>8s}"
+    )
+    for t in tests:
+        log(
+            f"{t['scenario'][:24]:24s} {t['b']:26s} {t['metric']:6s} "
+            f"{t['wins']:>3d}/{t['seeds']:<2d} {t['mean_diff']:>+10.4f} {t['p']:>8.4f} "
+            f"{t['p_holm']:>8.4f}"
+        )
     return report
